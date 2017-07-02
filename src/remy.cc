@@ -32,20 +32,20 @@ int main( int argc, char *argv[] )
       string filename( arg.substr( 3 ) );
       int fd = open( filename.c_str(), O_RDONLY );
       if ( fd < 0 ) {
-	perror( "open" );
-	exit( 1 );
+        perror( "open" );
+        exit( 1 );
       }
 
       RemyBuffers::WhiskerTree tree;
       if ( !tree.ParseFromFileDescriptor( fd ) ) {
-	fprintf( stderr, "Could not parse %s.\n", filename.c_str() );
-	exit( 1 );
+        fprintf( stderr, "Could not parse %s.\n", filename.c_str() );
+        exit( 1 );
       }
       whiskers = WhiskerTree( tree );
 
       if ( close( fd ) < 0 ) {
-	perror( "close" );
-	exit( 1 );
+        perror( "close" );
+        exit( 1 );
       }
 
     } else if ( arg.substr( 0, 3 ) == "of=" ) {
@@ -146,7 +146,7 @@ int main( int argc, char *argv[] )
       }
       printf( "===\nconfig: %s\n", run.first.str().c_str() );
       for ( auto &x : run.second ) {
-	printf( "sender: [tp=%f, del=%f]\n", x.first / run.first.link_ppt, x.second / run.first.delay );
+        printf( "sender: [tp=%f, del=%f]\n", x.first / run.first.link_ppt, x.second / run.first.delay );
       }
     }
 
@@ -156,8 +156,8 @@ int main( int argc, char *argv[] )
       fprintf( stderr, "Writing to \"%s\"... ", of );
       int fd = open( of, O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR );
       if ( fd < 0 ) {
-	perror( "open" );
-	exit( 1 );
+        perror( "open" );
+        exit( 1 );
       }
 
       auto remycc = whiskers.DNA();
@@ -165,13 +165,13 @@ int main( int argc, char *argv[] )
       remycc.mutable_optimizer()->CopyFrom( Whisker::get_optimizer().DNA() );
       remycc.mutable_configvector()->CopyFrom( training_configs );
       if ( not remycc.SerializeToFileDescriptor( fd ) ) {
-	fprintf( stderr, "Could not serialize RemyCC.\n" );
-	exit( 1 );
+        fprintf( stderr, "Could not serialize RemyCC.\n" );
+        exit( 1 );
       }
 
       if ( close( fd ) < 0 ) {
-	perror( "close" );
-	exit( 1 );
+        perror( "close" );
+        exit( 1 );
       }
 
       fprintf( stderr, "done.\n" );

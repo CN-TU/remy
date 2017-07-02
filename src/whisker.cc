@@ -66,13 +66,13 @@ vector< Whisker > Whisker::next_generation( bool optimize_window_increment, bool
         Whisker new_whisker { *this };
         new_whisker._generation++;
 
-	new_whisker._window_increment = alt_window;
-	new_whisker._window_multiple = alt_multiple;
-	new_whisker._intersend = alt_intersend;
+        new_whisker._window_increment = alt_window;
+        new_whisker._window_multiple = alt_multiple;
+        new_whisker._intersend = alt_intersend;
 
-	new_whisker.round();
+        new_whisker.round();
 
-	ret.push_back( new_whisker );
+        ret.push_back( new_whisker );
       }
     }
   }

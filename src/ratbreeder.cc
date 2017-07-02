@@ -40,11 +40,11 @@ Evaluator< WhiskerTree >::Outcome RatBreeder::improve( WhiskerTree & whiskers )
       double new_score = improver.improve( whisker_to_improve );
       assert( new_score >= score_to_beat );
       if ( new_score == score_to_beat ) {
-	cerr << "Ending search." << endl;
-	break;
+        cerr << "Ending search." << endl;
+        break;
       } else {
-	cerr << "Score jumps from " << score_to_beat << " to " << new_score << endl;
-	score_to_beat = new_score;
+        cerr << "Score jumps from " << score_to_beat << " to " << new_score << endl;
+        score_to_beat = new_score;
       }
     }
 
