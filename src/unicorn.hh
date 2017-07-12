@@ -10,6 +10,12 @@
 #include "memory.hh"
 #include "simulationresults.pb.h"
 
+typedef struct {
+  int window_increment,
+  double window_multiple,
+  double intersend
+} action_struct;
+
 class Unicorn
 {
 private:
@@ -46,7 +52,13 @@ public:
   const unsigned int & packets_sent( void ) const { return _packets_sent; }
 
   // SimulationResultBuffers::SenderState state_DNA() const;
-  unsigned int window( const unsigned int previous_window ) const { return std::min( std::max( 0, int( previous_window * _window_multiple + _window_increment ) ), 1000000 ); }
+  unsigned int window(
+    const unsigned int previous_window,  
+    const int window_increment, 
+    const double window_multiple
+  ) const {
+    return std::min( std::max( 0, int( previous_window * window_multiple + window_increment ) ), 1000000 ); 
+  }
   const double & intersend( void ) const { return _intersend; }
 };
 

@@ -30,7 +30,7 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
   // EACH packet received
 
   // TODO: do that for each packet too!
-  _the_window = window( _the_window );
+  _the_window = window( _the_window, window_increment, window_multiple );
   _intersend_time = intersend();
 }
 
