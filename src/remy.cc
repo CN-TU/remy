@@ -6,7 +6,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "ratbreeder.hh"
+#include "unicornbreeder.hh"
 #include "dna.pb.h"
 #include "configrange.hh"
 using namespace std;
@@ -94,7 +94,7 @@ int main( int argc, char *argv[] )
 
   options.config_range = ConfigRange( input_config );
 
-  RatBreeder breeder( options, whisker_options );
+  UnicornBreeder breeder( options, whisker_options );
 
   unsigned int run = 0;
 
