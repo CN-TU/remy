@@ -49,7 +49,6 @@ class GameState(object):
     x_t *= (1.0/255.0)
     return reward, terminal, x_t
     
-    
   def _setup_display(self):
     if sys.platform == 'darwin':
       import pygame

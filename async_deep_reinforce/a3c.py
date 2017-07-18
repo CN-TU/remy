@@ -120,15 +120,20 @@ def create_training_thread():
   global_thread_index += 1
   return global_thread_index-1
 
+def delete_training_thread(thread_id):
+  del training_threads[global_thread_index]
+
 def call_process_action(thread_id, state):
   return training_threads[thread_id].action_step(sess, state)
 
-def call_process_reward(thread_id, reward, terminal):
-  diff_global_t = training_threads[thread_id].reward_step(sess, global_t, summary_writer, summary_op, score_input, reward, terminal)
+def call_process_reward(thread_id, reward):
+  diff_global_t = training_threads[thread_id].reward_step(sess, global_t, summary_writer, summary_op, score_input, reward)
   if diff_global_t is not None:
     global_t += diff_global_t
 
-
+def call_process_finished(thread_id, final_state):
+  diff_global_t = training_threads[thread_id].final_step(sess, global_t, summary_writer, summary_op, score_input, final_state)
+  global_t += diff_global_t
 
 # def train_function(parallel_index):
 #   global global_t

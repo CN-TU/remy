@@ -6,19 +6,15 @@
 #include <limits>
 
 #include "packet.hh"
-#include "whiskertree.hh"
 #include "memory.hh"
 #include "simulationresults.pb.h"
 
-typedef struct {
-  int window_increment,
-  double window_multiple,
-  double intersend
-} action_struct;
+#include "unicornfarm.hh"
 
 class Unicorn
 {
 private:
+
   Memory _memory;
 
   unsigned int _packets_sent, _packets_received;
@@ -28,12 +24,13 @@ private:
   double _last_send_time;
 
   int _the_window;
-  double _intersend_time;
+  // double _intersend_time;
 
   unsigned int _flow_id;
   int _largest_ack;
 
   int _thread_id;
+  UnicornFarm _unicorn_farm;
 
 public:
   Unicorn();
@@ -59,7 +56,7 @@ public:
   ) const {
     return std::min( std::max( 0, int( previous_window * window_multiple + window_increment ) ), 1000000 ); 
   }
-  const double & intersend( void ) const { return _intersend; }
+  // const double & intersend( void ) const { return _intersend; }
 };
 
 #endif

@@ -3,27 +3,34 @@
 
 #include <vector>
 #include "whisker.hh"
+#include <mutex>
+
+typedef struct action_struct {
+	int window_increment,
+	double window_multiple,
+	double intersend
+} action_struct;
 
 class UnicornFarm
 {
 private:
+	std::mutex global_lock;
 	PyObject* pModule;
 	PyObject* pActionFunc;
-	PyObject* pActionFunc;
-
-	int create_thread();
-	std::vector<int> get_action(int thread_id, std::vector<DataType> state);
-	void put_reward(int thread_id, int reward, bool terminal);
+	PyObject* pRewardFunc;
+	PyObject* pCreateFunc;
+	PyObject* pDeleteFunc;
+	UnicornFarm();
 
 public:
+	UnicornFarm(UnicornFarm const&) = delete;
+	void operator=(UnicornFarm const&) = delete;
 	static UnicornFarm& getInstance();
+	int create_thread();
+	action_struct get_action(const int thread_id, const std::vector<DataType> state);
+	void put_reward(const int thread_id, const int reward);
+	void finish(const int thread_id, const std::vector<DataType> state);
+	void delete_thread(const int thread_id);
 };
 
 #endif
-
-// TODO: Call Python base program, don't do anything. It's possible to create Unicorns from the UnicornFarm
-// UnicornBreeders don't interact with the UnicornFarm, they only contain the Remy emulator's simulation.
-// However, each UnicornBreeder owns a number of Unicorns, that he has to destroy when the simulation ends. 
-// A new simulation is started, which creates new Unicorns in the UnicornBreeder. 
-// So 1 UnicornFarm, a fixed number of UnicornBreeders and a variable number of Unicorns,
-// their number depends on the number of UnicornBreeders and the number of Unicorns required in each UnicornBreeder. 

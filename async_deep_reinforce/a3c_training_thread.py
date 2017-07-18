@@ -68,6 +68,8 @@ class A3CTrainingThread(object):
     # variable controling log output
     self.prev_local_t = 0
 
+    self.acc_state = None
+
   def _anneal_learning_rate(self, global_time_step):
     learning_rate = self.initial_learning_rate * (self.max_global_time_step - global_time_step) / self.max_global_time_step
     if learning_rate < 0.0:
@@ -91,9 +93,14 @@ class A3CTrainingThread(object):
     self.start_time = start_time
 
   def action_step(self, sess, state):
-    pi_, value_ = self.local_network.run_policy_and_value(sess, state) # TODO: State is some kind of tuple, no?
+    pi_, value_ = self.local_network.run_policy_and_value(sess, state) # TODO: State is some kind of tuple, isn't it?
     action = self.choose_action(pi_)
-    states.append(state)
+    # This whole accumulation thing is just a big hack that is also used in the game implementation. Fortunately with LSTM it's not needed anymore hopefully. 
+    if self.acc_state is None:
+      self.acc_state = np.stack((state, state, state, state), axis=1)
+    else:
+      self.acc_state = np.append(self.acc_state[:,1:], state, axis=1)
+    states.append(self.acc_state.flatten())
     actions.append(action)
     values.append(value_)
     # if (self.thread_index == 0) and (self.local_t % LOG_INTERVAL == 0):
@@ -102,49 +109,41 @@ class A3CTrainingThread(object):
       print(" V={}".format(value_))
     return action
 
-  def reward_step(self, sess, global_t, summary_writer, summary_op, score_input, reward, terminal):
-    terminals.append(terminal)
+  def reward_step(self, sess, global_t, summary_writer, summary_op, score_input, reward):
     rewards.append(reward)
-    if len(rewards) % LOCAL_T_MAX == 0 or terminal:
+    if len(rewards) % LOCAL_T_MAX == 0:
+      print("len(rewards)", len(rewards), "len(states)", len(states), "len(actions)", len(actions), "len(values)", len(values))
       return process(sess, global_t, summary_writer, summary_op, score_input)
     # implicitly returns None otherwise
 
-  def process(self, sess, global_t, summary_writer, summary_op, score_input):
+  def final_step(self, sess, global_t, summary_writer, summary_op, score_input, final_state):
+    return process(sess, global_t, summary_writer, summary_op, score_input, final_state)
 
+  def process(self, sess, global_t, summary_writer, summary_op, score_input, final_state=None):
     # copy weights from shared to local
     sess.run( self.sync )
 
     start_local_t = self.local_t
 
-    if USE_LSTM:
-      start_lstm_state = self.local_network.lstm_state_out
+    # if USE_LSTM:
+    #   start_lstm_state = self.local_network.lstm_state_out
     
     # t_max times loop
-    for i in range(LOCAL_T_MAX):
-      self.episode_reward += reward
+    for i in range(len(self.states)):
+      self.episode_reward += self.rewards[i]
 
       # clip reward
       # rewards[i] = np.clip(rewards[i], -1, 1) ) # TODO: Why do this? Is the range from -1 to 1 problem-specific?
 
       self.local_t += 1
-      
-      if terminals[i]:
-        terminal_end = True
-        print("score={}".format(self.episode_reward))
 
-        self._record_score(sess, summary_writer, summary_op, score_input,
-                           self.episode_reward, global_t)
-          
-        # self.episode_reward = 0
-        # self.game_state.reset()
-        # if USE_LSTM:
-        #   self.local_network.reset_state()
-        break
-
-    R = 0.0
-    if not terminal_end:
-      # R = self.local_network.run_value(sess, self.game_state.s_t) 
-      R = self.local_network.run_value(sess, states[-1]) # TODO: Hope that this is correct
+    if final_state is not None:
+      print("score={}".format(self.episode_reward))
+      self._record_score(sess, summary_writer, summary_op, score_input,
+                          self.episode_reward, global_t) # TODO:NOW: is that "not terminal_end" correct?
+      R = self.local_network.run_value(sess, final_state)
+    else:
+      R = 0.0
 
     actions.reverse()
     states.reverse()
