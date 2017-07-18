@@ -6,11 +6,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "unicornbreeder.hh"
+#include "ratbreeder.hh"
 #include "dna.pb.h"
 #include "configrange.hh"
-#include <thread>
-
 using namespace std;
 
 void print_range( const Range & range, const string & name )
@@ -19,19 +17,12 @@ void print_range( const Range & range, const string & name )
     range.low, range.incr, range.high );
 }
 
-void unicorn_thread(const size_t thread_id, const BreederOptions options, const size_t iterations_per_thread) {
-  UnicornBreeder breeder(options);
-  auto outcome = breeder.run(iterations_per_thread);
-  printf("thread = %u, score = %f\n", (unsigned int) thread_id, outcome.score);
-}
-
 int main( int argc, char *argv[] )
 {
-  // WhiskerTree whiskers;
+  WhiskerTree whiskers;
   string output_filename;
   BreederOptions options;
-  // FIXME: Unused. Might be useful to compare to original Remy...
-  // WhiskerImproverOptions whisker_options;
+  WhiskerImproverOptions whisker_options;
   RemyBuffers::ConfigRange input_config;
   string config_filename;
 
@@ -45,12 +36,12 @@ int main( int argc, char *argv[] )
         exit( 1 );
       }
 
-      // RemyBuffers::WhiskerTree tree;
-      // if ( !tree.ParseFromFileDescriptor( fd ) ) {
-      //   fprintf( stderr, "Could not parse %s.\n", filename.c_str() );
-      //   exit( 1 );
-      // }
-      // whiskers = WhiskerTree( tree );
+      RemyBuffers::WhiskerTree tree;
+      if ( !tree.ParseFromFileDescriptor( fd ) ) {
+        fprintf( stderr, "Could not parse %s.\n", filename.c_str() );
+        exit( 1 );
+      }
+      whiskers = WhiskerTree( tree );
 
       if ( close( fd ) < 0 ) {
         perror( "close" );
@@ -60,22 +51,22 @@ int main( int argc, char *argv[] )
     } else if ( arg.substr( 0, 3 ) == "of=" ) {
       output_filename = string( arg.substr( 3 ) );
 
-    // } else if ( arg.substr( 0, 4 ) == "opt=" ) {
-    //   whisker_options.optimize_window_increment = false;
-    //   whisker_options.optimize_window_multiple = false;
-    //   whisker_options.optimize_intersend = false;
-    //   for ( char & c : arg.substr( 4 ) ) {
-    //     if ( c == 'b' ) {
-    //       whisker_options.optimize_window_increment = true;
-    //     } else if ( c == 'm' ) {
-    //       whisker_options.optimize_window_multiple = true;
-    //     } else if ( c == 'r' ) {
-    //       whisker_options.optimize_intersend = true;
-    //     } else {
-    //       fprintf( stderr, "Invalid optimize option: %c\n", c );
-    //       exit( 1 );
-    //     }
-    //   }
+    } else if ( arg.substr( 0, 4 ) == "opt=" ) {
+      whisker_options.optimize_window_increment = false;
+      whisker_options.optimize_window_multiple = false;
+      whisker_options.optimize_intersend = false;
+      for ( char & c : arg.substr( 4 ) ) {
+        if ( c == 'b' ) {
+          whisker_options.optimize_window_increment = true;
+        } else if ( c == 'm' ) {
+          whisker_options.optimize_window_multiple = true;
+        } else if ( c == 'r' ) {
+          whisker_options.optimize_intersend = true;
+        } else {
+          fprintf( stderr, "Invalid optimize option: %c\n", c );
+          exit( 1 );
+        }
+      }
 
     } else if ( arg.substr(0, 3 ) == "cf=" ) {
       config_filename = string( arg.substr( 3 ) );
@@ -103,14 +94,16 @@ int main( int argc, char *argv[] )
 
   options.config_range = ConfigRange( input_config );
 
-  // unsigned int run = 0;
+  RatBreeder breeder( options, whisker_options );
+
+  unsigned int run = 0;
 
   printf( "#######################\n" );
   printf( "Evaluator simulations will run for %d ticks\n",
     options.config_range.simulation_ticks );
-  // printf( "Optimizing window increment: %d, window multiple: %d, intersend: %d\n",
-  //         whisker_options.optimize_window_increment, whisker_options.optimize_window_multiple,
-  //         whisker_options.optimize_intersend);
+  printf( "Optimizing window increment: %d, window multiple: %d, intersend: %d\n",
+          whisker_options.optimize_window_increment, whisker_options.optimize_window_multiple,
+          whisker_options.optimize_intersend);
   print_range( options.config_range.link_ppt, "link packets_per_ms" );
   print_range( options.config_range.rtt, "rtt_ms" );
   print_range( options.config_range.num_senders, "num_senders" );
@@ -123,7 +116,7 @@ int main( int argc, char *argv[] )
     printf( "Optimizing for infinitely sized buffers. \n");
   }
 
-  // printf( "Initial rules (use if=FILENAME to read from disk): %s\n", whiskers.str().c_str() );
+  printf( "Initial rules (use if=FILENAME to read from disk): %s\n", whiskers.str().c_str() );
   printf( "#######################\n" );
 
   if ( !output_filename.empty() ) {
@@ -132,72 +125,61 @@ int main( int argc, char *argv[] )
     printf( "Not saving output. Use the of=FILENAME argument to save the results.\n" );
   }
 
-  // RemyBuffers::ConfigVector training_configs;
-  // bool written = false;
+  RemyBuffers::ConfigVector training_configs;
+  bool written = false;
 
-  // while ( 1 ) {
+  while ( 1 ) {
+    auto outcome = breeder.improve( whiskers );
+    printf( "run = %u, score = %f\n", run, outcome.score );
 
-  const size_t iterations_per_thread = 10000;
-  const size_t num_threads = 5;
-  vector<thread> thread_array(num_threads);
+    printf( "whiskers: %s\n", whiskers.str().c_str() );
 
-  for (size_t i=0; i<num_threads; i++) {
-    thread_array[i] = thread(unicorn_thread, i, options, iterations_per_thread);
+    for ( auto &run : outcome.throughputs_delays ) {
+      if ( !(written) ) {
+        for ( auto &run : outcome.throughputs_delays) {
+          // record the config to the protobuf
+          RemyBuffers::NetConfig* net_config = training_configs.add_config();
+          *net_config = run.first.DNA();
+          written = true;
+
+        }
+      }
+      printf( "===\nconfig: %s\n", run.first.str().c_str() );
+      for ( auto &x : run.second ) {
+        printf( "sender: [tp=%f, del=%f]\n", x.first / run.first.link_ppt, x.second / run.first.delay );
+      }
+    }
+
+    if ( !output_filename.empty() ) {
+      char of[ 128 ];
+      snprintf( of, 128, "%s.%d", output_filename.c_str(), run );
+      fprintf( stderr, "Writing to \"%s\"... ", of );
+      int fd = open( of, O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR );
+      if ( fd < 0 ) {
+        perror( "open" );
+        exit( 1 );
+      }
+
+      auto remycc = whiskers.DNA();
+      remycc.mutable_config()->CopyFrom( options.config_range.DNA() );
+      remycc.mutable_optimizer()->CopyFrom( Whisker::get_optimizer().DNA() );
+      remycc.mutable_configvector()->CopyFrom( training_configs );
+      if ( not remycc.SerializeToFileDescriptor( fd ) ) {
+        fprintf( stderr, "Could not serialize RemyCC.\n" );
+        exit( 1 );
+      }
+
+      if ( close( fd ) < 0 ) {
+        perror( "close" );
+        exit( 1 );
+      }
+
+      fprintf( stderr, "done.\n" );
+    }
+
+    fflush( NULL );
+    run++;
   }
-
-  for (size_t i=0; i<num_threads; i++) {
-    thread_array[i].join();
-    printf("All threads finished!\n");
-  }
-
-  // printf( "whiskers: %s\n", whiskers.str().c_str() );
-
-  // for ( auto &run : outcome.throughputs_delays ) {
-  //   if ( !(written) ) {
-  //     for ( auto &run : outcome.throughputs_delays) {
-  //       // record the config to the protobuf
-  //       RemyBuffers::NetConfig* net_config = training_configs.add_config();
-  //       *net_config = run.first.DNA();
-  //       written = true;
-
-  //     }
-  //   }
-  //   printf( "===\nconfig: %s\n", run.first.str().c_str() );
-  //   for ( auto &x : run.second ) {
-  //     printf( "sender: [tp=%f, del=%f]\n", x.first / run.first.link_ppt, x.second / run.first.delay );
-  //   }
-  // }
-
-  // if ( !output_filename.empty() ) {
-  //   char of[ 128 ];
-  //   snprintf( of, 128, "%s.%d", output_filename.c_str(), run );
-  //   fprintf( stderr, "Writing to \"%s\"... ", of );
-  //   int fd = open( of, O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR );
-  //   if ( fd < 0 ) {
-  //     perror( "open" );
-  //     exit( 1 );
-  //   }
-
-  //   auto remycc = whiskers.DNA();
-  //   remycc.mutable_config()->CopyFrom( options.config_range.DNA() );
-  //   remycc.mutable_optimizer()->CopyFrom( Whisker::get_optimizer().DNA() );
-  //   remycc.mutable_configvector()->CopyFrom( training_configs );
-  //   if ( not remycc.SerializeToFileDescriptor( fd ) ) {
-  //     fprintf( stderr, "Could not serialize RemyCC.\n" );
-  //     exit( 1 );
-  //   }
-
-  //   if ( close( fd ) < 0 ) {
-  //     perror( "close" );
-  //     exit( 1 );
-  //   }
-
-  //   fprintf( stderr, "done.\n" );
-  // }
-
-  // fflush( NULL );
-    // run++;
-  // }
 
   return 0;
 }
