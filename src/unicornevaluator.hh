@@ -6,6 +6,7 @@
 
 // #include "random.hh"
 #include "network.hh"
+#include "unicorn.hh"
 // #include "problem.pb.h"
 // #include "answer.pb.h"
 

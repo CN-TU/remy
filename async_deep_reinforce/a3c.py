@@ -105,7 +105,8 @@ else:
 
 
 
-global_thread_index = 0 # TODO: Is this actually necessary?
+# First thread has index 1, 0 is invalid
+global_thread_index = 1 # TODO: Is this actually necessary?
 
 def create_training_thread():
   global global_t

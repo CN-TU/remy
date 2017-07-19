@@ -4,6 +4,7 @@
 #include "unicornevaluator.hh"
 #include "network.cc"
 #include "random.hh"
+#include "unicorn-templates.cc"
 
 #include <algorithm>
 
@@ -75,9 +76,10 @@ UnicornEvaluator::Outcome UnicornEvaluator::score(
   /* run tests */
   UnicornEvaluator::Outcome the_outcome;
   
-  std::shuffle( configs.begin(), configs.end(), run_pnrg );
+  vector<NetConfig> shuffled_configs(configs);
+  std::shuffle(shuffled_configs.begin(), shuffled_configs.end(), run_prng);
 
-  for ( auto &x : configs ) {
+  for ( auto &x : shuffled_configs ) {
     /* run once */
     Network<SenderGang<Unicorn, TimeSwitchedSender<Unicorn>>,
       SenderGang<Unicorn, TimeSwitchedSender<Unicorn>>> network1( Unicorn(), run_prng, x );

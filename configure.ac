@@ -19,6 +19,16 @@ AS_IF([test x"$PROTOC" = x],
 # Checks for libraries.
 PKG_CHECK_MODULES([protobuf], [protobuf])
 
+# Python stuff -- cargo cult...
+AM_PATH_PYTHON([3.5])
+#PY_PREFIX=`$PYTHON -c 'import sys ; print(sys.prefix)'`
+#PYTHON_LIBS=`"-lpython$PYTHON_VERSION" | tr -d .`
+#PYTHON_CFLAGS="-I$PY_PREFIX/include/python$PYTHON_VERSION"
+PYTHON_LIBS=`python3-config --ldflags`
+PYTHON_CFLAGS=`python3-config --cflags`
+AC_SUBST([PYTHON_LIBS])
+AC_SUBST([PYTHON_CFLAGS])
+
 # Add compiler flags
 CXX11_FLAGS="-std=c++11 -pthread"
 AC_SUBST([CXX11_FLAGS])

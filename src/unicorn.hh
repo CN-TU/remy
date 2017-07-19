@@ -24,16 +24,18 @@ private:
   double _last_send_time;
 
   int _the_window;
-  // double _intersend_time;
+  double _intersend_time;
 
   unsigned int _flow_id;
   int _largest_ack;
+  int _most_recent_ack;
 
-  int _thread_id;
-  UnicornFarm _unicorn_farm;
+  long unsigned int _thread_id;
+  UnicornFarm& _unicorn_farm;
 
 public:
   Unicorn();
+  ~Unicorn();
 
   void packets_received( const std::vector< Packet > & packets );
   void reset( const double & tickno ); /* start new flow */
