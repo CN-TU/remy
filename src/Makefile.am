@@ -29,6 +29,8 @@ remy_unicorn_SOURCES = $(common_source) remy-unicorn.cc unicornbreeder.cc unicor
 	breeder.cc breeder.hh unicornfarm.cc unicornfarm.hh unicornevaluator.cc unicornevaluator.hh \
 	unicorn.hh unicorn.cc
 
+utility.$(OBJEXT) : CXXFLAGS += -Wno-unused-value
+
 remy_poisson_SOURCES = $(common_source) remy-poisson.cc breeder.cc breeder.hh fishbreeder.cc fishbreeder.hh
 
 sender_runner_SOURCES = $(common_source) sender-runner.cc

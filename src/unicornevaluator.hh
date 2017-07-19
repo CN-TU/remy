@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-// #include "random.hh"
+#include "random.hh"
 #include "network.hh"
 #include "unicorn.hh"
 // #include "problem.pb.h"

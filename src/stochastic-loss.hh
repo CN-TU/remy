@@ -7,6 +7,9 @@
 #include <random>
 #include "exponential.hh"
 
+// FIXME: Why do I even need this?
+#define UNUSED(x) (void)(x)
+
 class StochasticLoss
 {
   private:
@@ -33,9 +36,9 @@ class StochasticLoss
       }
     }
 
-
     double next_event_time( const double & tickno ) const
     {
+      UNUSED(tickno);
       if ( _buffer.empty() ) {
         return std::numeric_limits<double>::max();
       }

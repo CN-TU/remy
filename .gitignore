@@ -32,6 +32,7 @@ Makefile.in
 /src/sender-logger
 /src/inspect-simulationsdata
 /src/remy
+/src/remy-unicorn
 /src/remy-poisson
 /graph/ratatouille
 /src/scoring-example
