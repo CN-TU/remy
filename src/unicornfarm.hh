@@ -22,6 +22,7 @@ private:
 	PyObject* pCreateFunc;
 	PyObject* pDeleteFunc;
 	PyObject* pFinishFunc;
+	PyObject* pSaveFunc;
 	UnicornFarm();
 
 public:
@@ -34,6 +35,7 @@ public:
 	void put_reward(const long unsigned int thread_id, const int reward);
 	void finish(const long unsigned int thread_id, const std::vector<double> state);
 	void delete_thread(const long unsigned int thread_id);
+	void save_session();
 };
 
 #endif

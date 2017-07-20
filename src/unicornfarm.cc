@@ -21,7 +21,8 @@ UnicornFarm::UnicornFarm() :
 	pRewardFunc(NULL),
 	pCreateFunc(NULL),
 	pDeleteFunc(NULL),
-	pFinishFunc(NULL)
+	pFinishFunc(NULL),
+	pSaveFunc(NULL)
 
 	{
 	
@@ -52,6 +53,7 @@ UnicornFarm::UnicornFarm() :
 	const char pCreateFuncName[] = "create_training_thread";
 	const char pDeleteFuncName[] = "delete_training_thread";
 	const char pFinishFuncName[] = "call_process_finished";
+	const char pSaveFuncName[] = "save_session";
 
 	// PyObject* pLoadModule = PyImport_ImportModule(pLoadModuleName);
 	// printf("pLoadModule %zd\n", (size_t) pLoadModule);
@@ -91,6 +93,9 @@ UnicornFarm::UnicornFarm() :
 
 	pFinishFunc = PyObject_GetAttrString(pModule, pFinishFuncName);
 	// Py_DECREF(pFinishFuncName);
+
+	pSaveFunc = PyObject_GetAttrString(pModule, pSaveFuncName);
+
 	PyGILState_Release(gstate);
 }
 
@@ -165,6 +170,16 @@ void UnicornFarm::finish(const long unsigned int thread_id, const std::vector<do
 	PyObject* pReturnValue = PyObject_CallObject(pFinishFunc, pArgs);
 	Py_DECREF(pArgs);	
 	Py_DECREF(pState);
+	Py_DECREF(pReturnValue);
+
+	PyGILState_Release(gstate);
+}
+
+void UnicornFarm::save_session() {
+	PyGILState_STATE gstate; 
+	gstate = PyGILState_Ensure();
+
+	PyObject* pReturnValue = PyObject_CallObject(pSaveFunc, NULL);
 	Py_DECREF(pReturnValue);
 
 	PyGILState_Release(gstate);

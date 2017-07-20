@@ -21,9 +21,6 @@ PKG_CHECK_MODULES([protobuf], [protobuf])
 
 # Python stuff -- cargo cult...
 AM_PATH_PYTHON([3.5])
-#PY_PREFIX=`$PYTHON -c 'import sys ; print(sys.prefix)'`
-#PYTHON_LIBS=`"-lpython$PYTHON_VERSION" | tr -d .`
-#PYTHON_CFLAGS="-I$PY_PREFIX/include/python$PYTHON_VERSION"
 PYTHON_LIBS=`python3-config --ldflags`
 PYTHON_CFLAGS=`python3-config --cflags | sed 's/\-Wstrict\-prototypes//'`
 AC_SUBST([PYTHON_LIBS])

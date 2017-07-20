@@ -136,6 +136,9 @@ def call_process_finished(thread_id, final_state):
   diff_global_t = training_threads[thread_id].final_step(sess, global_t, summary_writer, summary_op, score_input, final_state)
   global_t += diff_global_t
 
+def save_session():
+  saver.save(sess, CHECKPOINT_DIR + '/' + 'checkpoint', global_step = global_t)
+
 # def train_function(parallel_index):
 #   global global_t
   
@@ -188,6 +191,4 @@ def call_process_finished(thread_id, final_state):
 # wall_t_fname = CHECKPOINT_DIR + '/' + 'wall_t.' + str(global_t)
 # with open(wall_t_fname, 'w') as f:
 #   f.write(str(wall_t))
-
-# saver.save(sess, CHECKPOINT_DIR + '/' + 'checkpoint', global_step = global_t)
 

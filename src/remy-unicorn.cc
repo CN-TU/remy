@@ -7,11 +7,17 @@
 #include <fcntl.h>
 
 #include "unicornbreeder.hh"
-#include "dna.pb.h"
+#include "unicornfarm.hh"
+// #include "dna.pb.h"
 #include "configrange.hh"
 #include <thread>
 
+#include <signal.h>
+#include <stdlib.h>
+
 using namespace std;
+
+#define UNUSED(x) (void)(x)
 
 void print_range( const Range & range, const string & name )
 {
@@ -19,7 +25,16 @@ void print_range( const Range & range, const string & name )
     range.low, range.incr, range.high );
 }
 
+void signal_handler(int s) {
+  // UNUSED(s);
+  printf("Caught signal %d\n",s);
+  UnicornFarm& unicorn_farm = UnicornFarm::getInstance();
+  unicorn_farm.save_session();
+  exit(EXIT_SUCCESS);
+}
+
 void unicorn_thread(const size_t thread_id, const BreederOptions options, const size_t iterations_per_thread) {
+  printf("Creating thread no %zd\n", thread_id);
   UnicornBreeder breeder(options);
   auto outcome = breeder.run(iterations_per_thread);
   printf("thread = %u, score = %f\n", (unsigned int) thread_id, outcome.score);
@@ -144,6 +159,9 @@ int main( int argc, char *argv[] )
   for (size_t i=0; i<num_threads; i++) {
     thread_array[i] = thread(unicorn_thread, i, options, iterations_per_thread);
   }
+
+  signal(SIGINT, signal_handler);
+  signal(SIGTERM, signal_handler);
 
   for (size_t i=0; i<num_threads; i++) {
     thread_array[i].join();
