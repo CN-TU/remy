@@ -48,6 +48,7 @@ UnicornFarm::UnicornFarm() :
 	printf("%s\n", search_path);
 
 	const char pModuleName[] = "a3c";
+	const char pTestModuleName[] = "python_embedding_test";
 	const char pActionFuncName[] = "call_process_action";
 	const char pRewardFuncName[] = "call_process_reward";
 	const char pCreateFuncName[] = "create_training_thread";
@@ -72,28 +73,23 @@ UnicornFarm::UnicornFarm() :
 	PyList_Append(path, pSearchPath);
 	Py_DECREF(pSearchPath);
 
+	PyObject* pTestModule = PyImport_ImportModule(pTestModuleName);
+	printf("pTestModule %zd\n", (size_t) pTestModule);
+	if (pTestModule == NULL) {
+		PyErr_Print();
+	}
+	Py_DECREF(pTestModule);
 	pModule = PyImport_ImportModule(pModuleName);
 	printf("pModule %zd\n", (size_t) pModule);
 	if (pModule == NULL) {
 		PyErr_Print();
 	}
-	// Py_DECREF(pModuleName);
 
 	pActionFunc = PyObject_GetAttrString(pModule, pActionFuncName);
-	// Py_DECREF(pActionFuncName);
-
 	pRewardFunc = PyObject_GetAttrString(pModule, pRewardFuncName);
-	// Py_DECREF(pRewardFuncName);
-
 	pCreateFunc = PyObject_GetAttrString(pModule, pCreateFuncName);
-	// Py_DECREF(pCreateFuncName);
-
 	pDeleteFunc = PyObject_GetAttrString(pModule, pDeleteFuncName);
-	// Py_DECREF(pDeleteFuncName);
-
 	pFinishFunc = PyObject_GetAttrString(pModule, pFinishFuncName);
-	// Py_DECREF(pFinishFuncName);
-
 	pSaveFunc = PyObject_GetAttrString(pModule, pSaveFuncName);
 
 	PyGILState_Release(gstate);
@@ -176,11 +172,15 @@ void UnicornFarm::finish(const long unsigned int thread_id, const std::vector<do
 }
 
 void UnicornFarm::save_session() {
+	printf("Saving session\n");
 	PyGILState_STATE gstate; 
 	gstate = PyGILState_Ensure();
+
+	PyErr_Print();
 
 	PyObject* pReturnValue = PyObject_CallObject(pSaveFunc, NULL);
 	Py_DECREF(pReturnValue);
 
 	PyGILState_Release(gstate);
+	printf("Saved session\n");
 }

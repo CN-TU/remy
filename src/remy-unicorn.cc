@@ -160,8 +160,11 @@ int main( int argc, char *argv[] )
     thread_array[i] = thread(unicorn_thread, i, options, iterations_per_thread);
   }
 
+  printf("Created threads\n");
   signal(SIGINT, signal_handler);
   signal(SIGTERM, signal_handler);
+  signal(SIGSEGV, signal_handler);
+  printf("Registered handlers\n");
 
   for (size_t i=0; i<num_threads; i++) {
     thread_array[i].join();
