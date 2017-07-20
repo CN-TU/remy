@@ -1,6 +1,9 @@
 #include "unicornfarm.hh"
 #include <thread>
 #include <stddef.h>
+#include <unistd.h>
+#include <cstdio>
+#include <cerrno>
 // #include <Python.h>
 
 UnicornFarm& UnicornFarm::getInstance() {
@@ -21,23 +24,58 @@ UnicornFarm::UnicornFarm() :
 	pFinishFunc(NULL)
 
 	{
+	
 	Py_Initialize();
-	PyObject* pModuleName = PyUnicode_FromString("../async_deep_reinforce/a3c.py");
+	// PyObject* pModuleName = PyUnicode_FromString("../async_deep_reinforce/a3c");
 	// PyObject* pActionFuncName = PyUnicode_FromString("call_process_action");
 	// PyObject* pRewardFuncName = PyUnicode_FromString("call_process_reward");
 	// PyObject* pCreateFuncName = PyUnicode_FromString("create_training_thread");
 	// PyObject* pDeleteFuncName = PyUnicode_FromString("delete_training_thread");
 	// PyObject* pFinishFuncName = PyUnicode_FromString("call_process_finished");
 
-	// const char* pModuleName = "../async_deep_reinforce/a3c.py";
-	const char* pActionFuncName = "call_process_action";
-	const char* pRewardFuncName = "call_process_reward";
-	const char* pCreateFuncName = "create_training_thread";
-	const char* pDeleteFuncName = "delete_training_thread";
-	const char* pFinishFuncName = "call_process_finished";
+	PyGILState_STATE gstate; 
+	gstate = PyGILState_Ensure();
 
-	pModule = PyImport_Import(pModuleName);
-	Py_DECREF(pModuleName);
+	char cwd[1024];
+	if (getcwd(cwd, sizeof(cwd)) != NULL)
+		fprintf(stdout, "Current working dir: %s\n", cwd);
+	else
+		perror("getcwd() error");
+	const char python_directory[] = "/async_deep_reinforce";
+	char* search_path = new char[strlen(cwd)+strlen(python_directory)+1];
+	sprintf(search_path, "%s%s", cwd, python_directory);
+	printf("%s\n", search_path);
+
+	const char pModuleName[] = "a3c";
+	const char pActionFuncName[] = "call_process_action";
+	const char pRewardFuncName[] = "call_process_reward";
+	const char pCreateFuncName[] = "create_training_thread";
+	const char pDeleteFuncName[] = "delete_training_thread";
+	const char pFinishFuncName[] = "call_process_finished";
+
+	// PyObject* pLoadModule = PyImport_ImportModule(pLoadModuleName);
+	// printf("pLoadModule %zd\n", (size_t) pLoadModule);
+	// if (pLoadModule == NULL) {
+	// 	PyErr_Print();
+	// }
+	PyObject* path = PySys_GetObject("path");
+	if (path == NULL) {
+		PyErr_Print();
+	}
+	PyObject* pSearchPath = PyUnicode_FromString(search_path);
+	if (pSearchPath == NULL) {
+		PyErr_Print();
+	}
+	delete search_path;
+	PyList_Append(path, pSearchPath);
+	Py_DECREF(pSearchPath);
+
+	pModule = PyImport_ImportModule(pModuleName);
+	printf("pModule %zd\n", (size_t) pModule);
+	if (pModule == NULL) {
+		PyErr_Print();
+	}
+	// Py_DECREF(pModuleName);
 
 	pActionFunc = PyObject_GetAttrString(pModule, pActionFuncName);
 	// Py_DECREF(pActionFuncName);
@@ -53,6 +91,7 @@ UnicornFarm::UnicornFarm() :
 
 	pFinishFunc = PyObject_GetAttrString(pModule, pFinishFuncName);
 	// Py_DECREF(pFinishFuncName);
+	PyGILState_Release(gstate);
 }
 
 action_struct UnicornFarm::get_action(const long unsigned int thread_id, const std::vector<double> state) {

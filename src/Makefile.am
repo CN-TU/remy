@@ -1,20 +1,20 @@
-AM_CPPFLAGS = $(CXX11_FLAGS) -I../protobufs $(PYTHON_CFLAGS)
-AM_CXXFLAGS = $(PICKY_CXXFLAGS)
+AM_CPPFLAGS = $(CXX11_FLAGS) -I../protobufs
+AM_CXXFLAGS = $(PICKY_CXXFLAGS) -g $(PYTHON_CFLAGS)
 LDADD = ../protobufs/libremyprotos.a -lm $(protobuf_LIBS) $(PYTHON_LIBS)
 
 bin_PROGRAMS = remy remy-unicorn remy-poisson sender-runner sender-logger scoring-example configuration inspect-config inspect-simulationsdata
 
 common_source = delay.hh evaluator.cc evaluator.hh                 \
-	exponential.hh link.hh link-templates.cc stochastic-loss.hh                      \
+	exponential.hh link.hh link-templates.cc stochastic-loss.hh    \
 	memory.cc memory.hh memoryrange.cc memoryrange.hh              \
 	network.cc network.hh packet.hh poisson.hh                     \
 	random.cc random.hh rat.cc rat.hh rat-templates.cc             \
 	receiver.cc receiver.hh sendergang.cc sendergang.hh            \
 	senderdatapoint.hh                                             \
-	sendergangofgangs.cc sendergangofgangs.hh                  \
+	sendergangofgangs.cc sendergangofgangs.hh                      \
 	utility.hh whisker.cc whisker.hh whiskertree.cc whiskertree.hh \
 	aimd-templates.cc aimd.cc aimd.hh                              \
-	configrange.hh configrange.cc                              \
+	configrange.hh configrange.cc                                  \
 	simulationresults.hh simulationresults.cc                      \
     action.hh fin.hh fin.cc fintree.cc fintree.hh  	               \
     fish.hh fish.cc fish-templates.cc unicorn-templates.cc
@@ -28,8 +28,6 @@ remy_SOURCES = $(common_source) remy.cc ratbreeder.cc ratbreeder.hh \
 remy_unicorn_SOURCES = $(common_source) remy-unicorn.cc unicornbreeder.cc unicornbreeder.hh \
 	breeder.cc breeder.hh unicornfarm.cc unicornfarm.hh unicornevaluator.cc unicornevaluator.hh \
 	unicorn.hh unicorn.cc
-
-utility.$(OBJEXT) : CXXFLAGS += -Wno-unused-value
 
 remy_poisson_SOURCES = $(common_source) remy-poisson.cc breeder.cc breeder.hh fishbreeder.cc fishbreeder.hh
 

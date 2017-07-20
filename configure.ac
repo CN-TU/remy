@@ -25,7 +25,7 @@ AM_PATH_PYTHON([3.5])
 #PYTHON_LIBS=`"-lpython$PYTHON_VERSION" | tr -d .`
 #PYTHON_CFLAGS="-I$PY_PREFIX/include/python$PYTHON_VERSION"
 PYTHON_LIBS=`python3-config --ldflags`
-PYTHON_CFLAGS=`python3-config --cflags`
+PYTHON_CFLAGS=`python3-config --cflags | sed 's/\-Wstrict\-prototypes//'`
 AC_SUBST([PYTHON_LIBS])
 AC_SUBST([PYTHON_CFLAGS])
 
