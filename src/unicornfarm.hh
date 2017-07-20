@@ -15,7 +15,7 @@ class UnicornFarm
 {
 private:
 	// FIXME: Replace global_lock by Python's GIL
-	std::mutex global_lock;
+	// std::mutex global_lock;
 	PyObject* pModule;
 	PyObject* pActionFunc;
 	PyObject* pRewardFunc;

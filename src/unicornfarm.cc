@@ -5,14 +5,14 @@
 
 UnicornFarm& UnicornFarm::getInstance() {
 	// Apparently in C++11 all that code is thread_safe...
-	// std::unique_lock<std::mutex> lock(global_lock);
+	// PyGILState_STATE gstate; gstate = PyGILState_Ensure();
 
 	static UnicornFarm instance;
 	return instance;
 }
 
 UnicornFarm::UnicornFarm() : 
-	global_lock(),
+	// global_lock(),
 	pModule(NULL),
 	pActionFunc(NULL),
 	pRewardFunc(NULL),
@@ -56,7 +56,8 @@ UnicornFarm::UnicornFarm() :
 }
 
 action_struct UnicornFarm::get_action(const long unsigned int thread_id, const std::vector<double> state) {
-	std::unique_lock<std::mutex> lock(global_lock);
+	PyGILState_STATE gstate; 
+	gstate = PyGILState_Ensure();
 
 	PyObject* pState = PyTuple_New(state.size());
 	for (size_t i=0; i<state.size(); i++) {
@@ -72,38 +73,50 @@ action_struct UnicornFarm::get_action(const long unsigned int thread_id, const s
 	Py_DECREF(pActionArrayValue);
 	Py_DECREF(pArgs);	
 	Py_DECREF(pState);
+
+	PyGILState_Release(gstate);
 	return action;
 }
 
 void UnicornFarm::put_reward(const long unsigned int thread_id, const int reward) {
-	std::unique_lock<std::mutex> lock(global_lock);
+	PyGILState_STATE gstate; 
+	gstate = PyGILState_Ensure();
 
 	PyObject* pRewardArgs = Py_BuildValue("(ii)", (long) thread_id, (long) reward);
 	PyObject* pReturnValue = PyObject_CallObject(pRewardFunc, pRewardArgs);
 	Py_DECREF(pRewardArgs);
 	Py_DECREF(pReturnValue);
+
+	PyGILState_Release(gstate);
 }
 
 long unsigned int UnicornFarm::create_thread() {
-	std::unique_lock<std::mutex> lock(global_lock);
+	PyGILState_STATE gstate; 
+	gstate = PyGILState_Ensure();
 
 	PyObject* pThreadId = PyObject_CallObject(pCreateFunc, NULL);
 	long unsigned int thread_id = (int) PyLong_AsLong(pThreadId);
 	Py_DECREF(pThreadId);
+
+	PyGILState_Release(gstate);
 	return thread_id;
 }
 
 void UnicornFarm::delete_thread(const long unsigned int thread_id) {
-	std::unique_lock<std::mutex> lock(global_lock);
+	PyGILState_STATE gstate; 
+	gstate = PyGILState_Ensure();
 
 	PyObject* pThreadIdTuple = Py_BuildValue("(i)", (long) thread_id);
 	PyObject* pReturnValue = PyObject_CallObject(pDeleteFunc, pThreadIdTuple);
 	Py_DECREF(pReturnValue);
 	Py_DECREF(pThreadIdTuple);
+
+	PyGILState_Release(gstate);
 }
 
 void UnicornFarm::finish(const long unsigned int thread_id, const std::vector<double> state) {
-	std::unique_lock<std::mutex> lock(global_lock);
+	PyGILState_STATE gstate; 
+	gstate = PyGILState_Ensure();
 
 	PyObject* pState = PyTuple_New(state.size());
 	for (size_t i=0; i<state.size(); i++) {
@@ -114,4 +127,6 @@ void UnicornFarm::finish(const long unsigned int thread_id, const std::vector<do
 	Py_DECREF(pArgs);	
 	Py_DECREF(pState);
 	Py_DECREF(pReturnValue);
+
+	PyGILState_Release(gstate);
 }
