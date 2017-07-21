@@ -24,6 +24,26 @@ SenderGang<SenderType, SwitcherType>::SenderGang( const double mean_on_duration,
 }
 
 template <class SenderType, class SwitcherType>
+SenderGang<SenderType, SwitcherType>::SenderGang( const double mean_on_duration,
+						  const double mean_off_duration,
+						  const unsigned int num_senders,
+						  // const SenderType & exemplar,
+						  PRNG & prng,
+						  const unsigned int id_range_begin )
+  : _gang(),
+    _prng( prng ),
+    _start_distribution( 1.0 / mean_off_duration ),
+    _stop_distribution( 1.0 / mean_on_duration )
+{
+  printf("Creating %u unicorns\n", num_senders);
+  for ( unsigned int i = 0; i < num_senders; i++ ) {
+    _gang.emplace_back( i + id_range_begin,
+			_start_distribution.sample( _prng ));
+  }
+  puts("Created unicorns");   
+}
+
+template <class SenderType, class SwitcherType>
 SenderGang<SenderType, SwitcherType>::SenderGang()
   : _gang(),
     _prng( global_PRNG() ),

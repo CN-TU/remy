@@ -20,10 +20,11 @@ Unicorn::Unicorn()
      _intersend_time( 0 ),
      _flow_id( 0 ),
      _largest_ack( -1 ),
-     _most_recent_ack (-1),
+     _most_recent_ack ( -1 ),
      _thread_id(0),
      _unicorn_farm(UnicornFarm::getInstance())
 {
+  puts("Creating a Unicorn!");
   _thread_id = _unicorn_farm.create_thread();
 }
 
@@ -106,10 +107,14 @@ double Unicorn::next_event_time( const double & tickno ) const
 // }
 
 Unicorn::~Unicorn() {
-  // When everything is finished and packets were lost in the end, put reward 0 for each of them. 
-  for (size_t i=0; i<(_packets_sent-_most_recent_ack); i++) {
-    _unicorn_farm.put_reward(_thread_id, LOSS_REWARD);
+  puts("Destroying a unicorn");
+  if (_packets_sent > 0) {
+    printf("Unicorn sent %i", _packets_sent);
+    // When everything is finished and packets were lost in the end, put reward 0 for each of them. 
+    for (size_t i=0; i<(_packets_sent-_most_recent_ack-1); i++) {
+      _unicorn_farm.put_reward(_thread_id, LOSS_REWARD);
+    }
+    _unicorn_farm.finish(_thread_id, {_memory.field(0), _memory.field(1), _memory.field(2), _memory.field(3)});
   }
-  _unicorn_farm.finish(_thread_id, {_memory.field(0), _memory.field(1), _memory.field(2), _memory.field(3)});
   _unicorn_farm.delete_thread(_thread_id);
 }

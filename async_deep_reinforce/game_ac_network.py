@@ -26,14 +26,16 @@ class GameACNetwork(object):
       self.td = tf.placeholder("float", [None])
 
       # avoid NaN with clipping when value in pi becomes zero
-      # log_pi = tuple(map(lambda item: tf.log(tf.clip_by_value(item, 1e-20, 1.0)), self.pi)) # TODO: Is this needed?
+      # log_pi = tf.log(tf.clip_by_value(item, 1e-20, 1.0))
       
       # policy entropy
       # entropy = -tf.reduce_sum(self.pi * log_pi, reduction_indices=1)
       entropy = 0.5 * tf.reduce_sum((tf.log(2*math.pi*self.pi[1]) + 1), axis=1) # TODO: Not sure if minus is required here or not...
       
       # policy loss (output)  (Adding minus, because the original paper's objective function is for gradient ascent, but we use gradient descent optimizer.)
-      policy_loss = - tf.reduce_sum( tf.reduce_sum( tf.multiply( log_pi, self.a ), axis=1 ) * self.td + entropy * entropy_beta )
+      # policy_loss = - tf.reduce_sum( tf.reduce_sum( tf.multiply( log_pi, self.a ), axis=1 ) * self.td + entropy * entropy_beta )
+      policy_loss = tf.reduce_sum( tf.reduce_sum( tf.square(tf.subtract( self.pi[0], self.a )), axis=1 ) * self.td - entropy * entropy_beta )
+      # TODO:Immediate: (- mean square error) damit es größer wird, je besser es wird, wie in der Ausgangsformel. 
 
       # R (input for value)
       self.r = tf.placeholder("float", [None])
@@ -124,8 +126,8 @@ class GameACFFNetwork(GameACNetwork):
       self.pi = (
         # tf.nn.softmax(tf.matmul(h_fc, self.W_hidden_to_action_mean_fc) + self.b_hidden_to_action_mean_fc),
         # tf.nn.softmax(tf.matmul(h_fc, self.W_hidden_to_action_var_fc) + self.b_hidden_to_action_var_fc)
-        tf.matmul(h_fc, self.W_hidden_to_action_mean_fc) + self.b_hidden_to_action_mean_fc,
-        tf.nn.softplus(tf.matmul(h_fc, self.W_hidden_to_action_var_fc) + self.b_hidden_to_action_var_fc)
+        tf.matmul(h_fc, self.W_hidden_to_action_mean_fc) + self.b_hidden_to_action_mean_fc, # mean
+        tf.nn.softplus(tf.matmul(h_fc, self.W_hidden_to_action_var_fc) + self.b_hidden_to_action_var_fc) #var
       )
       # value (output)
       v_ = tf.matmul(h_fc, self.W_hidden_to_value_fc) + self.b_hidden_to_value_fc
@@ -145,7 +147,8 @@ class GameACFFNetwork(GameACNetwork):
 
   def get_vars(self):
     return [self.W_state_to_hidden_fc, self.b_state_to_hidden_fc,
-            self.W_hidden_to_action_fc, self.b_hidden_to_action_fc,
+            self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc,
+            self.W_hidden_to_action_var_fc, self.b_hidden_to_action_var_fc,
             self.W_hidden_to_value_fc, self.b_hidden_to_value_fc]
 
 # # Actor-Critic LSTM Network

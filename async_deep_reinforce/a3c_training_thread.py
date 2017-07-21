@@ -93,6 +93,7 @@ class A3CTrainingThread(object):
     self.start_time = start_time
 
   def action_step(self, sess, state):
+    print("action_step", state)
     pi_, value_ = self.local_network.run_policy_and_value(sess, state) # TODO: State is some kind of tuple, isn't it?
     action = self.choose_action(pi_)
     # This whole accumulation thing is just a big hack that is also used in the game implementation. Fortunately with LSTM it's not needed anymore hopefully. 
@@ -110,16 +111,19 @@ class A3CTrainingThread(object):
     return action
 
   def reward_step(self, sess, global_t, summary_writer, summary_op, score_input, reward):
-    rewards.append(reward)
-    if len(rewards) % LOCAL_T_MAX == 0:
-      print("len(rewards)", len(rewards), "len(states)", len(states), "len(actions)", len(actions), "len(values)", len(values))
-      return process(sess, global_t, summary_writer, summary_op, score_input)
+    print("reward step", reward)
+    self.rewards.append(reward)
+    if len(self.rewards) % LOCAL_T_MAX == 0:
+      print("len(rewards)", len(self.rewards), "len(states)", len(self.states), "len(actions)", len(self.actions), "len(values)", len(self.values))
+      return self.process(sess, global_t, summary_writer, summary_op, score_input)
     # implicitly returns None otherwise
 
   def final_step(self, sess, global_t, summary_writer, summary_op, score_input, final_state):
-    return process(sess, global_t, summary_writer, summary_op, score_input, final_state)
+    print("final step", final_state)
+    return self.process(sess, global_t, summary_writer, summary_op, score_input, final_state)
 
   def process(self, sess, global_t, summary_writer, summary_op, score_input, final_state=None):
+    print("process, final_state", final_state)
     # copy weights from shared to local
     sess.run( self.sync )
 
@@ -145,10 +149,10 @@ class A3CTrainingThread(object):
     else:
       R = 0.0
 
-    actions.reverse()
-    states.reverse()
-    rewards.reverse()
-    values.reverse()
+    self.actions.reverse()
+    self.states.reverse()
+    self.rewards.reverse()
+    self.values.reverse()
 
     batch_si = []
     batch_a = []
@@ -156,7 +160,7 @@ class A3CTrainingThread(object):
     batch_R = []
 
     # compute and accmulate gradients
-    for(ai, ri, si, Vi) in zip(actions, rewards, states, values):
+    for(ai, ri, si, Vi) in zip(self.actions, self.rewards, self.states, self.values):
       R = ri + GAMMA * R
       td = R - Vi
       a = np.zeros([ACTION_SIZE])

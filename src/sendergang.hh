@@ -49,6 +49,16 @@ public:
       id( s_id )
   {}
 
+  SwitchedSender( const unsigned int s_id,
+		  const double & start_tick )
+    : internal_tick( 0 ),
+      next_switch_tick( start_tick ),
+      sender( SenderType() ),
+      utility(),
+      sending( false ),
+      id( s_id )
+  {}
+
   virtual ~SwitchedSender() {}
 };
 
@@ -132,6 +142,13 @@ public:
 	      const double mean_off_duration,
 	      const unsigned int num_senders,
 	      const SenderType & exemplar,
+	      PRNG & s_prng,
+	      const unsigned int id_range_begin = 0 );
+
+  SenderGang( const double mean_on_duration,
+	      const double mean_off_duration,
+	      const unsigned int num_senders,
+	      // const SenderType & exemplar,
 	      PRNG & s_prng,
 	      const unsigned int id_range_begin = 0 );
 

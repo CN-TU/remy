@@ -13,6 +13,7 @@ UnicornEvaluator::UnicornEvaluator( const ConfigRange & range )
     _tick_count( range.simulation_ticks ),
     _configs()
 {
+  printf("Creating UnicornEvaluator with random seed %u\n", _prng_seed);
   // add configs from every point in the cube of configs
   for (double link_ppt = range.link_ppt.low; link_ppt <= range.link_ppt.high; link_ppt += range.link_ppt.incr) {
     for (double rtt = range.rtt.high; rtt <= range.rtt.high; rtt += range.rtt.incr) {
@@ -82,7 +83,7 @@ UnicornEvaluator::Outcome UnicornEvaluator::score(
   for ( auto &x : shuffled_configs ) {
     /* run once */
     Network<SenderGang<Unicorn, TimeSwitchedSender<Unicorn>>,
-      SenderGang<Unicorn, TimeSwitchedSender<Unicorn>>> network1( Unicorn(), run_prng, x );
+      SenderGang<Unicorn, TimeSwitchedSender<Unicorn>>> network1( run_prng, x );
     network1.run_simulation( ticks_to_run );
     
     the_outcome.score += network1.senders().utility();
