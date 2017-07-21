@@ -74,13 +74,11 @@ UnicornFarm::UnicornFarm() :
 	Py_DECREF(pSearchPath);
 
 	PyObject* pTestModule = PyImport_ImportModule(pTestModuleName);
-	printf("pTestModule %zd\n", (size_t) pTestModule);
 	if (pTestModule == NULL) {
 		PyErr_Print();
 	}
 	Py_DECREF(pTestModule);
 	pModule = PyImport_ImportModule(pModuleName);
-	printf("pModule %zd\n", (size_t) pModule);
 	if (pModule == NULL) {
 		PyErr_Print();
 	}

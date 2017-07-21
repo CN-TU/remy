@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
+print("Loading a3c...")
+
 import tensorflow as tf
-import threading
+print("Loaded tensorflow")
 import numpy as np
+print("Loaded numpy")
 
 import signal
 import random
@@ -27,7 +31,7 @@ from constants import GRAD_NORM_CLIP
 from constants import USE_GPU
 from constants import USE_LSTM
 
-print("Loading a3c!")
+print("Loaded a3c!")
 
 def log_uniform(lo, hi, rate):
   log_lo = math.log(lo)

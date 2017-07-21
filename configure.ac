@@ -17,7 +17,7 @@ AS_IF([test x"$PROTOC" = x],
   [AC_MSG_ERROR([cannot find protoc, the Protocol Buffers compiler])])
 
 # Checks for libraries.
-PKG_CHECK_MODULES([protobuf], [protobuf])
+PKG_CHECK_MODULES([protobuf], [protobuf >= 3.3])
 
 # Python stuff -- cargo cult...
 AM_PATH_PYTHON([3.5])
