@@ -75,13 +75,19 @@ class GameACNetwork(object):
 
   # weight initialization based on muupan's code
   # https://github.com/muupan/async-rl/blob/master/a3c_ale.py
-  def _fc_variable(self, weight_shape):
+  def _fc_variable(self, weight_shape, positive=False):
     input_channels  = weight_shape[0]
     output_channels = weight_shape[1]
     d = 1.0 / np.sqrt(input_channels)
+    if positive:
+      lower = 0
+      upper = 2*d
+    else:
+      lower = -d
+      upper = d
     bias_shape = [output_channels]
-    weight = tf.Variable(tf.random_uniform(weight_shape, minval=-d, maxval=d))
-    bias   = tf.Variable(tf.random_uniform(bias_shape,   minval=-d, maxval=d))
+    weight = tf.Variable(tf.random_uniform(weight_shape, minval=lower, maxval=upper))
+    bias   = tf.Variable(tf.random_uniform(bias_shape,   minval=lower, maxval=upper))
     return weight, bias
 
   # def _conv_variable(self, weight_shape):
@@ -110,6 +116,8 @@ class GameACFFNetwork(GameACNetwork):
 
       self.W_state_to_hidden_fc, self.b_state_to_hidden_fc = self._fc_variable([STATE_SIZE, HIDDEN_SIZE])
 
+      # print("self.W_state_to_hidden_fc", self.W_state_to_hidden_fc, "self.b_state_to_hidden_fc", self.b_state_to_hidden_fc)
+
       # weight for policy output layer
       self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE])
       self.W_hidden_to_action_var_fc, self.b_hidden_to_action_var_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE])
@@ -135,7 +143,8 @@ class GameACFFNetwork(GameACNetwork):
 
   def run_policy_and_value(self, sess, s_t):
     pi_out, v_out = sess.run( [self.pi, self.v], feed_dict = {self.s : [s_t]} )
-    return (pi_out[0], v_out[0])
+    # print("run_policy_and_value", pi_out, v_out)
+    return ((pi_out[0][0], pi_out[1][0]), v_out[0])
 
   def run_policy(self, sess, s_t):
     pi_out = sess.run( self.pi, feed_dict = {self.s : [s_t]} )

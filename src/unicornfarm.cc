@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <cstdio>
 #include <cerrno>
+#include <cmath>
 // #include <Python.h>
 
 UnicornFarm& UnicornFarm::getInstance() {
@@ -36,8 +37,8 @@ UnicornFarm::UnicornFarm() :
 	// PyObject* pDeleteFuncName = PyUnicode_FromString("delete_training_thread");
 	// PyObject* pFinishFuncName = PyUnicode_FromString("call_process_finished");
 
-	PyGILState_STATE gstate; 
-	gstate = PyGILState_Ensure();
+	// PyGILState_STATE gstate; 
+	// gstate = PyGILState_Ensure();
 
 	char cwd[1024];
 	if (getcwd(cwd, sizeof(cwd)) != NULL)
@@ -97,7 +98,7 @@ UnicornFarm::UnicornFarm() :
 	pFinishFunc = PyObject_GetAttrString(pModule, pFinishFuncName);
 	pSaveFunc = PyObject_GetAttrString(pModule, pSaveFuncName);
 
-	PyGILState_Release(gstate);
+	// PyGILState_Release(gstate);
 }
 
 action_struct UnicornFarm::get_action(const long unsigned int thread_id, const std::vector<double> state) {
@@ -109,13 +110,18 @@ action_struct UnicornFarm::get_action(const long unsigned int thread_id, const s
 	for (size_t i=0; i<state.size(); i++) {
 		PyTuple_SetItem(pState, i, PyFloat_FromDouble(state[i]));
 	}
-	PyObject* pArgs = Py_BuildValue("(i0)", (long) thread_id, pState);
+	PyObject* pArgs = Py_BuildValue("(iO)", (long) thread_id, pState);
+
 	PyObject* pActionArrayValue = PyObject_CallObject(pActionFunc, pArgs);
+	if (pActionArrayValue == NULL) {
+		PyErr_Print();
+	}
 	action_struct action = {
-		(unsigned long) PyLong_AsLong(PyTuple_GetItem(pActionArrayValue, 0)),
+		PyFloat_AsDouble(PyTuple_GetItem(pActionArrayValue, 0)),
 		PyFloat_AsDouble(PyTuple_GetItem(pActionArrayValue, 1)),
 		PyFloat_AsDouble(PyTuple_GetItem(pActionArrayValue, 2))
 	};
+	// printf("%f, %f, %f\n", action.window_increment, action.window_multiple, action.intersend);
 	Py_DECREF(pActionArrayValue);
 	Py_DECREF(pArgs);	
 	Py_DECREF(pState);
@@ -149,6 +155,7 @@ long unsigned int UnicornFarm::create_thread() {
 	// printf("Do I hold the GIL? %d\n", PyGILState_Check());
 	PyObject* pThreadId = PyObject_CallObject(pCreateFunc, NULL);
 	if (pThreadId == NULL) {
+		puts("Oh oh, NULL value for create_thread");
 		PyErr_Print();
 	}
 	long unsigned int thread_id = (int) PyLong_AsLong(pThreadId);
@@ -185,9 +192,7 @@ void UnicornFarm::finish(const long unsigned int thread_id, const std::vector<do
 		PyTuple_SetItem(pState, i, PyFloat_FromDouble(state[i]));
 	}
 	PyObject* pArgs = Py_BuildValue("(iO)", (long) thread_id, pState);
-	if (pArgs == NULL) {
-		PyErr_Print();
-	}
+	
 	PyObject* pReturnValue = PyObject_CallObject(pFinishFunc, pArgs);
 	if (pReturnValue == NULL) {
 		PyErr_Print();
@@ -215,4 +220,10 @@ void UnicornFarm::save_session() {
 
 	// PyGILState_Release(gstate);
 	printf("Saved session\n");
+}
+
+void UnicornFarm::print_errors() {
+	std::lock_guard<std::mutex> guard(global_lock);
+
+	PyErr_Print();
 }

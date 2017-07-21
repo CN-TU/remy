@@ -83,7 +83,7 @@ UnicornEvaluator::Outcome UnicornEvaluator::score(
   for ( auto &x : shuffled_configs ) {
     /* run once */
     Network<SenderGang<Unicorn, TimeSwitchedSender<Unicorn>>,
-      SenderGang<Unicorn, TimeSwitchedSender<Unicorn>>> network1( run_prng, x );
+      SenderGang<Unicorn, TimeSwitchedSender<Unicorn>>> network1( Unicorn(), run_prng, x );
     network1.run_simulation( ticks_to_run );
     
     the_outcome.score += network1.senders().utility();

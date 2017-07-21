@@ -6,7 +6,7 @@
 #include <Python.h>
 
 typedef struct action_struct {
-	long unsigned int window_increment;
+	double window_increment;
 	double window_multiple;
 	double intersend;
 } action_struct;
@@ -36,6 +36,7 @@ public:
 	void finish(const long unsigned int thread_id, const std::vector<double> state);
 	void delete_thread(const long unsigned int thread_id);
 	void save_session();
+	void print_errors();
 };
 
 #endif

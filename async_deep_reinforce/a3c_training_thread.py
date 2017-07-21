@@ -70,16 +70,20 @@ class A3CTrainingThread(object):
 
     self.acc_state = None
 
+  def get_network_vars(self):
+    return self.local_network.get_vars()
+
   def _anneal_learning_rate(self, global_time_step):
     learning_rate = self.initial_learning_rate * (self.max_global_time_step - global_time_step) / self.max_global_time_step
     if learning_rate < 0.0:
       learning_rate = 0.0
     return learning_rate
 
-  def choose_action(self, pi_mean_values, pi_std_values):
-    actions = [norm.rvs(loc=mean, scale=std) for mean, std, skewness in zip(pi_mean_values, pi_std_values)]
+  def choose_action(self, pi_values):
+    actions = [norm.rvs(loc=mean, scale=std) for mean, std in zip(pi_values[0], pi_values[1])]
     actions[0] = max(0, actions[0]) # Make sure that multiplier isn't negative. There are no negative congestion windows. TODO: Maybe it would be a good idea?
     actions[2] = max(0, actions[2]) # Make sure that the minimum time to wait until you send the next packet isn't negative. 
+
     return actions
 
   def _record_score(self, sess, summary_writer, summary_op, score_input, score, global_t):
@@ -93,17 +97,24 @@ class A3CTrainingThread(object):
     self.start_time = start_time
 
   def action_step(self, sess, state):
-    print("action_step", state)
-    pi_, value_ = self.local_network.run_policy_and_value(sess, state) # TODO: State is some kind of tuple, isn't it?
-    action = self.choose_action(pi_)
-    # This whole accumulation thing is just a big hack that is also used in the game implementation. Fortunately with LSTM it's not needed anymore hopefully. 
+    state = np.array(state)
     if self.acc_state is None:
       self.acc_state = np.stack((state, state, state, state), axis=1)
     else:
+      # print(self.acc_state)
+      state = np.expand_dims(state, 1)
+      # print(state)
       self.acc_state = np.append(self.acc_state[:,1:], state, axis=1)
-    states.append(self.acc_state.flatten())
-    actions.append(action)
-    values.append(value_)
+
+    state = self.acc_state.flatten()
+    pi_, value_ = self.local_network.run_policy_and_value(sess, state) # TODO: State is some kind of tuple, isn't it?
+    # print("action_step", pi_)
+    action = self.choose_action(pi_)
+    # This whole accumulation thing is just a big hack that is also used in the game implementation. Fortunately with LSTM it's not needed anymore hopefully. 
+
+    self.states.append(state)
+    self.actions.append(action)
+    self.values.append(value_)
     # if (self.thread_index == 0) and (self.local_t % LOG_INTERVAL == 0):
     if self.local_t % LOG_INTERVAL == 0:
       print("pi={}".format(pi_))
@@ -111,7 +122,6 @@ class A3CTrainingThread(object):
     return action
 
   def reward_step(self, sess, global_t, summary_writer, summary_op, score_input, reward):
-    print("reward step", reward)
     self.rewards.append(reward)
     if len(self.rewards) % LOCAL_T_MAX == 0:
       print("len(rewards)", len(self.rewards), "len(states)", len(self.states), "len(actions)", len(self.actions), "len(values)", len(self.values))
@@ -119,11 +129,10 @@ class A3CTrainingThread(object):
     # implicitly returns None otherwise
 
   def final_step(self, sess, global_t, summary_writer, summary_op, score_input, final_state):
-    print("final step", final_state)
-    return self.process(sess, global_t, summary_writer, summary_op, score_input, final_state)
+    final_output = self.process(sess, global_t, summary_writer, summary_op, score_input, final_state)
+    return final_output
 
   def process(self, sess, global_t, summary_writer, summary_op, score_input, final_state=None):
-    print("process, final_state", final_state)
     # copy weights from shared to local
     sess.run( self.sync )
 

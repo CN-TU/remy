@@ -9,6 +9,10 @@ template <class NextHop>
 void Unicorn::send( const unsigned int id, NextHop & next, const double & tickno,
 		const unsigned int packets_sent_cap )
 {
+  if (_thread_id == 0) {
+    _thread_id = _unicorn_farm.create_thread();
+    printf("Assigned thread id %lu to Unicorn\n", _thread_id);
+  }
   assert( int( _packets_sent ) >= _largest_ack + 1 );
 
   action_struct action = _unicorn_farm.get_action(_thread_id, {_memory.field(0), _memory.field(1), _memory.field(2), _memory.field(3)});

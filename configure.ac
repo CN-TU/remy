@@ -22,7 +22,7 @@ PKG_CHECK_MODULES([protobuf], [protobuf >= 3.3])
 # Python stuff -- cargo cult...
 AM_PATH_PYTHON([3.5])
 PYTHON_LIBS=`python3-config --ldflags`
-PYTHON_CFLAGS=`python3-config --cflags | sed 's/\-Wstrict\-prototypes//'`
+PYTHON_CFLAGS=`python3-config --cflags | sed 's/\-Wstrict\-prototypes//' | sed 's/\-DNDEBUG//'`
 AC_SUBST([PYTHON_LIBS])
 AC_SUBST([PYTHON_CFLAGS])
 

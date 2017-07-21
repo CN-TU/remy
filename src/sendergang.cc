@@ -153,6 +153,7 @@ void SwitchedSender<SenderType>::switch_on( const double & tickno )
 {
   assert( !sending );
   sending = true;
+  // puts("Resetting in sendergang");
   sender.reset( tickno );
 
   /* Advance internal_tick without accumulating sending time */

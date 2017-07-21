@@ -57,9 +57,6 @@ if USE_LSTM:
 else:
   global_network = GameACFFNetwork(-1, device)
 
-
-training_threads = {}
-
 learning_rate_input = tf.placeholder("float")
 
 grad_applier = RMSPropApplier(learning_rate = learning_rate_input,
@@ -109,44 +106,68 @@ else:
   # set wall time
   wall_t = 0.0
 
-
+training_threads = {}
 
 # First thread has index 1, 0 is invalid
 global_thread_index = 1 # TODO: Is this actually necessary?
+idle_threads = set()
 
 def create_training_thread():
-  global global_t, global_thread_index, wall_t
-  created_thread = A3CTrainingThread(global_thread_index, global_network, initial_learning_rate,
-                                      learning_rate_input,
-                                      grad_applier, MAX_TIME_STEP,
-                                      device = device)
+  print("Before idle_threads")
+  global global_t, global_thread_index, wall_t, sess
+  # print("idle_threads", idle_threads)
+  if len(idle_threads) == 0:
+    print("After idle threads none")
+    print("Creating new thread", global_thread_index)
+    created_thread = A3CTrainingThread(global_thread_index, global_network, initial_learning_rate,
+                                        learning_rate_input,
+                                        grad_applier, MAX_TIME_STEP,
+                                        device = device)
+    training_threads[global_thread_index] = created_thread
+    return_index = global_thread_index
+    global_thread_index += 1
+  else:
+    print("After idle threads some")
+    return_index = idle_threads.pop()
+    print("Recycling thread", return_index)
+    created_thread = training_threads[return_index]
   # set start time
   start_time = time.time() - wall_t
   created_thread.set_start_time(start_time)
-  training_threads[global_thread_index] = created_thread
-  global_thread_index += 1
-  return global_thread_index-1
+  
+  init_new_vars = tf.variables_initializer(created_thread.get_network_vars())
+  sess.run(init_new_vars)
+
+  return return_index
 
 def delete_training_thread(thread_id):
+  print("Deleting thread with id", thread_id)
   global sess, global_t, summary_writer, summary_op, score_input
-  del training_threads[global_thread_index]
+  idle_threads.add(thread_id)
+  # del training_threads[thread_id]
 
 def call_process_action(thread_id, state):
+  print("call_process_action", thread_id, state)
   global sess, global_t, summary_writer, summary_op, score_input
-  return training_threads[thread_id].action_step(sess, state)
+  chosen_action = tuple(training_threads[thread_id].action_step(sess, state))
+  # print("call_process_action", chosen_action)
+  return chosen_action
 
 def call_process_reward(thread_id, reward):
+  print("call_process_reward", thread_id, reward)
   global sess, global_t, summary_writer, summary_op, score_input
   diff_global_t = training_threads[thread_id].reward_step(sess, global_t, summary_writer, summary_op, score_input, reward)
   if diff_global_t is not None:
     global_t += diff_global_t
 
 def call_process_finished(thread_id, final_state):
+  print("call_process_finished", thread_id, final_state)
   global sess, global_t, summary_writer, summary_op, score_input
   diff_global_t = training_threads[thread_id].final_step(sess, global_t, summary_writer, summary_op, score_input, final_state)
   global_t += diff_global_t
 
 def save_session():
+  print("save_session")
   global global_t, sess, CHECKPOINT_DIR
   saver.save(sess, CHECKPOINT_DIR + '/' + 'checkpoint', global_step = global_t)
 

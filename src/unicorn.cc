@@ -20,12 +20,11 @@ Unicorn::Unicorn()
      _intersend_time( 0 ),
      _flow_id( 0 ),
      _largest_ack( -1 ),
-     _most_recent_ack ( -1 ),
+    //  _most_recent_ack ( -1 ),
      _thread_id(0),
      _unicorn_farm(UnicornFarm::getInstance())
 {
-  puts("Creating a Unicorn!");
-  _thread_id = _unicorn_farm.create_thread();
+  puts("Creating a Unicorn");
 }
 
 void Unicorn::packets_received( const vector< Packet > & packets ) {
@@ -36,7 +35,7 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
   _packets_received += packets.size();
   /* Assumption: There is no reordering */
   _memory.packets_received( packets, _flow_id, _largest_ack );
-  _largest_ack = max( packets.at( packets.size() - 1 ).seq_num, _largest_ack );
+  int previous_largest_ack = _largest_ack;
 
   // for ( auto &packet : packets ) {
   //   packet_delay += packet.tick_received - packet.tick_sent;
@@ -44,7 +43,7 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
 
   for ( auto &packet : packets ) {
 
-    const size_t packets_missing = packet.seq_num - _most_recent_ack - 1;
+    const size_t packets_missing = packet.seq_num - _largest_ack - 1;
 
     for (size_t i=0; i<packets_missing; i++) {
       _unicorn_farm.put_reward(_thread_id, LOSS_REWARD);
@@ -59,16 +58,23 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
     const double delay_penalty = (double) packet_delay;
 
     const double reward = throughput_utility - multiplier*delay_penalty;
-    assert(reward > 0.0);
+    // FIXME: Whether the reward is positive doesn't matter I guess?
+    // assert(reward > 0.0);
 
     _unicorn_farm.put_reward(_thread_id, reward);
 
-    _most_recent_ack = packet.seq_num;
+    _largest_ack = packet.seq_num;
   }
+
+  // FIXME: Why could _largest_ack already be larger than the current last packet?
+  // _largest_ack = max( packets.at( packets.size() - 1 ).seq_num, _largest_ack );
+  assert (_largest_ack > previous_largest_ack);
 }
 
 void Unicorn::reset( const double & )
 {
+
+  put_missing_rewards();
   _memory.reset();
   _last_send_time = 0;
   _the_window = 0;
@@ -106,15 +112,21 @@ double Unicorn::next_event_time( const double & tickno ) const
 //   return ret;
 // }
 
-Unicorn::~Unicorn() {
-  puts("Destroying a unicorn");
+void Unicorn::put_missing_rewards() {
   if (_packets_sent > 0) {
-    printf("Unicorn sent %i", _packets_sent);
+    printf("Unicorn sent %i\n", _packets_sent);
     // When everything is finished and packets were lost in the end, put reward 0 for each of them. 
-    for (size_t i=0; i<(_packets_sent-_most_recent_ack-1); i++) {
+    for (size_t i=0; i<(_packets_sent-_largest_ack-1); i++) {
       _unicorn_farm.put_reward(_thread_id, LOSS_REWARD);
     }
     _unicorn_farm.finish(_thread_id, {_memory.field(0), _memory.field(1), _memory.field(2), _memory.field(3)});
   }
-  _unicorn_farm.delete_thread(_thread_id);
+}
+
+Unicorn::~Unicorn() {
+  printf("Destroying Unicorn with thread id %lu\n", _thread_id);
+  put_missing_rewards();
+  if (_thread_id > 0) {
+    _unicorn_farm.delete_thread(_thread_id);
+  }
 }

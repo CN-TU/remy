@@ -28,10 +28,10 @@ private:
 
   unsigned int _flow_id;
   int _largest_ack;
-  int _most_recent_ack;
 
   long unsigned int _thread_id;
   UnicornFarm& _unicorn_farm;
+  void put_missing_rewards();
 
 public:
   Unicorn();
@@ -44,7 +44,9 @@ public:
   void send( const unsigned int id, NextHop & next, const double & tickno,
 	     const unsigned int packets_sent_cap = std::numeric_limits<unsigned int>::max() );
 
-  Unicorn & operator=( const Unicorn & ) { assert( false ); return *this; }
+  // Unicorn & operator=( const Unicorn & ) { assert( false ); return *this; }
+	// Unicorn(Unicorn const&) = delete;
+	void operator=(Unicorn const&) = delete;
 
   double next_event_time( const double & tickno ) const;
 
@@ -56,7 +58,9 @@ public:
     const int window_increment, 
     const double window_multiple
   ) const {
-    return std::min( std::max( 0, int( previous_window * window_multiple + window_increment ) ), 1000000 ); 
+    unsigned int new_window = std::min( std::max( 0, int( previous_window * window_multiple + window_increment ) ), 1000000 );
+    printf("new_window %u\n", new_window);
+    return new_window;
   }
   // const double & intersend( void ) const { return _intersend; }
 };

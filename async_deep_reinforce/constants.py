@@ -22,6 +22,7 @@ USE_GPU = False # To use GPU, set True
 USE_LSTM = False
 
 # Max's stuff
-STATE_SIZE = 4
+# STATE_SIZE = 4
+STATE_SIZE = 4*4 # Using his weird hack of using the last 4 states.
 HIDDEN_SIZE = 256
 ACTION_SIZE = 3 # action size

@@ -8,7 +8,6 @@
 
 #include "unicornbreeder.hh"
 #include "unicornfarm.hh"
-// #include "dna.pb.h"
 #include "configrange.hh"
 #include <thread>
 
@@ -27,11 +26,19 @@ void print_range( const Range & range, const string & name )
 
 void signal_handler(int s) {
   // UNUSED(s);
-  printf("Caught signal %d\n",s);
+  printf("Signal Handler: Caught signal %d\n",s);
   UnicornFarm& unicorn_farm = UnicornFarm::getInstance();
   unicorn_farm.save_session();
   exit(EXIT_SUCCESS);
 }
+
+// void debug_signal_handler(int s) {
+//   // UNUSED(s);
+//   printf("Debug Signal Handler: Caught signal %d\n",s);
+//   UnicornFarm& unicorn_farm = UnicornFarm::getInstance();
+//   unicorn_farm.print_errors();
+//   exit(EXIT_FAILURE);
+// }
 
 void unicorn_thread(const size_t thread_id, const BreederOptions options, const size_t iterations_per_thread) {
   printf("Creating thread no %zd\n", thread_id);
@@ -153,7 +160,8 @@ int main( int argc, char *argv[] )
   // while ( 1 ) {
 
   const size_t iterations_per_thread = 10000;
-  const size_t num_threads = 5;
+  // const size_t num_threads = 5;
+  const size_t num_threads = 1;
   vector<thread> thread_array(num_threads);
 
   for (size_t i=0; i<num_threads; i++) {
@@ -163,7 +171,7 @@ int main( int argc, char *argv[] )
   printf("Created threads\n");
   signal(SIGINT, signal_handler);
   signal(SIGTERM, signal_handler);
-  // signal(SIGSEGV, signal_handler);
+  // signal(SIGSEGV, debug_signal_handler);
   printf("Registered handlers\n");
 
   for (size_t i=0; i<num_threads; i++) {
