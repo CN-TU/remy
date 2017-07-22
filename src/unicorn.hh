@@ -31,7 +31,13 @@ private:
 
   long unsigned int _thread_id;
   UnicornFarm& _unicorn_farm;
-  void put_missing_rewards();
+  long unsigned int _previous_attempts;
+  long unsigned int _previous_attempts_acknowledged;
+  void put_missing_rewards(const int seq_num, const int previous_attempts);
+  long unsigned int _put_actions;
+  long unsigned int _put_rewards;
+
+  // bool _sent_at_least_once;
 
 public:
   Unicorn();

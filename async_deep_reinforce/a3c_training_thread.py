@@ -32,7 +32,6 @@ class A3CTrainingThread(object):
     self.actions = []
     self.rewards = []
     self.values = []
-    self.terminals = []
 
     self.thread_index = thread_index
     self.learning_rate_input = learning_rate_input
@@ -68,7 +67,7 @@ class A3CTrainingThread(object):
     # variable controling log output
     self.prev_local_t = 0
 
-    self.acc_state = None
+    # self.acc_state = None
 
   def get_network_vars(self):
     return self.local_network.get_vars()
@@ -96,17 +95,20 @@ class A3CTrainingThread(object):
   def set_start_time(self, start_time):
     self.start_time = start_time
 
-  def action_step(self, sess, state):
-    state = np.array(state)
-    if self.acc_state is None:
-      self.acc_state = np.stack((state, state, state, state), axis=1)
-    else:
-      # print(self.acc_state)
-      state = np.expand_dims(state, 1)
-      # print(state)
-      self.acc_state = np.append(self.acc_state[:,1:], state, axis=1)
+  # def _accumulate(self, state):
+  #   state = np.array(state)
+  #   if self.acc_state is None:
+  #     self.acc_state = np.stack((state, state, state, state), axis=1)
+  #   else:
+  #     # print(self.acc_state)
+  #     state = np.expand_dims(state, 1)
+  #     # print(state)
+  #     self.acc_state = np.append(self.acc_state[:,1:], state, axis=1)
+  #   return self.acc_state.flatten()
 
-    state = self.acc_state.flatten()
+  def action_step(self, sess, state):
+
+    # state = self._accumulate(state)
     pi_, value_ = self.local_network.run_policy_and_value(sess, state) # TODO: State is some kind of tuple, isn't it?
     # print("action_step", pi_)
     action = self.choose_action(pi_)
@@ -114,6 +116,11 @@ class A3CTrainingThread(object):
 
     self.states.append(state)
     self.actions.append(action)
+
+    # if(value_.__class__.__name__!="float32"):
+    #   print(value_.__class__.__name__)
+    # assert(value_.__class__.__name__=="float32")
+
     self.values.append(value_)
     # if (self.thread_index == 0) and (self.local_t % LOG_INTERVAL == 0):
     if self.local_t % LOG_INTERVAL == 0:
@@ -124,7 +131,6 @@ class A3CTrainingThread(object):
   def reward_step(self, sess, global_t, summary_writer, summary_op, score_input, reward):
     self.rewards.append(reward)
     if len(self.rewards) % LOCAL_T_MAX == 0:
-      print("len(rewards)", len(self.rewards), "len(states)", len(self.states), "len(actions)", len(self.actions), "len(values)", len(self.values))
       return self.process(sess, global_t, summary_writer, summary_op, score_input)
     # implicitly returns None otherwise
 
@@ -141,9 +147,16 @@ class A3CTrainingThread(object):
     # if USE_LSTM:
     #   start_lstm_state = self.local_network.lstm_state_out
     
+    print("In process: len(rewards)", len(self.rewards), "len(states)", len(self.states), "len(actions)", len(self.actions), "len(values)", len(self.values))
+
+    actions = self.actions[:len(self.rewards)]
+    states = self.states[:len(self.rewards)]
+    rewards = self.rewards
+    values = self.values[:len(self.rewards)]
+
     # t_max times loop
-    for i in range(len(self.states)):
-      self.episode_reward += self.rewards[i]
+    for i in range(len(rewards)):
+      self.episode_reward += rewards[i]
 
       # clip reward
       # rewards[i] = np.clip(rewards[i], -1, 1) ) # TODO: Why do this? Is the range from -1 to 1 problem-specific?
@@ -151,17 +164,20 @@ class A3CTrainingThread(object):
       self.local_t += 1
 
     if final_state is not None:
+      # assert(False)
       print("score={}".format(self.episode_reward))
       self._record_score(sess, summary_writer, summary_op, score_input,
                           self.episode_reward, global_t) # TODO:NOW: is that "not terminal_end" correct?
+      # final_state = self._accumulate(final_state)
       R = self.local_network.run_value(sess, final_state)
     else:
       R = 0.0
 
-    self.actions.reverse()
-    self.states.reverse()
-    self.rewards.reverse()
-    self.values.reverse()
+    actions.reverse()
+    states.reverse()
+    rewards.reverse()
+    values.reverse()
+    # print("values", values)
 
     batch_si = []
     batch_a = []
@@ -169,17 +185,19 @@ class A3CTrainingThread(object):
     batch_R = []
 
     # compute and accmulate gradients
-    for(ai, ri, si, Vi) in zip(self.actions, self.rewards, self.states, self.values):
+    for(ai, ri, si, Vi) in zip(actions, rewards, states, values):
       R = ri + GAMMA * R
+      # print("R", R, "Vi", Vi)
       td = R - Vi
-      a = np.zeros([ACTION_SIZE])
-      a[ai] = 1
+      # a = np.zeros([ACTION_SIZE])
+      # a[ai] = 1
 
       batch_si.append(si)
-      batch_a.append(a)
+      batch_a.append(ai)
       batch_td.append(td)
       batch_R.append(R)
 
+    print("Got the following R:", rewards, R)
     cur_learning_rate = self._anneal_learning_rate(global_t)
 
     if USE_LSTM:
@@ -198,6 +216,7 @@ class A3CTrainingThread(object):
                   self.local_network.step_size : [len(batch_a)],
                   self.learning_rate_input: cur_learning_rate } )
     else:
+      # print("learning_rate_input", cur_learning_rate)
       sess.run( self.apply_gradients,
                 feed_dict = {
                   self.local_network.s: batch_si,
@@ -214,12 +233,10 @@ class A3CTrainingThread(object):
       print("### Performance : {} STEPS in {:.0f} sec. {:.0f} STEPS/sec. {:.2f}M STEPS/hour".format(
         global_t,  elapsed_time, steps_per_sec, steps_per_sec * 3600 / 1000000.))
 
-    self.states = []
-    self.actions = []
+    self.actions = self.actions[len(self.rewards):]
+    self.states = self.states[len(self.rewards):]
+    self.values = self.values[len(self.rewards):]
     self.rewards = []
-    self.values = []
-    self.terminals = []
-
     # return advanced local step size
     diff_local_t = self.local_t - start_local_t
     return diff_local_t

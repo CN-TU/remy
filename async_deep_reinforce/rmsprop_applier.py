@@ -90,6 +90,7 @@ class RMSPropApplier(object):
 
   # Apply accumulated gradients to var.
   def apply_gradients(self, var_list, accum_grad_list, name=None):
+    # print("\n\n\nvar_list", var_list, "\n\n\n")
     update_ops = []
 
     with tf.device(self._device):
@@ -101,5 +102,6 @@ class RMSPropApplier(object):
         for var, accum_grad in zip(var_list, accum_grad_list):
           with tf.name_scope("update_" + var.op.name), tf.device(var.device):
             clipped_accum_grad = tf.clip_by_norm(accum_grad, self._clip_norm)
+            # print("clipped_accum_grad", clipped_accum_grad, "var", var)
             update_ops.append(self._apply_dense(clipped_accum_grad, var))
         return tf.group(*update_ops, name=name)

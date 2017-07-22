@@ -160,8 +160,8 @@ int main( int argc, char *argv[] )
   // while ( 1 ) {
 
   const size_t iterations_per_thread = 10000;
-  // const size_t num_threads = 5;
-  const size_t num_threads = 1;
+  const size_t num_threads = 5;
+  // const size_t num_threads = 1;
   vector<thread> thread_array(num_threads);
 
   for (size_t i=0; i<num_threads; i++) {

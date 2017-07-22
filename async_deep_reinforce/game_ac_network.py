@@ -75,19 +75,13 @@ class GameACNetwork(object):
 
   # weight initialization based on muupan's code
   # https://github.com/muupan/async-rl/blob/master/a3c_ale.py
-  def _fc_variable(self, weight_shape, positive=False):
+  def _fc_variable(self, weight_shape, multiplier_w=1.0, multiplier_b=1.0):
     input_channels  = weight_shape[0]
     output_channels = weight_shape[1]
     d = 1.0 / np.sqrt(input_channels)
-    if positive:
-      lower = 0
-      upper = 2*d
-    else:
-      lower = -d
-      upper = d
     bias_shape = [output_channels]
-    weight = tf.Variable(tf.random_uniform(weight_shape, minval=lower, maxval=upper))
-    bias   = tf.Variable(tf.random_uniform(bias_shape,   minval=lower, maxval=upper))
+    weight = tf.Variable(tf.random_uniform(weight_shape, minval=-multiplier_w*d, maxval=multiplier_w*d))
+    bias   = tf.Variable(tf.random_uniform(bias_shape,   minval=-multiplier_b*d, maxval=multiplier_b*d))
     return weight, bias
 
   # def _conv_variable(self, weight_shape):
@@ -119,7 +113,7 @@ class GameACFFNetwork(GameACNetwork):
       # print("self.W_state_to_hidden_fc", self.W_state_to_hidden_fc, "self.b_state_to_hidden_fc", self.b_state_to_hidden_fc)
 
       # weight for policy output layer
-      self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE])
+      self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], multiplier_w=2.0, multiplier_b=1.0)
       self.W_hidden_to_action_var_fc, self.b_hidden_to_action_var_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE])
 
       # weight for value output layer
@@ -135,7 +129,7 @@ class GameACFFNetwork(GameACNetwork):
         # tf.nn.softmax(tf.matmul(h_fc, self.W_hidden_to_action_mean_fc) + self.b_hidden_to_action_mean_fc),
         # tf.nn.softmax(tf.matmul(h_fc, self.W_hidden_to_action_var_fc) + self.b_hidden_to_action_var_fc)
         tf.matmul(h_fc, self.W_hidden_to_action_mean_fc) + self.b_hidden_to_action_mean_fc, # mean
-        tf.nn.softplus(tf.matmul(h_fc, self.W_hidden_to_action_var_fc) + self.b_hidden_to_action_var_fc) #var
+        tf.clip_by_value(tf.nn.softplus(tf.matmul(h_fc, self.W_hidden_to_action_var_fc) + self.b_hidden_to_action_var_fc), 1e-20, 1.0) #var
       )
       # value (output)
       v_ = tf.matmul(h_fc, self.W_hidden_to_value_fc) + self.b_hidden_to_value_fc

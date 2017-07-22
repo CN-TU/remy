@@ -39,6 +39,15 @@ def log_uniform(lo, hi, rate):
   v = log_lo * (1-rate) + log_hi * rate
   return math.exp(v)
 
+def initialize_uninitialized(sess):
+    global_vars          = tf.global_variables()
+    is_not_initialized   = sess.run([tf.is_variable_initialized(var) for var in global_vars])
+    not_initialized_vars = [v for (v, f) in zip(global_vars, is_not_initialized) if not f]
+
+    print([str(i.name) for i in not_initialized_vars]) # only for testing
+    if len(not_initialized_vars):
+        sess.run(tf.variables_initializer(not_initialized_vars))
+
 device = "/cpu:0"
 if USE_GPU:
   device = "/gpu:0"
@@ -79,6 +88,10 @@ sess = tf.Session(config=tf.ConfigProto(log_device_placement=False,
 
 init = tf.global_variables_initializer()
 sess.run(init)
+
+# print("reported as uninit after init", sess.run(tf.report_uninitialized_variables(tf.global_variables())))
+
+# print("\n\n\nRMSPropApplier", grad_applier, "\n\n\n")
 
 # summary for tensorboard
 score_input = tf.placeholder(tf.int32)
@@ -126,6 +139,9 @@ def create_training_thread():
     training_threads[global_thread_index] = created_thread
     return_index = global_thread_index
     global_thread_index += 1
+    # init_new_vars = tf.variables_initializer(created_thread.get_network_vars())
+    # sess.run(init_new_vars)
+    initialize_uninitialized(sess)
   else:
     print("After idle threads some")
     return_index = idle_threads.pop()
@@ -134,9 +150,6 @@ def create_training_thread():
   # set start time
   start_time = time.time() - wall_t
   created_thread.set_start_time(start_time)
-  
-  init_new_vars = tf.variables_initializer(created_thread.get_network_vars())
-  sess.run(init_new_vars)
 
   return return_index
 
@@ -167,8 +180,18 @@ def call_process_finished(thread_id, final_state):
   global_t += diff_global_t
 
 def save_session():
+  return
   print("save_session")
   global global_t, sess, CHECKPOINT_DIR
+  if not os.path.exists(CHECKPOINT_DIR):
+    os.mkdir(CHECKPOINT_DIR)
+
+  # write wall time
+  wall_t = time.time() - start_time
+  wall_t_fname = CHECKPOINT_DIR + '/' + 'wall_t.' + str(global_t)
+  with open(wall_t_fname, 'w') as f:
+    f.write(str(wall_t))
+
   saver.save(sess, CHECKPOINT_DIR + '/' + 'checkpoint', global_step = global_t)
 
 # def train_function(parallel_index):
