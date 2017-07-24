@@ -44,6 +44,8 @@ private:
   long unsigned int _put_actions;
   long unsigned int _put_rewards;
 
+  std::set<Packet, packet_compare> _jitter_buffer;
+
   // bool _sent_at_least_once;
 
 public:

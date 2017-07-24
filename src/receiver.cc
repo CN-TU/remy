@@ -4,8 +4,13 @@
 #include "receiver.hh"
 
 Receiver::Receiver()
+<<<<<<< HEAD
   : _collector()
   // _collector_lost()
+=======
+  : _collector(),
+  _collector_lost()
+>>>>>>> 331e785d61963efd7bb8e85fc9a5f1cecb7adea9
 {
 }
 

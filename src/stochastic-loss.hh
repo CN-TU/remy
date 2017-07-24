@@ -30,10 +30,12 @@ class StochasticLoss
         _buffer.pop_front();
       }
     }
-    void accept( const Packet & p, const double & tickno ) noexcept
+    void accept( Packet & p, const double & tickno ) noexcept
     {
       if (!(_distr( _prng ))) {
         _buffer.emplace_back( tickno, p );
+      } else {
+        _rec.accept_lost(p, tickno);
       }
     }
 

@@ -25,12 +25,14 @@ public:
   Receiver & s_rec)
     : _buffer(), _pending_packet( 1.0 / s_rate ), _limit( s_limit ) {}
 
-  void accept( const Packet & p, const double & tickno ) noexcept {
+  void accept( Packet & p, const double & tickno ) noexcept {
     if ( _pending_packet.empty() ) {
       _pending_packet.accept( p, tickno );
     } else {
       if ( _limit and _buffer.size() < _limit ) {
         _buffer.push_back( p );
+      } else {
+        _rec.accept_lost(p, tickno);
       }
     }
   }

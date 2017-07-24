@@ -25,7 +25,8 @@ Unicorn::Unicorn()
      _unicorn_farm(UnicornFarm::getInstance()),
     //  _outstanding_rewards()
     _put_actions(0),
-    _put_rewards(0)
+    _put_rewards(0),
+    _jitter_buffer()
     // _sent_at_least_once(false)
 {
   puts("Creating a Unicorn");
@@ -60,9 +61,42 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
     _largest_ack = packet.seq_num;
   }
 
+  put_contiguous_rewards(packet);
+
   // FIXME: Why could _largest_ack already be larger than the current last packet?
   // _largest_ack = max( packets.at( packets.size() - 1 ).seq_num, _largest_ack );
   assert (_largest_ack > previous_largest_ack);
+}
+
+void Unicorn::put_contiguous_rewards() {
+  int previous_ack = _largest_ack;
+  auto new_jitter_buffer = jitter_buffer;
+  for (auto i=0; i<_jitter_buffer.size(); i++) {
+    auto iterator = std::next(_jitter_buffer.begin(), i);
+    auto current_packet = *iterator;
+    if (current_packet.seq_num == previous_ack+1) {
+      const double reward = Unicorn::calculate_reward(current_packet);
+      printf("Putting reward %f\n", reward);
+      _unicorn_farm.put_reward(_thread_id, reward);
+      _put_rewards += 1;
+      if (!current_packet.lost) {
+        _packets_received += only_received_packets.size();
+        /* Assumption: There is no reordering */
+        _memory.packets_received( only_received_packets, _flow_id, _largest_ack );
+      }
+      new_jitter_buffer.erase(iterator);
+    } else {
+      break;
+    }
+    previous_ack = _jitter_buffer[i].seq_num;
+  }
+  _jitter_buffer = new_jitter_buffer;
+}
+
+const double Unicorn::calculate_reward(Packet p) const {
+  const int packet_delay = packet.tick_received - packet.tick_sent;
+  const double reward = 1.0/(packet_delay/multiplier);
+  return reward;
 }
 
 void Unicorn::reset( const double & )
@@ -84,6 +118,7 @@ void Unicorn::reset( const double & )
   _largest_ack = _packets_sent - 1; /* Assume everything's been delivered */
   _put_actions = 0;
   _put_rewards = 0;
+  _jitter_buffer.clear()
   assert( _flow_id != 0 );
 
   /* initial window and intersend time */

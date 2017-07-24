@@ -6,6 +6,8 @@ Makefile.in
 *.log
 *.trs
 
+/.vscode
+
 /INSTALL
 /aclocal.m4
 /ar-lib
