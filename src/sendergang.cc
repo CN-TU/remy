@@ -189,10 +189,12 @@ void SwitchedSender<SenderType>::receive_feedback( Receiver & rec )
 {
   if ( rec.readable( id ) ) {
     const std::vector< Packet > & packets = rec.packets_for( id );
+    // const std::vector< Packet > * all_packets = rec.all_packets_for( id );
 
     utility.packets_received( packets );
-    sender.packets_received( packets );
+    // sender.packets_received( *all_packets );
 
+    // delete all_packets;
     rec.clear( id );
   }
 }

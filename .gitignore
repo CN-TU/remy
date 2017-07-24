@@ -22,6 +22,7 @@ Makefile.in
 /alfalfa-*.tar.gz
 /stamp-h1
 /test-driver
+/tmp
 
 /protobufs/*.pb.cc
 /protobufs/*.pb.h
@@ -36,3 +37,4 @@ Makefile.in
 /src/remy-poisson
 /graph/ratatouille
 /src/scoring-example
+/src/tmp

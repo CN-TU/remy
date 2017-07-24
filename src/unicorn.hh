@@ -4,12 +4,19 @@
 #include <vector>
 #include <string>
 #include <limits>
+#include <set>
 
 #include "packet.hh"
 #include "memory.hh"
 #include "simulationresults.pb.h"
 
 #include "unicornfarm.hh"
+
+struct packet_compare {
+  bool operator() (const Packet& l, const Packet& r) const {
+    return l.seq_num() < r.seq_num();
+  }
+};
 
 class Unicorn
 {
@@ -31,9 +38,9 @@ private:
 
   long unsigned int _thread_id;
   UnicornFarm& _unicorn_farm;
-  long unsigned int _previous_attempts;
-  long unsigned int _previous_attempts_acknowledged;
-  void put_missing_rewards(const int seq_num, const int previous_attempts);
+  // long unsigned int _previous_attempts;
+  // long unsigned int _previous_attempts_acknowledged;
+  void put_lost_rewards(size_t number);
   long unsigned int _put_actions;
   long unsigned int _put_rewards;
 
@@ -42,6 +49,8 @@ private:
 public:
   Unicorn();
   ~Unicorn();
+
+  void get_action();
 
   void packets_received( const std::vector< Packet > & packets );
   void reset( const double & tickno ); /* start new flow */
