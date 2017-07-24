@@ -17,9 +17,10 @@ class StochasticLoss
     double _loss_rate;
     PRNG & _prng;
     std::bernoulli_distribution _distr;
+    Receiver & _rec;
 
   public:
-    StochasticLoss( const double & rate, PRNG &prng ) :  _buffer(), _loss_rate( rate ), _prng( prng ), _distr() { _distr = std::bernoulli_distribution( rate );}
+    StochasticLoss( const double & rate, PRNG &prng, Receiver & s_rec ) :  _buffer(), _loss_rate( rate ), _prng( prng ), _distr(), _rec(s_rec) { _distr = std::bernoulli_distribution( rate );}
     template <class NextHop>
     void tick( NextHop & next, const double & tickno )
     {
@@ -29,10 +30,12 @@ class StochasticLoss
         _buffer.pop_front();
       }
     }
-    void accept( const Packet & p, const double & tickno ) noexcept
+    void accept( Packet & p, const double & tickno ) noexcept
     {
       if (!(_distr( _prng ))) {
         _buffer.emplace_back( tickno, p );
+      } else {
+        _rec.accept_lost(p, tickno);
       }
     }
 

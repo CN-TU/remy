@@ -6,6 +6,7 @@
 
 #include "packet.hh"
 #include "delay.hh"
+#include "receiver.hh"
 
 class Link
 {
@@ -16,17 +17,22 @@ private:
 
   unsigned int _limit;
 
+  Receiver & _rec;
+
 public:
   Link( const double s_rate,
-	const unsigned int s_limit )
-    : _buffer(), _pending_packet( 1.0 / s_rate ), _limit( s_limit ) {}
+	const unsigned int s_limit, 
+  Receiver & s_rec)
+    : _buffer(), _pending_packet( 1.0 / s_rate ), _limit( s_limit ), _rec(s_rec) {}
 
-  void accept( const Packet & p, const double & tickno ) noexcept {
+  void accept( Packet & p, const double & tickno ) noexcept {
     if ( _pending_packet.empty() ) {
       _pending_packet.accept( p, tickno );
     } else {
       if ( _limit and _buffer.size() < _limit ) {
         _buffer.push_back( p );
+      } else {
+        _rec.accept_lost(p, tickno);
       }
     }
   }

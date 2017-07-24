@@ -3,6 +3,7 @@
 #include "sendergangofgangs.cc"
 #include "link-templates.cc"
 #include "stochastic-loss.hh"
+
 template <class Gang1Type, class Gang2Type>
 Network<Gang1Type, Gang2Type>::Network( const typename Gang1Type::Sender & example_sender1,
 					const typename Gang2Type::Sender & example_sender2,
@@ -11,11 +12,11 @@ Network<Gang1Type, Gang2Type>::Network( const typename Gang1Type::Sender & examp
   : _prng( s_prng ),
     _senders( Gang1Type( config.mean_on_duration, config.mean_off_duration, config.num_senders, example_sender1, _prng ),
 	      Gang2Type( config.mean_on_duration, config.mean_off_duration, config.num_senders, example_sender2, _prng, config.num_senders ) ),
-    _link( config.link_ppt, config.buffer_size ),
     _delay( config.delay ),
     _rec(),
+    _link( config.link_ppt, config.buffer_size, _rec ),
     _tickno( 0 ),
-    _stochastic_loss( config.stochastic_loss_rate , _prng)
+    _stochastic_loss( config.stochastic_loss_rate, _prng, _rec)
 {
 }
 
@@ -26,11 +27,11 @@ Network<Gang1Type, Gang2Type>::Network( const typename Gang1Type::Sender & examp
   : _prng( s_prng ),
     _senders( Gang1Type( config.mean_on_duration, config.mean_off_duration, config.num_senders, example_sender1, _prng ),
 	      Gang2Type() ),
-    _link( config.link_ppt, config.buffer_size ),
     _delay( config.delay ),
     _rec(),
+    _link( config.link_ppt, config.buffer_size, _rec ),
     _tickno( 0 ),
-    _stochastic_loss( config.stochastic_loss_rate , _prng)
+    _stochastic_loss( config.stochastic_loss_rate, _prng, _rec)
 {
 }
 

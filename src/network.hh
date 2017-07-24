@@ -79,9 +79,9 @@ class Network
 private:
   PRNG & _prng;
   SenderGangofGangs<Gang1Type, Gang2Type> _senders;
-  Link _link;
   Delay _delay;
   Receiver _rec;
+  Link _link;
 
   double _tickno;
   StochasticLoss _stochastic_loss;
