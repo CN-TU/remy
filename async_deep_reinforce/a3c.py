@@ -148,6 +148,8 @@ def create_training_thread():
     return_index = idle_threads.pop()
     print("Recycling thread", return_index)
     created_thread = training_threads[return_index]
+    sess.run(created_thread.sync)
+    
   # set start time
   start_time = time.time() - wall_t
   created_thread.set_start_time(start_time)

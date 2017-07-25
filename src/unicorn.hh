@@ -11,6 +11,7 @@
 #include "simulationresults.pb.h"
 
 #include "unicornfarm.hh"
+#include <cmath>
 
 // #define MAX_WINDOW 1000000
 #define MAX_WINDOW 1000
@@ -70,7 +71,7 @@ public:
     const int window_increment, 
     const double window_multiple
   ) const {
-    unsigned int new_window = std::min( std::max( 0, int( previous_window * window_multiple + window_increment ) ), MAX_WINDOW );
+    unsigned int new_window = std::min( std::max( 0, int (round( previous_window * window_multiple + window_increment )) ), MAX_WINDOW );
     printf("%lu: new_window %u\n", _thread_id, new_window);
     return new_window;
   }

@@ -40,7 +40,7 @@ void signal_handler(int s) {
 //   exit(EXIT_FAILURE);
 // }
 
-void unicorn_thread(const size_t thread_id, const BreederOptions options, const size_t iterations_per_thread) {
+void unicorn_thread(const size_t thread_id, const BreederOptionsUnicorn options, const size_t iterations_per_thread) {
   printf("Creating thread no %zd\n", thread_id);
   UnicornBreeder breeder(options);
   auto outcome = breeder.run(iterations_per_thread);
@@ -51,10 +51,10 @@ int main( int argc, char *argv[] )
 {
   // WhiskerTree whiskers;
   string output_filename;
-  BreederOptions options;
+  BreederOptionsUnicorn options;
   // FIXME: Unused. Might be useful to compare to original Remy...
   // WhiskerImproverOptions whisker_options;
-  RemyBuffers::ConfigRange input_config;
+  RemyBuffers::ConfigRangeUnicorn input_config;
   string config_filename;
 
   for ( int i = 1; i < argc; i++ ) {
@@ -123,13 +123,14 @@ int main( int argc, char *argv[] )
     exit ( 1 );
   }
 
-  options.config_range = ConfigRange( input_config );
+  options.config_range = ConfigRangeUnicorn( input_config );
 
   // unsigned int run = 0;
 
   printf( "#######################\n" );
-  printf( "Evaluator simulations will run for %d ticks\n",
-    options.config_range.simulation_ticks );
+  // printf( "Evaluator simulations will run for %d ticks\n",
+      // options.config_range.simulation_ticks );
+  print_range( options.config_range.simulation_ticks, "simulation_ticks" );
   // printf( "Optimizing window increment: %d, window multiple: %d, intersend: %d\n",
   //         whisker_options.optimize_window_increment, whisker_options.optimize_window_multiple,
   //         whisker_options.optimize_intersend);

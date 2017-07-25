@@ -7,35 +7,41 @@
 #include "unicorn-templates.cc"
 
 #include <algorithm>
+#include <cstdlib>
+#include <cmath>
 
-UnicornEvaluator::UnicornEvaluator( const ConfigRange & range )
+UnicornEvaluator::UnicornEvaluator( const ConfigRangeUnicorn & range )
   : _prng_seed( global_PRNG()() ), /* freeze the PRNG seed for the life of this UnicornEvaluator */
-    _tick_count( range.simulation_ticks ),
+    // _tick_count( range.simulation_ticks ),
     _configs()
 {
   printf("Creating UnicornEvaluator with random seed %u\n", _prng_seed);
+  srand(_prng_seed);
   // add configs from every point in the cube of configs
-  for (double link_ppt = range.link_ppt.low; link_ppt <= range.link_ppt.high; link_ppt += range.link_ppt.incr) {
-    for (double rtt = range.rtt.high; rtt <= range.rtt.high; rtt += range.rtt.incr) {
-      for (unsigned int senders = range.num_senders.low; senders <= range.num_senders.high; senders += range.num_senders.incr) {
-        for (double on = range.mean_on_duration.low; on <= range.mean_on_duration.high; on += range.mean_on_duration.incr) {
-          for (double off = range.mean_off_duration.low; off <= range.mean_off_duration.high; off += range.mean_off_duration.incr) {
-            for ( double buffer_size = range.buffer_size.low; buffer_size <= range.buffer_size.high; buffer_size += range.buffer_size.incr) {
-              for ( double loss_rate = range.stochastic_loss_rate.low; loss_rate <= range.stochastic_loss_rate.high; loss_rate += range.stochastic_loss_rate.incr) {
-                _configs.push_back( NetConfig().set_link_ppt( link_ppt ).set_delay( rtt ).set_num_senders( senders ).set_on_duration( on ).set_off_duration(off).set_buffer_size( buffer_size ).set_stochastic_loss_rate( loss_rate ) );
-                if ( range.stochastic_loss_rate.isOne() ) { break; }
+  for (double simulation_ticks = range.simulation_ticks.low; simulation_ticks <= range.simulation_ticks.high; simulation_ticks += range.simulation_ticks.incr) {
+    for (double link_ppt = range.link_ppt.low; link_ppt <= range.link_ppt.high; link_ppt += range.link_ppt.incr) {
+      for (double rtt = range.rtt.high; rtt <= range.rtt.high; rtt += range.rtt.incr) {
+        for (unsigned int senders = range.num_senders.low; senders <= range.num_senders.high; senders += range.num_senders.incr) {
+          for (double on = range.mean_on_duration.low; on <= range.mean_on_duration.high; on += range.mean_on_duration.incr) {
+            for (double off = range.mean_off_duration.low; off <= range.mean_off_duration.high; off += range.mean_off_duration.incr) {
+              for ( double buffer_size = range.buffer_size.low; buffer_size <= range.buffer_size.high; buffer_size += range.buffer_size.incr) {
+                for ( double loss_rate = range.stochastic_loss_rate.low; loss_rate <= range.stochastic_loss_rate.high; loss_rate += range.stochastic_loss_rate.incr) {
+                  _configs.push_back( NetConfig().set_link_ppt( link_ppt ).set_delay( rtt ).set_num_senders( senders ).set_on_duration( on ).set_off_duration(off).set_buffer_size( buffer_size ).set_stochastic_loss_rate( loss_rate ).set_simulation_ticks(round(rand() % ((int)simulation_ticks) +1)) );
+                  if ( range.stochastic_loss_rate.isOne() ) { break; }
+                }
+                if ( range.buffer_size.isOne() ) { break; }
               }
-              if ( range.buffer_size.isOne() ) { break; }
+              if ( range.mean_off_duration.isOne() ) { break; }
             }
-            if ( range.mean_off_duration.isOne() ) { break; }
+            if ( range.mean_on_duration.isOne() ) { break; }
           }
-          if ( range.mean_on_duration.isOne() ) { break; }
+          if ( range.num_senders.isOne() ) { break; }
         }
-        if ( range.num_senders.isOne() ) { break; }
+        if ( range.rtt.isOne() ) { break; }
       }
-      if ( range.rtt.isOne() ) { break; }
+      if ( range.link_ppt.isOne() ) { break; }
     }
-    if ( range.link_ppt.isOne() ) { break; }
+    if ( range.simulation_ticks.isOne() ) { break; }
   }
 }
 
@@ -69,8 +75,7 @@ UnicornEvaluator::UnicornEvaluator( const ConfigRange & range )
 
 UnicornEvaluator::Outcome UnicornEvaluator::score(
              const unsigned int prng_seed,
-             const vector<NetConfig> & configs,
-             const unsigned int ticks_to_run )
+             const vector<NetConfig> & configs)
 {
   PRNG run_prng( prng_seed );
 
@@ -81,10 +86,11 @@ UnicornEvaluator::Outcome UnicornEvaluator::score(
   std::shuffle(shuffled_configs.begin(), shuffled_configs.end(), run_prng);
 
   for ( auto &x : shuffled_configs ) {
+    printf("Running for %.f ticks\n", x.simulation_ticks);
     /* run once */
     Network<SenderGang<Unicorn, TimeSwitchedSender<Unicorn>>,
       SenderGang<Unicorn, TimeSwitchedSender<Unicorn>>> network1( Unicorn(), run_prng, x );
-    network1.run_simulation( ticks_to_run );
+    network1.run_simulation( x.simulation_ticks );
     
     the_outcome.score += network1.senders().utility();
     the_outcome.throughputs_delays.emplace_back( x, network1.senders().throughputs_delays() );
@@ -141,7 +147,7 @@ UnicornEvaluator::Outcome UnicornEvaluator::score(
 //   }
 // }
 
-UnicornEvaluator::Outcome UnicornEvaluator::score(const double carefulness) const
+UnicornEvaluator::Outcome UnicornEvaluator::score() const
 {
-  return score(_prng_seed, _configs, _tick_count* carefulness);
+  return score(_prng_seed, _configs);
 }

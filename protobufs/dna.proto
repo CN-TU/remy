@@ -103,6 +103,17 @@ message ConfigRange {
   optional Range stochastic_loss_rate = 78;
 }
 
+message ConfigRangeUnicorn {
+  optional Range link_packets_per_ms = 71;
+  optional Range rtt = 72;
+  optional Range num_senders = 73;
+  optional Range buffer_size = 74;
+  optional Range mean_off_duration = 75;
+  optional Range mean_on_duration = 76;
+  optional Range simulation_ticks = 77;
+  optional Range stochastic_loss_rate = 78;
+}
+
 message NetConfig {
   optional double mean_on_duration = 1;
   optional double mean_off_duration = 2;
@@ -111,6 +122,7 @@ message NetConfig {
   optional double delay = 5;
   optional uint32 buffer_size = 6;
   optional double stochastic_loss_rate = 7;
+  optional uint32 simulation_ticks = 8;
 }
 
 message ConfigVector {

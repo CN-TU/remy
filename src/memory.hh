@@ -20,11 +20,11 @@ private:
   DataType _queueing_delay;
   DataType _loss;
 
+public:
   double _last_tick_sent;
   double _last_tick_received;
   double _min_rtt;
-
-public:
+  
   Memory( const std::vector< DataType > & s_data )
     : _rec_send_ewma( s_data.at( 0 ) ),
       _rec_rec_ewma( s_data.at( 1 ) ),

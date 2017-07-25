@@ -30,6 +30,7 @@ Makefile.in
 /protobufs/*.pb.h
 /protobufs/*_pb2.py
 /src/configuration
+/src/configuration-unicorn
 /src/inspect-config
 /src/sender-runner
 /src/sender-logger

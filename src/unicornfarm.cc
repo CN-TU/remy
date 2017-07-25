@@ -119,7 +119,7 @@ action_struct UnicornFarm::get_action(const long unsigned int thread_id, const s
 	action_struct action = {
 		PyFloat_AsDouble(PyTuple_GetItem(pActionArrayValue, 0)),
 		PyFloat_AsDouble(PyTuple_GetItem(pActionArrayValue, 1)),
-		PyFloat_AsDouble(PyTuple_GetItem(pActionArrayValue, 2))
+		PyFloat_AsDouble(PyTuple_GetItem(pActionArrayValue, 2)),
 	};
 	// printf("%f, %f, %f\n", action.window_increment, action.window_multiple, action.intersend);
 	Py_DECREF(pActionArrayValue);

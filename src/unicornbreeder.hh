@@ -7,10 +7,10 @@
 class UnicornBreeder
 {
 private:
-  BreederOptions _options;
+  BreederOptionsUnicorn _options;
 
 public:
-  UnicornBreeder( const BreederOptions & s_options) 
+  UnicornBreeder( const BreederOptionsUnicorn & s_options) 
   : _options( s_options )
   {};
 

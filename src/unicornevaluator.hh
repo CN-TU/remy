@@ -28,25 +28,24 @@ public:
 
 private:
   const unsigned int _prng_seed;
-  unsigned int _tick_count;
+  // unsigned int _tick_count;
 
   std::vector< NetConfig > _configs;
 
   // ProblemBuffers::Problem _ProblemSettings_DNA ( void ) const;
 
 public:
-  UnicornEvaluator( const ConfigRange & range );
+  UnicornEvaluator( const ConfigRangeUnicorn & range );
   
   // ProblemBuffers::Problem DNA( const T & actions ) const;
 
-  Outcome score(const double carefulness = 1) const;
+  Outcome score() const;
 
   // static UnicornEvaluator::Outcome parse_problem_and_evaluate( const ProblemBuffers::Problem & problem );
 
   static Outcome score(
 			const unsigned int prng_seed,
-			const std::vector<NetConfig> & configs,
-			const unsigned int ticks_to_run );
+			const std::vector<NetConfig> & configs);
 };
 
 #endif

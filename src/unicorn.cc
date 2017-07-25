@@ -8,7 +8,7 @@
 
 #define LOSS_REWARD 0
 #define INITIAL_WINDOW 1
-#define WINDOW_NORMALIZER 500
+#define WINDOW_NORMALIZER (500.0)
 
 using namespace std;
 
@@ -51,18 +51,22 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
     puts("Lost rewards at received");
     put_lost_rewards(_largest_ack+1,packet.seq_num);
 
+    const double packet_delay = packet.tick_received - packet.tick_sent;
+    // printf("%lu: last_received:%f, received:%f\n", _thread_id, _memory._last_tick_received, packet.tick_received);
+    const double throughput = packet.tick_received- _memory._last_tick_received;
+    const double multiplier = 1000;
+    const double reward_delay = log(1.0/(packet_delay/multiplier));
+    const double reward_throughput = log(1.0/(throughput/multiplier));
+    const double reward = reward_delay+reward_throughput;
+    printf("Calculated reward %f\n", reward);
+    _unicorn_farm.put_reward(_thread_id, reward);
+    _put_rewards += 1;
+
     _packets_received += 1;
     vector<Packet> packet_for_memory_update;
     packet_for_memory_update.push_back(packet);
     _memory.packets_received( packet_for_memory_update, _flow_id, _largest_ack );
     _sent_packets.erase(packet.seq_num);
-
-    const int packet_delay = packet.tick_received - packet.tick_sent;
-    const double multiplier = 100;
-    const double reward = 1.0/(packet_delay/multiplier);
-    printf("Calculated reward %f\n", reward);
-    _unicorn_farm.put_reward(_thread_id, reward);
-    _put_rewards += 1;
 
     get_action();
 
@@ -123,12 +127,13 @@ void Unicorn::reset( const double & )
 
 double Unicorn::next_event_time( const double & tickno ) const
 {
+  // return tickno;
   if ( int(_packets_sent) < _largest_ack + 1 + _the_window ) {
-    if ( _last_send_time + _intersend_time <= tickno ) {
+    // if ( _last_send_time + _intersend_time <= tickno ) {
       return tickno;
-    } else {
-      return _last_send_time + _intersend_time;
-    }
+    // } else {
+      // return _last_send_time + _intersend_time;
+    // }
   } else {
     /* window is currently closed */
     return std::numeric_limits<double>::max();
@@ -136,7 +141,8 @@ double Unicorn::next_event_time( const double & tickno ) const
 }
 
 void Unicorn::get_action() {
-  action_struct action = _unicorn_farm.get_action(_thread_id, {_memory.field(0), _memory.field(1), _memory.field(2), _memory.field(3), _memory.field(6), (double) _the_window/WINDOW_NORMALIZER});
+  // action_struct action = _unicorn_farm.get_action(_thread_id, {_memory.field(0), _memory.field(1), _memory.field(2), _memory.field(3), _memory.field(6), (double) _the_window/WINDOW_NORMALIZER});
+  action_struct action = _unicorn_farm.get_action(_thread_id, {_memory.field(0), _memory.field(1), _memory.field(2), _memory.field(3), _memory.field(6)});
   printf("%lu: action is: %f, %f, %f\n", _thread_id, action.window_increment, action.window_multiple, action.intersend);
   _put_actions += 1;
 
@@ -146,8 +152,10 @@ void Unicorn::get_action() {
 
 void Unicorn::finish() {
   const bool at_least_one_packet_sent = _put_actions>1;
+  // const bool at_least_one_packet_sent = true;
   printf("%lu: finish, _packets_sent: %u\n", _thread_id, _packets_sent);
-  _unicorn_farm.finish(_thread_id, {_memory.field(0), _memory.field(1), _memory.field(2), _memory.field(3), _memory.field(6), (double) _the_window/WINDOW_NORMALIZER}, at_least_one_packet_sent);
+  // _unicorn_farm.finish(_thread_id, {_memory.field(0), _memory.field(1), _memory.field(2), _memory.field(3), _memory.field(6), (double) _the_window/WINDOW_NORMALIZER}, at_least_one_packet_sent);
+  _unicorn_farm.finish(_thread_id, {_memory.field(0), _memory.field(1), _memory.field(2), _memory.field(3), _memory.field(6)}, at_least_one_packet_sent);
 }
 
 void Unicorn::put_lost_rewards(int start, int end) {

@@ -50,4 +50,21 @@ public:
   RemyBuffers::ConfigRange DNA( void ) const;
 };
 
+class ConfigRangeUnicorn
+{
+public:
+  Range link_ppt;
+  Range rtt;
+  Range mean_on_duration;
+  Range mean_off_duration;
+  Range num_senders;
+  Range buffer_size;
+  Range simulation_ticks;
+  Range stochastic_loss_rate;
+
+  ConfigRangeUnicorn( void );
+  ConfigRangeUnicorn( RemyBuffers::ConfigRangeUnicorn configrange );
+  RemyBuffers::ConfigRangeUnicorn DNA( void ) const;
+};
+
 #endif  // CONFIG_RANGE_HH

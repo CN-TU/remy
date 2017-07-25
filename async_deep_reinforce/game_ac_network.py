@@ -75,13 +75,17 @@ class GameACNetwork(object):
 
   # weight initialization based on muupan's code
   # https://github.com/muupan/async-rl/blob/master/a3c_ale.py
-  def _fc_variable(self, weight_shape, constant_for_bias=0):
+  def _fc_variable(self, weight_shape, lower=None, upper=None):
     input_channels  = weight_shape[0]
     output_channels = weight_shape[1]
     d = 1.0 / np.sqrt(input_channels)
+    if lower is None:
+      lower = -d
+    if upper is None:
+      upper = d
     bias_shape = [output_channels]
-    weight = tf.Variable(tf.random_uniform(weight_shape, minval=-d, maxval=d))
-    bias   = tf.Variable(tf.random_uniform(bias_shape,   minval=-d, maxval=d))
+    weight = tf.Variable(tf.random_uniform(weight_shape, minval=lower, maxval=upper))
+    bias   = tf.Variable(tf.random_uniform(bias_shape,   minval=lower, maxval=upper))
     return weight, bias
 
   # def _conv_variable(self, weight_shape):
@@ -114,7 +118,7 @@ class GameACFFNetwork(GameACNetwork):
 
       # weight for policy output layer
       self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE])
-      self.W_hidden_to_action_var_fc, self.b_hidden_to_action_var_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE])
+      self.W_hidden_to_action_var_fc, self.b_hidden_to_action_var_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 0, 5)
 
       # weight for value output layer
       self.W_hidden_to_value_fc, self.b_hidden_to_value_fc = self._fc_variable([HIDDEN_SIZE, 1])
@@ -125,9 +129,8 @@ class GameACFFNetwork(GameACNetwork):
       h_fc = tf.nn.relu(tf.matmul(self.s, self.W_state_to_hidden_fc) + self.b_state_to_hidden_fc)
 
       raw_pi_mean = tf.matmul(h_fc, self.W_hidden_to_action_mean_fc) + self.b_hidden_to_action_mean_fc
-      print("raw_pi_mean", raw_pi_mean)
-      pi_mean = tf.concat([tf.slice(raw_pi_mean,(0,0),(-1,2)), tf.nn.softplus(tf.slice(raw_pi_mean,(0,2),(-1,-1)))], axis=1)
-
+      # pi_mean = tf.concat([tf.slice(raw_pi_mean,(0,0),(-1,2)), tf.nn.softplus(tf.slice(raw_pi_mean,(0,2),(-1,-1)))], axis=1)
+      pi_mean = raw_pi_mean
       # policy (output)
       # TODO: Now the network is completely linear. And can't map non-linear relationships
       self.pi = (

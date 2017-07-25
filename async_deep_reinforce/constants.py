@@ -23,6 +23,6 @@ USE_LSTM = False
 
 # Max's stuff
 # STATE_SIZE = 4
-STATE_SIZE = 6 # Using his weird hack of using the last 4 states.
+STATE_SIZE = 5 # Using his weird hack of using the last 4 states.
 HIDDEN_SIZE = 256
-ACTION_SIZE = 3 # action size
+ACTION_SIZE = 2 # action size

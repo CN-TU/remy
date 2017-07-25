@@ -80,7 +80,6 @@ class A3CTrainingThread(object):
 
   def choose_action(self, pi_values):
     actions = [norm.rvs(loc=mean, scale=std) for mean, std in zip(pi_values[0], pi_values[1])]
-    # FIXME: Ensure that the time value can never be negative
     # actions[0] = max(0, actions[0]) # Make sure that multiplier isn't negative. There are no negative congestion windows. TODO: Maybe it would be a good idea?
     # actions[2] = max(0, actions[2]) # Make sure that the minimum time to wait until you send the next packet isn't negative. 
 
@@ -131,7 +130,8 @@ class A3CTrainingThread(object):
 
   def reward_step(self, sess, global_t, summary_writer, summary_op, score_input, reward):
     self.rewards.append(reward)
-    if len(self.rewards)-2 >= LOCAL_T_MAX:
+
+    if len(self.rewards)-LOCAL_T_MAX >= LOCAL_T_MAX:
       return self.process(sess, global_t, summary_writer, summary_op, score_input)
     # implicitly returns None otherwise
 

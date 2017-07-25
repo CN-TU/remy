@@ -14,6 +14,11 @@ struct BreederOptions
   ConfigRange config_range = ConfigRange();
 };
 
+struct BreederOptionsUnicorn
+{
+  ConfigRangeUnicorn config_range = ConfigRangeUnicorn();
+};
+
 template <typename T, typename A>
 class ActionImprover
 {

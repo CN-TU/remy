@@ -2,8 +2,8 @@ AM_CPPFLAGS = $(CXX11_FLAGS) -I../protobufs
 AM_CXXFLAGS = $(PICKY_CXXFLAGS) -g $(PYTHON_CFLAGS)
 LDADD = ../protobufs/libremyprotos.a -lm $(protobuf_LIBS) $(PYTHON_LIBS)
 
-#bin_PROGRAMS = remy remy-unicorn remy-poisson sender-runner sender-logger scoring-example configuration inspect-config inspect-simulationsdata
-bin_PROGRAMS = remy-unicorn
+#bin_PROGRAMS = remy remy-unicorn remy-poisson sender-runner sender-logger scoring-example configuration configuration-unicorn inspect-config inspect-simulationsdata
+bin_PROGRAMS = remy-unicorn configuration-unicorn
 
 common_source = delay.hh evaluator.cc evaluator.hh                 \
 	exponential.hh link.hh link-templates.cc stochastic-loss.hh    \
@@ -39,6 +39,8 @@ sender_logger_SOURCES = $(common_source) sender-logger.cc
 scoring_example_SOURCES = $(common_source) scoring-example.cc
 
 configuration_SOURCES = input-configrange.cc
+
+configuration_unicorn_SOURCES = input-configrange-unicorn.cc
 
 inspect_config_SOURCES = inspect-configrange.cc
 
