@@ -75,13 +75,13 @@ class GameACNetwork(object):
 
   # weight initialization based on muupan's code
   # https://github.com/muupan/async-rl/blob/master/a3c_ale.py
-  def _fc_variable(self, weight_shape, multiplier_w=1.0, multiplier_b=1.0):
+  def _fc_variable(self, weight_shape, constant_for_bias=0):
     input_channels  = weight_shape[0]
     output_channels = weight_shape[1]
     d = 1.0 / np.sqrt(input_channels)
     bias_shape = [output_channels]
-    weight = tf.Variable(tf.random_uniform(weight_shape, minval=-multiplier_w*d, maxval=multiplier_w*d))
-    bias   = tf.Variable(tf.random_uniform(bias_shape,   minval=-multiplier_b*d, maxval=multiplier_b*d))
+    weight = tf.Variable(tf.random_uniform(weight_shape, minval=-d, maxval=d))
+    bias   = tf.Variable(tf.random_uniform(bias_shape,   minval=-d, maxval=d))
     return weight, bias
 
   # def _conv_variable(self, weight_shape):
@@ -113,7 +113,7 @@ class GameACFFNetwork(GameACNetwork):
       # print("self.W_state_to_hidden_fc", self.W_state_to_hidden_fc, "self.b_state_to_hidden_fc", self.b_state_to_hidden_fc)
 
       # weight for policy output layer
-      self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], multiplier_w=2.0, multiplier_b=1.0)
+      self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE])
       self.W_hidden_to_action_var_fc, self.b_hidden_to_action_var_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE])
 
       # weight for value output layer
@@ -123,12 +123,17 @@ class GameACFFNetwork(GameACNetwork):
       self.s = tf.placeholder("float", [None, STATE_SIZE])
 
       h_fc = tf.nn.relu(tf.matmul(self.s, self.W_state_to_hidden_fc) + self.b_state_to_hidden_fc)
+
+      raw_pi_mean = tf.matmul(h_fc, self.W_hidden_to_action_mean_fc) + self.b_hidden_to_action_mean_fc
+      unstacked_pi_mean = tf.unstack(raw_pi_mean)
+      pi_mean = np.stack(unstacked_pi_mean[0], unstacked_pi_mean[1], tf.nn.softplus(unstacked_pi_mean[2]))
+
       # policy (output)
       # TODO: Now the network is completely linear. And can't map non-linear relationships
       self.pi = (
         # tf.nn.softmax(tf.matmul(h_fc, self.W_hidden_to_action_mean_fc) + self.b_hidden_to_action_mean_fc),
         # tf.nn.softmax(tf.matmul(h_fc, self.W_hidden_to_action_var_fc) + self.b_hidden_to_action_var_fc)
-        tf.matmul(h_fc, self.W_hidden_to_action_mean_fc) + self.b_hidden_to_action_mean_fc, # mean
+        pi_mean, # mean
         tf.clip_by_value(tf.nn.softplus(tf.matmul(h_fc, self.W_hidden_to_action_var_fc) + self.b_hidden_to_action_var_fc), 1e-20, 1.0) #var
       )
       # value (output)

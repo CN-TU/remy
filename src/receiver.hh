@@ -31,7 +31,7 @@ public:
   //   assert(concat->size()<=1);
   //   return concat; 
   // }
-  void clear( const unsigned int src ) { _collector[ src ].clear(); _collector_lost[ src ].clear(); }
+  void clear( const unsigned int src ) { _collector[ src ].clear(); }
   bool readable( const unsigned int src ) const noexcept
   { return (src < _collector.size()) && (!_collector[ src ].empty()); }
 

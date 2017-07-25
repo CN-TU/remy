@@ -18,6 +18,7 @@ private:
   DataType _slow_rec_rec_ewma;
   DataType _rtt_diff;
   DataType _queueing_delay;
+  DataType _loss;
 
   double _last_tick_sent;
   double _last_tick_received;
@@ -31,6 +32,7 @@ public:
       _slow_rec_rec_ewma( s_data.at( 3 ) ),
       _rtt_diff( s_data.at(4) ),
       _queueing_delay( s_data.at(5) ),
+      _loss( 0 ),
       _last_tick_sent( 0 ),
       _last_tick_received( 0 ),
       _min_rtt( 0 )
@@ -43,20 +45,22 @@ public:
       _slow_rec_rec_ewma( 0 ),
       _rtt_diff( 0 ),
       _queueing_delay( 0 ),
+      _loss( 0 ),
       _last_tick_sent( 0 ),
       _last_tick_received( 0 ),
       _min_rtt( 0 )
   {}
 
-  void reset( void ) { _rec_send_ewma = _rec_rec_ewma = _rtt_ratio = _slow_rec_rec_ewma = _rtt_diff = _queueing_delay = _last_tick_sent = _last_tick_received = _min_rtt = 0; }
+  void reset( void ) { _rec_send_ewma = _rec_rec_ewma = _rtt_ratio = _slow_rec_rec_ewma = _rtt_diff = _queueing_delay = _last_tick_sent = _last_tick_received = _min_rtt = _loss = 0; }
 
   static const unsigned int datasize = 6;
 
-  const DataType & field( unsigned int num ) const { return num == 0 ? _rec_send_ewma : num == 1 ? _rec_rec_ewma : num == 2 ? _rtt_ratio : num == 3 ? _slow_rec_rec_ewma : num == 4 ? _rtt_diff : _queueing_delay ; }
-  DataType & mutable_field( unsigned int num )     { return num == 0 ? _rec_send_ewma : num == 1 ? _rec_rec_ewma : num == 2 ? _rtt_ratio : num == 3 ? _slow_rec_rec_ewma : num == 4 ? _rtt_diff : _queueing_delay ; }
+  const DataType & field( unsigned int num ) const { return num == 0 ? _rec_send_ewma : num == 1 ? _rec_rec_ewma : num == 2 ? _rtt_ratio : num == 3 ? _slow_rec_rec_ewma : num == 4 ? _rtt_diff : num == 5 ? _queueing_delay : _loss ; }
+  DataType & mutable_field( unsigned int num )     { return num == 0 ? _rec_send_ewma : num == 1 ? _rec_rec_ewma : num == 2 ? _rtt_ratio : num == 3 ? _slow_rec_rec_ewma : num == 4 ? _rtt_diff : num == 5 ? _queueing_delay : _loss ; }
 
   void packet_sent( const Packet & packet __attribute((unused)) ) {}
   void packets_received( const std::vector< Packet > & packets, const unsigned int flow_id, const int largest_ack );
+  void packets_received_unicorn( const std::vector< Packet > & packets, const unsigned int flow_id, const int largest_ack, const bool lost );
   void advance_to( const unsigned int tickno __attribute((unused)) ) {}
 
   std::string str( void ) const;

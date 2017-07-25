@@ -192,7 +192,7 @@ void SwitchedSender<SenderType>::receive_feedback( Receiver & rec )
     // const std::vector< Packet > * all_packets = rec.all_packets_for( id );
 
     utility.packets_received( packets );
-    // sender.packets_received( *all_packets );
+    sender.packets_received( packets );
 
     // delete all_packets;
     rec.clear( id );

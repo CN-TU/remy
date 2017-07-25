@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 #include <limits>
-#include <set>
+#include <unordered_map>
 
 #include "packet.hh"
 #include "memory.hh"
@@ -12,11 +12,8 @@
 
 #include "unicornfarm.hh"
 
-struct packet_compare {
-  bool operator() (const Packet& l, const Packet& r) const {
-    return l.seq_num() < r.seq_num();
-  }
-};
+// #define MAX_WINDOW 1000000
+#define MAX_WINDOW 1000
 
 class Unicorn
 {
@@ -40,19 +37,17 @@ private:
   UnicornFarm& _unicorn_farm;
   // long unsigned int _previous_attempts;
   // long unsigned int _previous_attempts_acknowledged;
-  void put_lost_rewards(size_t number);
+  void put_lost_rewards(int start, int end);
+  void get_action();
+  void finish();
   long unsigned int _put_actions;
   long unsigned int _put_rewards;
 
-  std::set<Packet, packet_compare> _jitter_buffer;
-
-  // bool _sent_at_least_once;
+  std::unordered_map<int, Packet> _sent_packets;
 
 public:
   Unicorn();
   ~Unicorn();
-
-  void get_action();
 
   void packets_received( const std::vector< Packet > & packets );
   void reset( const double & tickno ); /* start new flow */
@@ -75,8 +70,8 @@ public:
     const int window_increment, 
     const double window_multiple
   ) const {
-    unsigned int new_window = std::min( std::max( 0, int( previous_window * window_multiple + window_increment ) ), 1000000 );
-    printf("new_window %u\n", new_window);
+    unsigned int new_window = std::min( std::max( 0, int( previous_window * window_multiple + window_increment ) ), MAX_WINDOW );
+    printf("%lu: new_window %u\n", _thread_id, new_window);
     return new_window;
   }
   // const double & intersend( void ) const { return _intersend; }

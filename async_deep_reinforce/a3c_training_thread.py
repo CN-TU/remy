@@ -80,8 +80,9 @@ class A3CTrainingThread(object):
 
   def choose_action(self, pi_values):
     actions = [norm.rvs(loc=mean, scale=std) for mean, std in zip(pi_values[0], pi_values[1])]
-    actions[0] = max(0, actions[0]) # Make sure that multiplier isn't negative. There are no negative congestion windows. TODO: Maybe it would be a good idea?
-    actions[2] = max(0, actions[2]) # Make sure that the minimum time to wait until you send the next packet isn't negative. 
+    # FIXME: Ensure that the time value can never be negative
+    # actions[0] = max(0, actions[0]) # Make sure that multiplier isn't negative. There are no negative congestion windows. TODO: Maybe it would be a good idea?
+    # actions[2] = max(0, actions[2]) # Make sure that the minimum time to wait until you send the next packet isn't negative. 
 
     return actions
 
@@ -130,11 +131,16 @@ class A3CTrainingThread(object):
 
   def reward_step(self, sess, global_t, summary_writer, summary_op, score_input, reward):
     self.rewards.append(reward)
-    if len(self.rewards) % LOCAL_T_MAX == 0:
+    if len(self.rewards)-2 >= LOCAL_T_MAX:
       return self.process(sess, global_t, summary_writer, summary_op, score_input)
     # implicitly returns None otherwise
 
-  def final_step(self, sess, global_t, summary_writer, summary_op, score_input, final_state):
+  def final_step(self, sess, global_t, summary_writer, summary_op, score_input, final_state, remove_last):
+    if removeLast:
+      self.action = self.action[:-1]
+      self.states = self.states[:-1]
+      self.rewards = self.rewards[:-1]
+      self.values = self.values[:-1]
     final_output = self.process(sess, global_t, summary_writer, summary_op, score_input, final_state)
     return final_output
 
@@ -149,10 +155,10 @@ class A3CTrainingThread(object):
     
     print("In process: len(rewards)", len(self.rewards), "len(states)", len(self.states), "len(actions)", len(self.actions), "len(values)", len(self.values))
 
-    actions = self.actions[:len(self.rewards)]
-    states = self.states[:len(self.rewards)]
-    rewards = self.rewards
-    values = self.values[:len(self.rewards)]
+    actions = self.actions[:LOCAL_T_MAX]
+    states = self.states[:LOCAL_T_MAX]
+    rewards = self.rewards[:LOCAL_T_MAX]
+    values = self.values[:LOCAL_T_MAX]
 
     # t_max times loop
     for i in range(len(rewards)):
@@ -233,10 +239,10 @@ class A3CTrainingThread(object):
       print("### Performance : {} STEPS in {:.0f} sec. {:.0f} STEPS/sec. {:.2f}M STEPS/hour".format(
         global_t,  elapsed_time, steps_per_sec, steps_per_sec * 3600 / 1000000.))
 
-    self.actions = self.actions[len(self.rewards):]
-    self.states = self.states[len(self.rewards):]
-    self.values = self.values[len(self.rewards):]
-    self.rewards = []
+    self.actions = self.actions[LOCAL_T_MAX:]
+    self.states = self.states[LOCAL_T_MAX:]
+    self.values = self.values[LOCAL_T_MAX:]
+    self.rewards = self.rewards[LOCAL_T_MAX:]
     # return advanced local step size
     diff_local_t = self.local_t - start_local_t
     return diff_local_t

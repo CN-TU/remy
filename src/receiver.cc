@@ -1,21 +1,18 @@
 #include <cassert>
 #include <limits>
+#include <cstdio>
 
 #include "receiver.hh"
 
 Receiver::Receiver()
-<<<<<<< HEAD
   : _collector()
   // _collector_lost()
-=======
-  : _collector(),
-  _collector_lost()
->>>>>>> 331e785d61963efd7bb8e85fc9a5f1cecb7adea9
 {
 }
 
 void Receiver::accept( const Packet & p, const double & tickno ) noexcept
 {
+  // puts("Got packet in Receiver!");
   autosize( p.src );
 
   _collector[ p.src ].push_back( p );
@@ -47,11 +44,6 @@ void Receiver::autosize( const unsigned int index )
 
 double Receiver::next_event_time( const double & tickno ) const
 {
-  for ( const auto & x : _collector_lost ) {
-    if ( not x.empty() ) {
-      return tickno;
-    }
-  }
   for ( const auto & x : _collector ) {
     if ( not x.empty() ) {
       return tickno;

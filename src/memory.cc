@@ -28,19 +28,23 @@ void Memory::packets_received( const vector< Packet > & packets, const unsigned 
       _last_tick_received = x.tick_received;
       _min_rtt = rtt;
     } else {
-      _rec_send_ewma = (1 - alpha) * _rec_send_ewma + alpha * (x.tick_sent - _last_tick_sent);
-      _rec_rec_ewma = (1 - alpha) * _rec_rec_ewma + alpha * (x.tick_received - _last_tick_received);
-      _slow_rec_rec_ewma = (1 - slow_alpha) * _slow_rec_rec_ewma + slow_alpha * (x.tick_received - _last_tick_received);
+      if (!x.lost) {
+        _rec_send_ewma = (1 - alpha) * _rec_send_ewma + alpha * (x.tick_sent - _last_tick_sent);
+        _rec_rec_ewma = (1 - alpha) * _rec_rec_ewma + alpha * (x.tick_received - _last_tick_received);
+        _slow_rec_rec_ewma = (1 - slow_alpha) * _slow_rec_rec_ewma + slow_alpha * (x.tick_received - _last_tick_received);
 
-      _last_tick_sent = x.tick_sent;
-      _last_tick_received = x.tick_received;
+        _last_tick_sent = x.tick_sent;
+        _last_tick_received = x.tick_received;
 
-      _min_rtt = min( _min_rtt, rtt );
-      _rtt_ratio = double( rtt ) / double( _min_rtt );
-      assert( _rtt_ratio >= 1.0 );
-      _rtt_diff = rtt - _min_rtt;
-      assert( _rtt_diff >= 0 );
-      _queueing_delay = _rec_rec_ewma * pkt_outstanding;
+        _min_rtt = min( _min_rtt, rtt );
+        _rtt_ratio = double( rtt ) / double( _min_rtt );
+        _rtt_diff = rtt - _min_rtt;
+        // FIXME: Removed these two assertions as in the case of packet loss it can actually happen...
+        // assert( _rtt_ratio >= 1.0 );
+        // assert( _rtt_diff >= 0 );
+        _queueing_delay = _rec_rec_ewma * pkt_outstanding;
+      }
+      _loss = (1 - alpha) * _loss + alpha * ((int) x.lost);
     }
   }
 }
@@ -107,10 +111,12 @@ Memory::Memory( const bool is_lower_limit, const RemyBuffers::Memory & dna )
     _slow_rec_rec_ewma( get_val_or_default( dna, slow_rec_rec_ewma, is_lower_limit ) ),
     _rtt_diff( get_val_or_default( dna, rtt_diff, is_lower_limit ) ),
     _queueing_delay( get_val_or_default( dna, queueing_delay, is_lower_limit ) ),
+    _loss(0), //FIXME: Should change "DNA" at some point
     _last_tick_sent( 0 ),
     _last_tick_received( 0 ),
     _min_rtt( 0 )
 {
+  assert(false);
 }
 
 size_t hash_value( const Memory & mem )

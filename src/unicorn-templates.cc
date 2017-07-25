@@ -10,12 +10,7 @@ void Unicorn::send( const unsigned int id, NextHop & next, const double & tickno
 		const unsigned int packets_sent_cap )
 {
   // _sent_at_least_once = true;
-  if (_thread_id == 0) {
-    _thread_id = _unicorn_farm.create_thread();
-    printf("Assigned thread id %lu to Unicorn\n", _thread_id);
 
-    get_action();
-  }
   assert( int( _packets_sent ) >= _largest_ack + 1 );
 
   if ( _packets_sent >= packets_sent_cap ) {
@@ -30,7 +25,7 @@ void Unicorn::send( const unsigned int id, NextHop & next, const double & tickno
     /* Have we reached the end of the flow for now? */
 
     Packet p( id, _flow_id, tickno, _packets_sent);
-
+    _sent_packets.insert({_packets_sent, p});
     _packets_sent++;
 
     _memory.packet_sent( p );

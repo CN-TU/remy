@@ -130,12 +130,12 @@ action_struct UnicornFarm::get_action(const long unsigned int thread_id, const s
 	return action;
 }
 
-void UnicornFarm::put_reward(const long unsigned int thread_id, const int reward) {
+void UnicornFarm::put_reward(const long unsigned int thread_id, const double reward) {
 	std::lock_guard<std::mutex> guard(global_lock);
 	// PyGILState_STATE gstate; 
 	// gstate = PyGILState_Ensure();
 
-	PyObject* pRewardArgs = Py_BuildValue("(ii)", (long) thread_id, (long) reward);
+	PyObject* pRewardArgs = Py_BuildValue("(if)", (long) thread_id, reward);
 	PyObject* pReturnValue = PyObject_CallObject(pRewardFunc, pRewardArgs);
 	if (pReturnValue == NULL) {
 		PyErr_Print();
@@ -182,7 +182,7 @@ void UnicornFarm::delete_thread(const long unsigned int thread_id) {
 	// PyGILState_Release(gstate);
 }
 
-void UnicornFarm::finish(const long unsigned int thread_id, const std::vector<double> state) {
+void UnicornFarm::finish(const long unsigned int thread_id, const std::vector<double> state, const bool remove_last) {
 	std::lock_guard<std::mutex> guard(global_lock);
 	// PyGILState_STATE gstate; 
 	// gstate = PyGILState_Ensure();
@@ -191,7 +191,7 @@ void UnicornFarm::finish(const long unsigned int thread_id, const std::vector<do
 	for (size_t i=0; i<state.size(); i++) {
 		PyTuple_SetItem(pState, i, PyFloat_FromDouble(state[i]));
 	}
-	PyObject* pArgs = Py_BuildValue("(iO)", (long) thread_id, pState);
+	PyObject* pArgs = Py_BuildValue("(iOp)", (long) thread_id, pState, remove_last);
 	
 	PyObject* pReturnValue = PyObject_CallObject(pFinishFunc, pArgs);
 	if (pReturnValue == NULL) {
