@@ -191,8 +191,11 @@ void UnicornFarm::finish(const long unsigned int thread_id, const std::vector<do
 	for (size_t i=0; i<state.size(); i++) {
 		PyTuple_SetItem(pState, i, PyFloat_FromDouble(state[i]));
 	}
-	PyObject* pArgs = Py_BuildValue("(iOp)", (long) thread_id, pState, remove_last);
-	
+	PyObject* pArgs = Py_BuildValue("(iOO)", (long) thread_id, pState, remove_last ? Py_True: Py_False);
+	// if (pArgs == NULL) {
+	// 	puts("pArgs was NULL!");
+	// 	PyErr_Print();
+	// }
 	PyObject* pReturnValue = PyObject_CallObject(pFinishFunc, pArgs);
 	if (pReturnValue == NULL) {
 		PyErr_Print();

@@ -136,8 +136,8 @@ class A3CTrainingThread(object):
     # implicitly returns None otherwise
 
   def final_step(self, sess, global_t, summary_writer, summary_op, score_input, final_state, remove_last):
-    if removeLast:
-      self.action = self.action[:-1]
+    if remove_last:
+      self.actions = self.actions[:-1]
       self.states = self.states[:-1]
       self.rewards = self.rewards[:-1]
       self.values = self.values[:-1]
@@ -153,7 +153,7 @@ class A3CTrainingThread(object):
     # if USE_LSTM:
     #   start_lstm_state = self.local_network.lstm_state_out
     
-    print("In process: len(rewards)", len(self.rewards), "len(states)", len(self.states), "len(actions)", len(self.actions), "len(values)", len(self.values))
+    print(self.thread_index, "In process: len(rewards)", len(self.rewards), "len(states)", len(self.states), "len(actions)", len(self.actions), "len(values)", len(self.values))
 
     actions = self.actions[:LOCAL_T_MAX]
     states = self.states[:LOCAL_T_MAX]

@@ -112,7 +112,7 @@ void Unicorn::reset( const double & )
     printf("Assigned thread id %lu to Unicorn\n", _thread_id);
     // get_action();
   }
-  // puts("Starting");
+  puts("Starting");
   get_action();
 
   /* initial window and intersend time */
@@ -145,7 +145,8 @@ void Unicorn::get_action() {
 }
 
 void Unicorn::finish() {
-  const bool at_least_one_packet_sent = _packets_sent>0;
+  const bool at_least_one_packet_sent = _put_actions>1;
+  printf("%lu: finish, _packets_sent: %u\n", _thread_id, _packets_sent);
   _unicorn_farm.finish(_thread_id, {_memory.field(0), _memory.field(1), _memory.field(2), _memory.field(3), _memory.field(6), (double) _the_window/WINDOW_NORMALIZER}, at_least_one_packet_sent);
 }
 

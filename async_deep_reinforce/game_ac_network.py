@@ -125,8 +125,8 @@ class GameACFFNetwork(GameACNetwork):
       h_fc = tf.nn.relu(tf.matmul(self.s, self.W_state_to_hidden_fc) + self.b_state_to_hidden_fc)
 
       raw_pi_mean = tf.matmul(h_fc, self.W_hidden_to_action_mean_fc) + self.b_hidden_to_action_mean_fc
-      unstacked_pi_mean = tf.unstack(raw_pi_mean)
-      pi_mean = np.stack(unstacked_pi_mean[0], unstacked_pi_mean[1], tf.nn.softplus(unstacked_pi_mean[2]))
+      print("raw_pi_mean", raw_pi_mean)
+      pi_mean = tf.concat([tf.slice(raw_pi_mean,(0,0),(-1,2)), tf.nn.softplus(tf.slice(raw_pi_mean,(0,2),(-1,-1)))], axis=1)
 
       # policy (output)
       # TODO: Now the network is completely linear. And can't map non-linear relationships
@@ -169,7 +169,7 @@ class GameACFFNetwork(GameACNetwork):
 
 #     scope_name = "net_" + str(self._thread_index)
 #     with tf.device(self._device), tf.variable_scope(scope_name) as scope:
-#       self.W_conv1, self.b_conv1 = self._conv_variable([8, 8, 4, 16])  # stride=4
+#       self.W_conv1, self.b_conv1 = self._conv_variable([8, 8, 4, 16])  # stride=4,
 #       self.W_conv2, self.b_conv2 = self._conv_variable([4, 4, 16, 32]) # stride=2
       
 #       self.W_state_to_hidden_fc, self.b_state_to_hidden_fc = self._fc_variable([2592, 256])
