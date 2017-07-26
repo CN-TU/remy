@@ -14,6 +14,7 @@ ROM = "pong.bin"     # action size = 3
 INITIAL_ALPHA_LOG_RATE = 0.4226 # log_uniform interpolate rate for learning rate (around 7 * 10^-4)
 GAMMA = 0.99 # discount factor for rewards
 # ENTROPY_BETA = 0.01 # entropy regurarlization constant (discrete actions)
+# ENTROPY_BETA = 10**(-4) # entropy regurarlization constant (continuous actions)
 ENTROPY_BETA = 10**(-4) # entropy regurarlization constant (continuous actions)
 MAX_TIME_STEP = 10 * 10**7
 GRAD_NORM_CLIP = 40.0 # gradient norm clipping
@@ -25,4 +26,4 @@ USE_LSTM = False
 # STATE_SIZE = 4
 STATE_SIZE = 5 # Using his weird hack of using the last 4 states.
 HIDDEN_SIZE = 256
-ACTION_SIZE = 2 # action size
+ACTION_SIZE = 1 # action size

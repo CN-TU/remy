@@ -99,7 +99,6 @@ public:
 		 Exponential & start_distribution,
 		 Exponential & stop_distribution,
 		 const unsigned int num_sending ) override;
-
   using SwitchedSender<SenderType>::SwitchedSender;
 };
 

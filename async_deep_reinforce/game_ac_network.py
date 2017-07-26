@@ -118,7 +118,7 @@ class GameACFFNetwork(GameACNetwork):
 
       # weight for policy output layer
       self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE])
-      self.W_hidden_to_action_var_fc, self.b_hidden_to_action_var_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 0, 5)
+      self.W_hidden_to_action_var_fc, self.b_hidden_to_action_var_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE])
 
       # weight for value output layer
       self.W_hidden_to_value_fc, self.b_hidden_to_value_fc = self._fc_variable([HIDDEN_SIZE, 1])
@@ -137,7 +137,7 @@ class GameACFFNetwork(GameACNetwork):
         # tf.nn.softmax(tf.matmul(h_fc, self.W_hidden_to_action_mean_fc) + self.b_hidden_to_action_mean_fc),
         # tf.nn.softmax(tf.matmul(h_fc, self.W_hidden_to_action_var_fc) + self.b_hidden_to_action_var_fc)
         pi_mean, # mean
-        tf.clip_by_value(tf.nn.softplus(tf.matmul(h_fc, self.W_hidden_to_action_var_fc) + self.b_hidden_to_action_var_fc), 1e-20, 1.0) #var
+        tf.nn.softplus(tf.matmul(h_fc, self.W_hidden_to_action_var_fc) + self.b_hidden_to_action_var_fc) #var
       )
       # value (output)
       v_ = tf.matmul(h_fc, self.W_hidden_to_value_fc) + self.b_hidden_to_value_fc

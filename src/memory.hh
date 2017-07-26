@@ -60,7 +60,7 @@ public:
 
   void packet_sent( const Packet & packet __attribute((unused)) ) {}
   void packets_received( const std::vector< Packet > & packets, const unsigned int flow_id, const int largest_ack );
-  void packets_received_unicorn( const std::vector< Packet > & packets, const unsigned int flow_id, const int largest_ack, const bool lost );
+  void lost(const int lost);
   void advance_to( const unsigned int tickno __attribute((unused)) ) {}
 
   std::string str( void ) const;

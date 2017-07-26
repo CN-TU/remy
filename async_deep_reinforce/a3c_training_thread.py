@@ -79,7 +79,7 @@ class A3CTrainingThread(object):
     return learning_rate
 
   def choose_action(self, pi_values):
-    actions = [norm.rvs(loc=mean, scale=std) for mean, std in zip(pi_values[0], pi_values[1])]
+    actions = [norm.rvs(loc=mean, scale=np.sqrt(var)) for mean, var in zip(pi_values[0], pi_values[1])]
     # actions[0] = max(0, actions[0]) # Make sure that multiplier isn't negative. There are no negative congestion windows. TODO: Maybe it would be a good idea?
     # actions[2] = max(0, actions[2]) # Make sure that the minimum time to wait until you send the next packet isn't negative. 
 
@@ -131,20 +131,26 @@ class A3CTrainingThread(object):
   def reward_step(self, sess, global_t, summary_writer, summary_op, score_input, reward):
     self.rewards.append(reward)
 
-    if len(self.rewards)-LOCAL_T_MAX >= LOCAL_T_MAX:
+    # In the end we always remove the last step because it's meaningless. 
+    # So there must be always at least 2 items left in the next batch:
+    # one to be removed and one to finish the sequence. 
+    if len(self.rewards)-1>=LOCAL_T_MAX:
       return self.process(sess, global_t, summary_writer, summary_op, score_input)
     # implicitly returns None otherwise
 
-  def final_step(self, sess, global_t, summary_writer, summary_op, score_input, final_state, remove_last):
+  def final_step(self, sess, global_t, summary_writer, summary_op, score_input, final, remove_last):
     if remove_last:
       self.actions = self.actions[:-1]
       self.states = self.states[:-1]
-      self.rewards = self.rewards[:-1]
+      # self.rewards = self.rewards[:-1]
       self.values = self.values[:-1]
-    final_output = self.process(sess, global_t, summary_writer, summary_op, score_input, final_state)
+    if len(self.rewards) > 0:
+      final_output = self.process(sess, global_t, summary_writer, summary_op, score_input, final)
+    else:
+      final_output = 0
     return final_output
 
-  def process(self, sess, global_t, summary_writer, summary_op, score_input, final_state=None):
+  def process(self, sess, global_t, summary_writer, summary_op, score_input, final=False):
     # copy weights from shared to local
     sess.run( self.sync )
 
@@ -169,15 +175,14 @@ class A3CTrainingThread(object):
 
       self.local_t += 1
 
-    if final_state is not None:
+    if final:
       # assert(False)
       print("score={}".format(self.episode_reward))
       self._record_score(sess, summary_writer, summary_op, score_input,
                           self.episode_reward, global_t) # TODO:NOW: is that "not terminal_end" correct?
-      # final_state = self._accumulate(final_state)
-      R = self.local_network.run_value(sess, final_state)
-    else:
       R = 0.0
+    else:
+      R = self.local_network.run_value(sess, self.states[LOCAL_T_MAX])
 
     actions.reverse()
     states.reverse()

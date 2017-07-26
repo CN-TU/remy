@@ -10,6 +10,12 @@ static const double alpha = 1.0 / 8.0;
 
 static const double slow_alpha = 1.0 / 256.0;
 
+void Memory::lost(const int lost) {
+  for (auto i=0; i<lost; i++) {
+    _loss = (1 - alpha) * _loss + alpha * 1;
+  }
+}
+
 void Memory::packets_received( const vector< Packet > & packets, const unsigned int flow_id,
   const int largest_ack )
 {
@@ -17,34 +23,31 @@ void Memory::packets_received( const vector< Packet > & packets, const unsigned 
     if ( x.flow_id != flow_id ) {
       continue;
     }
-
-    if (!x.lost) {
-      const double rtt = x.tick_received - x.tick_sent;
-      int pkt_outstanding = 1;
-      if ( x.seq_num > largest_ack ) {
-        pkt_outstanding = x.seq_num - largest_ack;
-      }
-      if ( _last_tick_sent == 0 || _last_tick_received == 0 ) {
-        _last_tick_sent = x.tick_sent;
-        _last_tick_received = x.tick_received;
-        _min_rtt = rtt;
-      } else {
-        _rec_send_ewma = (1 - alpha) * _rec_send_ewma + alpha * (x.tick_sent - _last_tick_sent);
-        _rec_rec_ewma = (1 - alpha) * _rec_rec_ewma + alpha * (x.tick_received - _last_tick_received);
-        _slow_rec_rec_ewma = (1 - slow_alpha) * _slow_rec_rec_ewma + slow_alpha * (x.tick_received - _last_tick_received);
-
-        _last_tick_sent = x.tick_sent;
-        _last_tick_received = x.tick_received;
-
-        _min_rtt = min( _min_rtt, rtt );
-        _rtt_ratio = double( rtt ) / double( _min_rtt );
-        _rtt_diff = rtt - _min_rtt;
-        assert( _rtt_ratio >= 1.0 );
-        assert( _rtt_diff >= 0 );
-        _queueing_delay = _rec_rec_ewma * pkt_outstanding;
-      }
+    const double rtt = x.tick_received - x.tick_sent;
+    int pkt_outstanding = 1;
+    if ( x.seq_num > largest_ack ) {
+      pkt_outstanding = x.seq_num - largest_ack;
     }
-    _loss = (1 - alpha) * _loss + alpha * ((int) x.lost);
+    if ( _last_tick_sent == 0 || _last_tick_received == 0 ) {
+      _last_tick_sent = x.tick_sent;
+      _last_tick_received = x.tick_received;
+      _min_rtt = rtt;
+    } else {
+      _rec_send_ewma = (1 - alpha) * _rec_send_ewma + alpha * (x.tick_sent - _last_tick_sent);
+      _rec_rec_ewma = (1 - alpha) * _rec_rec_ewma + alpha * (x.tick_received - _last_tick_received);
+      _slow_rec_rec_ewma = (1 - slow_alpha) * _slow_rec_rec_ewma + slow_alpha * (x.tick_received - _last_tick_received);
+
+      _last_tick_sent = x.tick_sent;
+      _last_tick_received = x.tick_received;
+
+      _min_rtt = min( _min_rtt, rtt );
+      _rtt_ratio = double( rtt ) / double( _min_rtt );
+      _rtt_diff = rtt - _min_rtt;
+      assert( _rtt_ratio >= 1.0 );
+      assert( _rtt_diff >= 0 );
+      _queueing_delay = _rec_rec_ewma * pkt_outstanding;
+      _loss = (1 - alpha) * _loss + alpha * 0;
+    }
   }
 }
 

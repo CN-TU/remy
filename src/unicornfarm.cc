@@ -118,8 +118,8 @@ action_struct UnicornFarm::get_action(const long unsigned int thread_id, const s
 	}
 	action_struct action = {
 		PyFloat_AsDouble(PyTuple_GetItem(pActionArrayValue, 0)),
-		PyFloat_AsDouble(PyTuple_GetItem(pActionArrayValue, 1)),
-		PyFloat_AsDouble(PyTuple_GetItem(pActionArrayValue, 2)),
+		1.0,
+		0.0,
 	};
 	// printf("%f, %f, %f\n", action.window_increment, action.window_multiple, action.intersend);
 	Py_DECREF(pActionArrayValue);
@@ -182,26 +182,24 @@ void UnicornFarm::delete_thread(const long unsigned int thread_id) {
 	// PyGILState_Release(gstate);
 }
 
-void UnicornFarm::finish(const long unsigned int thread_id, const std::vector<double> state, const bool remove_last) {
+void UnicornFarm::finish(const long unsigned int thread_id, const bool remove_last) {
 	std::lock_guard<std::mutex> guard(global_lock);
 	// PyGILState_STATE gstate; 
 	// gstate = PyGILState_Ensure();
 
-	PyObject* pState = PyTuple_New(state.size());
-	for (size_t i=0; i<state.size(); i++) {
-		PyTuple_SetItem(pState, i, PyFloat_FromDouble(state[i]));
-	}
-	PyObject* pArgs = Py_BuildValue("(iOO)", (long) thread_id, pState, remove_last ? Py_True: Py_False);
-	// if (pArgs == NULL) {
-	// 	puts("pArgs was NULL!");
-	// 	PyErr_Print();
+	// PyObject* pState = PyTuple_New(state.size());
+	// for (size_t i=0; i<state.size(); i++) {
+	// 	PyTuple_SetItem(pState, i, PyFloat_FromDouble(state[i]));
 	// }
+	PyObject* pArgs = Py_BuildValue("(iO)", (long) thread_id, remove_last ? Py_True: Py_False);
+	if (pArgs == NULL) {
+		PyErr_Print();
+	}
 	PyObject* pReturnValue = PyObject_CallObject(pFinishFunc, pArgs);
 	if (pReturnValue == NULL) {
 		PyErr_Print();
 	}
 	Py_DECREF(pArgs);	
-	Py_DECREF(pState);
 	Py_DECREF(pReturnValue);
 
 	// PyGILState_Release(gstate);

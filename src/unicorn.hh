@@ -14,7 +14,8 @@
 #include <cmath>
 
 // #define MAX_WINDOW 1000000
-#define MAX_WINDOW 1000
+#define MIN_WINDOW 0.0
+#define MAX_WINDOW 1000.0
 
 class Unicorn
 {
@@ -28,7 +29,7 @@ private:
 
   double _last_send_time;
 
-  int _the_window;
+  double _the_window;
   double _intersend_time;
 
   unsigned int _flow_id;
@@ -38,13 +39,21 @@ private:
   UnicornFarm& _unicorn_farm;
   // long unsigned int _previous_attempts;
   // long unsigned int _previous_attempts_acknowledged;
-  void put_lost_rewards(int start, int end);
+  // void put_lost_rewards(int start, int end);
   void get_action();
   void finish();
   long unsigned int _put_actions;
   long unsigned int _put_rewards;
 
-  std::unordered_map<int, Packet> _sent_packets;
+  // std::unordered_map<int, Packet> _sent_packets;
+
+  static double soft_ceil(const double x) {
+    return MAX_WINDOW-log(1+exp(MAX_WINDOW-x));
+  }
+
+  static double soft_floor(const double x) {
+    return log(1+exp(x+MIN_WINDOW))-MIN_WINDOW;
+  }
 
 public:
   Unicorn();
@@ -66,13 +75,13 @@ public:
   const unsigned int & packets_sent( void ) const { return _packets_sent; }
 
   // SimulationResultBuffers::SenderState state_DNA() const;
-  unsigned int window(
-    const unsigned int previous_window,  
-    const int window_increment, 
+  double window(
+    const double previous_window,  
+    const double window_increment, 
     const double window_multiple
   ) const {
-    unsigned int new_window = std::min( std::max( 0, int (round( previous_window * window_multiple + window_increment )) ), MAX_WINDOW );
-    printf("%lu: new_window %u\n", _thread_id, new_window);
+    double new_window = std::min(std::max(previous_window * window_multiple + window_increment, MIN_WINDOW), MAX_WINDOW);
+    printf("%lu: new_window %f\n", _thread_id, new_window);
     return new_window;
   }
   // const double & intersend( void ) const { return _intersend; }
