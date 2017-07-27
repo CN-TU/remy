@@ -131,24 +131,24 @@ class A3CTrainingThread(object):
   def reward_step(self, sess, global_t, summary_writer, summary_op, score_input, reward):
     self.rewards.append(reward)
 
-    # In the end we always remove the last step because it's meaningless. 
-    # So there must be always at least 2 items left in the next batch:
+    # There must be always at least 1 item left in the next batch:
     # one to be removed and one to finish the sequence. 
     if len(self.rewards)-1>=LOCAL_T_MAX:
       return self.process(sess, global_t, summary_writer, summary_op, score_input)
     # implicitly returns None otherwise
 
   def final_step(self, sess, global_t, summary_writer, summary_op, score_input, final, remove_last):
-    if remove_last:
-      self.actions = self.actions[:-1]
-      self.states = self.states[:-1]
-      # self.rewards = self.rewards[:-1]
-      self.values = self.values[:-1]
-    if len(self.rewards) > 0:
-      final_output = self.process(sess, global_t, summary_writer, summary_op, score_input, final)
-    else:
-      final_output = 0
-    return final_output
+    # if remove_last:
+    #   self.actions = self.actions[:-1]
+    #   self.states = self.states[:-1]
+    #   # self.rewards = self.rewards[:-1]
+    #   self.values = self.values[:-1]
+    # if len(self.rewards) > 0:
+    #   final_output = self.process(sess, global_t, summary_writer, summary_op, score_input, final)
+    # else:
+    #   final_output = 0
+    # return final_output
+    return self.process(sess, global_t, summary_writer, summary_op, score_input, final)
 
   def process(self, sess, global_t, summary_writer, summary_op, score_input, final=False):
     # copy weights from shared to local
@@ -208,7 +208,7 @@ class A3CTrainingThread(object):
       batch_td.append(td)
       batch_R.append(R)
 
-    print("Got the following R:", rewards, R)
+    print("Got the following rewards:", rewards, "values", values, "R", R)
     cur_learning_rate = self._anneal_learning_rate(global_t)
 
     if USE_LSTM:

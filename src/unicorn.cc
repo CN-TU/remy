@@ -6,9 +6,9 @@
 #include <cstdio>
 #include <cmath>
 
-// #define LOSS_REWARD 0
+#define LOSS_REWARD 0
 // #define WINDOW_NORMALIZER (500.0)
-#define INITIAL_WINDOW 1
+#define INITIAL_WINDOW 0
 
 using namespace std;
 
@@ -37,27 +37,30 @@ Unicorn::Unicorn()
 void Unicorn::packets_received( const vector< Packet > & packets ) {
   printf("~~~%lu: Oh my god, I received %lu packets!\n", _thread_id, packets.size());
   // FIXME: Is this really super bad?
-  assert(packets.size() <= 1);
+  assert(packets.size() == 1);
 
   // So this should only happen after a reset, when a packet arrives very late...
   if (_largest_ack >= packets.at( packets.size() - 1 ).seq_num) {
+    printf("%lu: returning because _largest ack >= packet.seq_num\n", _thread_id);
     return;
   }
 
   const int previous_largest_ack = _largest_ack;
 
   for ( auto const &packet : packets ) {
+    printf("%lu: packet.seq_num: %d, _largest_ack: %d\n", _thread_id, packet.seq_num, _largest_ack);
 
     // puts("Lost rewards at received");
-    _memory.lost(_largest_ack+1-packet.seq_num);
+    _memory.lost(packet.seq_num-_largest_ack-1);
     // put_lost_rewards(_largest_ack+1,packet.seq_num);
 
-    const double packet_delay = packet.tick_received - packet.tick_sent;
+    const double alpha = 1000.0;
+    const double beta = 100.0;
+    const double packet_delay = 1.0/((packet.tick_received - packet.tick_sent)/alpha);
     // printf("%lu: last_received:%f, received:%f\n", _thread_id, _memory._last_tick_received, packet.tick_received);
-    const double throughput = 1.0/(packet.tick_received-_memory._last_tick_received);
-    const double alpha = 10.0;
-    const double reward = -packet_delay+alpha*throughput;
-    printf("Calculated reward delay:%f, throughput:%f\n", packet_delay, alpha*throughput);
+    const double throughput = 1.0/((packet.tick_received-_memory._last_tick_received)/beta);
+    const double reward = packet_delay+throughput;
+    printf("%lu: Calculated reward delay:%f, throughput:%f\n", _thread_id, packet_delay, throughput);
     // if (reward < 0) {
     //   printf("delay: %f, throughput: %f\n", reward_delay, reward_throughput);
     // }
@@ -94,14 +97,14 @@ void Unicorn::reset( const double & )
   if (_thread_id > 0) {
     // printf("%lu: Lost rewards at reset\n", _thread_id);
     // put_lost_rewards(_largest_ack+1,_packets_sent);
-    // _unicorn_farm.put_reward(_thread_id, LOSS_REWARD);
-    // _put_rewards += 1;
+    _unicorn_farm.put_reward(_thread_id, LOSS_REWARD);
+    _put_rewards += 1;
     finish();
   }
   // if (_put_actions != _put_rewards) {
   //   printf("%lu: _put_actions: %lu, _put_rewards: %lu\n", _thread_id, _put_actions, _put_rewards);
   // }
-  // assert(_put_actions == _put_rewards);
+  assert(_put_actions == _put_rewards);
   // assert(_sent_packets.size() == 0);
 
   _memory.reset();
@@ -186,8 +189,8 @@ Unicorn::~Unicorn() {
   if (_thread_id > 0) {
     // puts("Lost rewards at destruction");
     // put_lost_rewards(_largest_ack+1,_packets_sent);
-    // _unicorn_farm.put_reward(_thread_id, LOSS_REWARD);
-    // _put_rewards += 1;
+    _unicorn_farm.put_reward(_thread_id, LOSS_REWARD);
+    _put_rewards += 1;
     finish();
     _unicorn_farm.delete_thread(_thread_id);
   }

@@ -11,6 +11,7 @@ static const double alpha = 1.0 / 8.0;
 static const double slow_alpha = 1.0 / 256.0;
 
 void Memory::lost(const int lost) {
+  printf("lost: %d\n", lost);
   for (auto i=0; i<lost; i++) {
     _loss = (1 - alpha) * _loss + alpha * 1;
   }

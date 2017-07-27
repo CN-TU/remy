@@ -15,7 +15,7 @@
 
 // #define MAX_WINDOW 1000000
 #define MIN_WINDOW 0.0
-#define MAX_WINDOW 1000.0
+#define MAX_WINDOW 10000.0
 
 class Unicorn
 {

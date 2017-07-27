@@ -128,16 +128,17 @@ class GameACFFNetwork(GameACNetwork):
 
       h_fc = tf.nn.relu(tf.matmul(self.s, self.W_state_to_hidden_fc) + self.b_state_to_hidden_fc)
 
-      raw_pi_mean = tf.matmul(h_fc, self.W_hidden_to_action_mean_fc) + self.b_hidden_to_action_mean_fc
+      raw_pi_loc = tf.matmul(h_fc, self.W_hidden_to_action_mean_fc) + self.b_hidden_to_action_mean_fc
+      raw_pi_scale_squared = tf.matmul(h_fc, self.W_hidden_to_action_var_fc) + self.b_hidden_to_action_var_fc
       # pi_mean = tf.concat([tf.slice(raw_pi_mean,(0,0),(-1,2)), tf.nn.softplus(tf.slice(raw_pi_mean,(0,2),(-1,-1)))], axis=1)
-      pi_mean = raw_pi_mean
+      # pi_mean = raw_pi_mean
       # policy (output)
       # TODO: Now the network is completely linear. And can't map non-linear relationships
       self.pi = (
         # tf.nn.softmax(tf.matmul(h_fc, self.W_hidden_to_action_mean_fc) + self.b_hidden_to_action_mean_fc),
         # tf.nn.softmax(tf.matmul(h_fc, self.W_hidden_to_action_var_fc) + self.b_hidden_to_action_var_fc)
-        pi_mean, # mean
-        tf.nn.softplus(tf.matmul(h_fc, self.W_hidden_to_action_var_fc) + self.b_hidden_to_action_var_fc) #var
+        tf.nn.softplus(pi_mean), # mean
+        tf.nn.softplus(raw_pi_scale_squared) #var
       )
       # value (output)
       v_ = tf.matmul(h_fc, self.W_hidden_to_value_fc) + self.b_hidden_to_value_fc
