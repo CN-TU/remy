@@ -39,7 +39,7 @@ private:
   UnicornFarm& _unicorn_farm;
   // long unsigned int _previous_attempts;
   // long unsigned int _previous_attempts_acknowledged;
-  // void put_lost_rewards(int start, int end);
+  void put_lost_rewards(int number);
   void get_action();
   void finish();
   long unsigned int _put_actions;

@@ -30,11 +30,19 @@ class GameACNetwork(object):
       
       # policy entropy
       # entropy = -tf.reduce_sum(self.pi * log_pi, reduction_indices=1)
-      entropy = 0.5 * tf.reduce_sum((tf.log(2*math.pi*self.pi[1]) + 1), axis=1) # TODO: Not sure if minus is required here or not...
+
+      # entropy = 0.5 * tf.reduce_sum( tf.log(tf.clip_by_value(2*math.pi*self.current_gamma.stddev()**2, 1e-20, float("inf")) ) + 1, axis=1) # TODO: Not sure if minus is required here or not...
+      entropy = 0.5 * tf.reduce_sum( tf.log(2*math.pi*self.current_gamma.stddev()**2 ) + 1, axis=1) # TODO: Not sure if minus is required here or not...
       
+      # FIXME: axis=1 is stupid because now we only have one action
+      # FIXME: Is it a good idea to take the logits of a CDF?
+      #                                  this minus isn't necessary...
+      action_loss = tf.reduce_sum(tf.abs(tf.log(self.current_gamma.cdf(self.a)) - tf.log(1-self.current_gamma.cdf(self.a)) ), axis=1)
+      # action_loss = tf.reduce_sum(tf.abs(0.5-self.current_gamma.cdf(self.a)), axis=1)
+      # action_loss = tf.reduce_sum( tf.square(tf.subtract( self.pi[0], self.a )), axis=1 )
       # policy loss (output)  (Adding minus, because the original paper's objective function is for gradient ascent, but we use gradient descent optimizer.)
       # policy_loss = - tf.reduce_sum( tf.reduce_sum( tf.multiply( log_pi, self.a ), axis=1 ) * self.td + entropy * entropy_beta )
-      policy_loss = tf.reduce_sum( tf.reduce_sum( tf.square(tf.subtract( self.pi[0], self.a )), axis=1 ) * self.td - entropy * entropy_beta )
+      policy_loss = tf.reduce_mean( action_loss * self.td - entropy * entropy_beta )
       # TODO:Immediate: (- mean square error) damit es größer wird, je besser es wird, wie in der Ausgangsformel. 
 
       # R (input for value)
@@ -137,9 +145,12 @@ class GameACFFNetwork(GameACNetwork):
       self.pi = (
         # tf.nn.softmax(tf.matmul(h_fc, self.W_hidden_to_action_mean_fc) + self.b_hidden_to_action_mean_fc),
         # tf.nn.softmax(tf.matmul(h_fc, self.W_hidden_to_action_var_fc) + self.b_hidden_to_action_var_fc)
-        tf.nn.softplus(pi_mean), # mean
+        tf.nn.softplus(raw_pi_loc), # mean
         tf.nn.softplus(raw_pi_scale_squared) #var
       )
+      self.current_gamma = tf.contrib.distributions.Gamma(self.pi[0], self.pi[1])
+      # self.chosen_action = tf.contrib.distributions.Gamma(self.pi[0], self.pi[1]).sample()
+      self.chosen_action = self.current_gamma.sample()
       # value (output)
       v_ = tf.matmul(h_fc, self.W_hidden_to_value_fc) + self.b_hidden_to_value_fc
       self.v = tf.reshape( v_, [-1] )
@@ -148,6 +159,11 @@ class GameACFFNetwork(GameACNetwork):
     pi_out, v_out = sess.run( [self.pi, self.v], feed_dict = {self.s : [s_t]} )
     # print("run_policy_and_value", pi_out, v_out)
     return ((pi_out[0][0], pi_out[1][0]), v_out[0])
+
+  def run_policy_action_and_value(self, sess, s_t):
+    pi_out, action_out, v_out = sess.run( [self.pi, self.chosen_action, self.v], feed_dict = {self.s : [s_t]} )
+    # print("run_policy_and_value", pi_out, v_out)
+    return ((pi_out[0][0], pi_out[1][0]), action_out[0], v_out[0])
 
   def run_policy(self, sess, s_t):
     pi_out = sess.run( self.pi, feed_dict = {self.s : [s_t]} )

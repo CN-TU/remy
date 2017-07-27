@@ -2,7 +2,7 @@
 import tensorflow as tf
 import numpy as np
 import scipy as sp
-from scipy.stats import norm#, skewnorm
+from scipy.stats import norm, gamma
 import random
 import time
 import sys
@@ -78,12 +78,12 @@ class A3CTrainingThread(object):
       learning_rate = 0.0
     return learning_rate
 
-  def choose_action(self, pi_values):
-    actions = [norm.rvs(loc=mean, scale=np.sqrt(var)) for mean, var in zip(pi_values[0], pi_values[1])]
-    # actions[0] = max(0, actions[0]) # Make sure that multiplier isn't negative. There are no negative congestion windows. TODO: Maybe it would be a good idea?
-    # actions[2] = max(0, actions[2]) # Make sure that the minimum time to wait until you send the next packet isn't negative. 
-
-    return actions
+  # def choose_action(self, action):
+  #   # actions = [norm.rvs(loc=mean, scale=np.sqrt(var)) for mean, var in zip(pi_values[0], pi_values[1])]
+  #   # actions = [norm.rvs(loc=mean, scale=np.sqrt(var)) for mean, var in zip(pi_values[0], pi_values[1])]
+  #   # actions[0] = max(0, actions[0]) # Make sure that multiplier isn't negative. There are no negative congestion windows. TODO: Maybe it would be a good idea?
+  #   # actions[2] = max(0, actions[2]) # Make sure that the minimum time to wait until you send the next packet isn't negative. 
+  #   return action
 
   def _record_score(self, sess, summary_writer, summary_op, score_input, score, global_t):
     summary_str = sess.run(summary_op, feed_dict={
@@ -109,9 +109,10 @@ class A3CTrainingThread(object):
   def action_step(self, sess, state):
 
     # state = self._accumulate(state)
-    pi_, value_ = self.local_network.run_policy_and_value(sess, state) # TODO: State is some kind of tuple, isn't it?
+    # pi_, value_ = self.local_network.run_policy_and_value(sess, state)
+    pi_, action, value_ = self.local_network.run_policy_action_and_value(sess, state)
     # print("action_step", pi_)
-    action = self.choose_action(pi_)
+    # action = self.choose_action(pi_)
     # This whole accumulation thing is just a big hack that is also used in the game implementation. Fortunately with LSTM it's not needed anymore hopefully. 
 
     self.states.append(state)
@@ -126,7 +127,7 @@ class A3CTrainingThread(object):
     if self.local_t % LOG_INTERVAL == 0:
       print("pi={}".format(pi_))
       print(" V={}".format(value_))
-    return action
+    return (0, 0, action)
 
   def reward_step(self, sess, global_t, summary_writer, summary_op, score_input, reward):
     self.rewards.append(reward)
@@ -182,7 +183,9 @@ class A3CTrainingThread(object):
                           self.episode_reward, global_t) # TODO:NOW: is that "not terminal_end" correct?
       R = 0.0
     else:
+      print("state", self.states[LOCAL_T_MAX])
       R = self.local_network.run_value(sess, self.states[LOCAL_T_MAX])
+    print(self.thread_index, "initial R", R)
 
     actions.reverse()
     states.reverse()
@@ -208,8 +211,14 @@ class A3CTrainingThread(object):
       batch_td.append(td)
       batch_R.append(R)
 
-    print("Got the following rewards:", rewards, "values", values, "R", R)
+    print(self.thread_index, "Got the following rewards:", rewards, "values", values, "R", R)
     cur_learning_rate = self._anneal_learning_rate(global_t)
+    print(self.thread_index, "Still alive!", cur_learning_rate)
+
+    print("All the batch stuff", "batch_si", batch_si,
+                  "batch_a", batch_a,
+                  "batch_td", batch_td,
+                  "batch_R", batch_R)
 
     if USE_LSTM:
       batch_si.reverse()

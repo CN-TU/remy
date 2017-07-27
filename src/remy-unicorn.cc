@@ -26,7 +26,7 @@ void print_range( const Range & range, const string & name )
 
 void signal_handler(int s) {
   // UNUSED(s);
-  printf("Signal Handler: Caught signal %d\n",s);
+  printf("Signal Handler: Caught signal %d\n", s);
   UnicornFarm& unicorn_farm = UnicornFarm::getInstance();
   unicorn_farm.save_session();
   exit(EXIT_SUCCESS);

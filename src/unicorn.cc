@@ -50,9 +50,9 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
   for ( auto const &packet : packets ) {
     printf("%lu: packet.seq_num: %d, _largest_ack: %d\n", _thread_id, packet.seq_num, _largest_ack);
 
-    // puts("Lost rewards at received");
+    puts("Lost rewards at received");
     _memory.lost(packet.seq_num-_largest_ack-1);
-    // put_lost_rewards(_largest_ack+1,packet.seq_num);
+    put_lost_rewards(packet.seq_num-_largest_ack-1);
 
     const double alpha = 1000.0;
     const double beta = 100.0;
@@ -75,7 +75,7 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
     _memory.packets_received( packet_for_memory_update, _flow_id, _largest_ack );
     // _sent_packets.erase(packet.seq_num);
 
-    get_action();
+    // get_action();
 
     _largest_ack = packet.seq_num;
   }
@@ -95,10 +95,10 @@ void Unicorn::reset( const double & )
   printf("%lu: Resetting\n", _thread_id);
   // _largest_ack -= 1;
   if (_thread_id > 0) {
-    // printf("%lu: Lost rewards at reset\n", _thread_id);
-    // put_lost_rewards(_largest_ack+1,_packets_sent);
-    _unicorn_farm.put_reward(_thread_id, LOSS_REWARD);
-    _put_rewards += 1;
+    printf("%lu: Lost rewards at reset\n", _thread_id);
+    put_lost_rewards(_packets_sent-_largest_ack);
+    // _unicorn_farm.put_reward(_thread_id, LOSS_REWARD);
+    // _put_rewards += 1;
     finish();
   }
   // if (_put_actions != _put_rewards) {
@@ -135,16 +135,16 @@ void Unicorn::reset( const double & )
 double Unicorn::next_event_time( const double & tickno ) const
 {
   // return tickno;
-  if ( int(_packets_sent) < _largest_ack + 1 + _the_window ) {
-    // if ( _last_send_time + _intersend_time <= tickno ) {
+  // if ( int(_packets_sent) < _largest_ack + 1 + _the_window ) {
+    if ( _last_send_time + _intersend_time <= tickno ) {
       return tickno;
-    // } else {
-      // return _last_send_time + _intersend_time;
-    // }
-  } else {
-    /* window is currently closed */
-    return std::numeric_limits<double>::max();
-  }
+    } else {
+      return _last_send_time + _intersend_time;
+    }
+  // } else {
+  //   /* window is currently closed */
+  //   return std::numeric_limits<double>::max();
+  // }
 }
 
 void Unicorn::get_action() {
@@ -153,44 +153,45 @@ void Unicorn::get_action() {
   printf("%lu: action is: %f, %f, %f\n", _thread_id, action.window_increment, action.window_multiple, action.intersend);
   _put_actions += 1;
 
-  _the_window = window(_the_window, action.window_increment, action.window_multiple);
+  // _the_window = window(_the_window, action.window_increment, action.window_multiple);
   _intersend_time = action.intersend;
 }
 
 void Unicorn::finish() {
-  // const bool at_least_one_packet_sent = _put_actions>1;
-  const bool at_least_one_packet_sent = true;
+  const bool at_least_one_packet_sent = _put_actions>1;
+  if (!at_least_one_packet_sent) {
+    _unicorn_farm.put_reward(_thread_id, LOSS_REWARD);
+    _put_rewards += 1;
+  }
+  // const bool at_least_one_packet_sent = true;
   printf("%lu: finish, _packets_sent: %u\n", _thread_id, _packets_sent);
   // _unicorn_farm.finish(_thread_id, {_memory.field(0), _memory.field(1), _memory.field(2), _memory.field(3), _memory.field(6), (double) _the_window/WINDOW_NORMALIZER}, at_least_one_packet_sent);
   _unicorn_farm.finish(_thread_id, at_least_one_packet_sent);
 }
 
-// void Unicorn::put_lost_rewards(int start, int end) {
+void Unicorn::put_lost_rewards(int number) {
 
-//   printf("%lu: Going to put %d lost packets\n", _thread_id, end-start);
-//   for (int i=start; i<end; i++) {
-//     _unicorn_farm.put_reward(_thread_id, LOSS_REWARD);
-//     _put_rewards += 1;
+  printf("%lu: Going to put %d lost packets\n", _thread_id, number);
+  for (int i=0; i<number; i++) {
+    _unicorn_farm.put_reward(_thread_id, LOSS_REWARD);
+    _put_rewards += 1;
 
-//     vector<Packet> packet_for_memory_update;
-//     Packet packet = _sent_packets[i];
-//     packet.lost = true;
-//     packet_for_memory_update.push_back(packet);
-//     _memory.packets_received( packet_for_memory_update, _flow_id, _largest_ack );
-//     _sent_packets.erase(packet.seq_num);
-
-//     get_action();
-//   }
-
-// }
+    // vector<Packet> packet_for_memory_update;
+    // Packet packet = _sent_packets[i];
+    // packet.lost = true;
+    // packet_for_memory_update.push_back(packet);
+    // _memory.packets_received( packet_for_memory_update, _flow_id, _largest_ack );
+    // _sent_packets.erase(packet.seq_num);
+  }
+}
 
 Unicorn::~Unicorn() {
   printf("Destroying Unicorn with thread id %lu\n", _thread_id);
   if (_thread_id > 0) {
-    // puts("Lost rewards at destruction");
-    // put_lost_rewards(_largest_ack+1,_packets_sent);
-    _unicorn_farm.put_reward(_thread_id, LOSS_REWARD);
-    _put_rewards += 1;
+    puts("Lost rewards at destruction");
+    put_lost_rewards(_packets_sent-_largest_ack);
+    // _unicorn_farm.put_reward(_thread_id, LOSS_REWARD);
+    // _put_rewards += 1;
     finish();
     _unicorn_farm.delete_thread(_thread_id);
   }
