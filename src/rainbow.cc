@@ -1,4 +1,4 @@
-#include "unicornfarm.hh"
+#include "rainbow.hh"
 #include <thread>
 #include <stddef.h>
 #include <unistd.h>
@@ -7,15 +7,15 @@
 #include <cmath>
 // #include <Python.h>
 
-UnicornFarm& UnicornFarm::getInstance() {
+Rainbow& Rainbow::getInstance() {
 	// Apparently in C++11 all that code is thread_safe...
 	// PyGILState_STATE gstate; gstate = PyGILState_Ensure();
 
-	static UnicornFarm instance;
+	static Rainbow instance;
 	return instance;
 }
 
-UnicornFarm::UnicornFarm() : 
+Rainbow::Rainbow() : 
 	global_lock(),
 	pModule(NULL),
 	pActionFunc(NULL),
@@ -101,7 +101,7 @@ UnicornFarm::UnicornFarm() :
 	// PyGILState_Release(gstate);
 }
 
-action_struct UnicornFarm::get_action(const long unsigned int thread_id, const std::vector<double> state) {
+action_struct Rainbow::get_action(const long unsigned int thread_id, const std::vector<double> state) {
 	std::lock_guard<std::mutex> guard(global_lock);
 	// PyGILState_STATE gstate; 
 	// gstate = PyGILState_Ensure();
@@ -130,7 +130,7 @@ action_struct UnicornFarm::get_action(const long unsigned int thread_id, const s
 	return action;
 }
 
-void UnicornFarm::put_reward(const long unsigned int thread_id, const double reward) {
+void Rainbow::put_reward(const long unsigned int thread_id, const double reward) {
 	std::lock_guard<std::mutex> guard(global_lock);
 	// PyGILState_STATE gstate; 
 	// gstate = PyGILState_Ensure();
@@ -146,7 +146,7 @@ void UnicornFarm::put_reward(const long unsigned int thread_id, const double rew
 	// PyGILState_Release(gstate);
 }
 
-long unsigned int UnicornFarm::create_thread() {
+long unsigned int Rainbow::create_thread() {
 	std::lock_guard<std::mutex> guard(global_lock);
 	// PyGILState_STATE gstate; 
 	// gstate = PyGILState_Ensure();
@@ -166,7 +166,7 @@ long unsigned int UnicornFarm::create_thread() {
 	return thread_id;
 }
 
-void UnicornFarm::delete_thread(const long unsigned int thread_id) {
+void Rainbow::delete_thread(const long unsigned int thread_id) {
 	std::lock_guard<std::mutex> guard(global_lock);
 	// PyGILState_STATE gstate; 
 	// gstate = PyGILState_Ensure();
@@ -182,7 +182,7 @@ void UnicornFarm::delete_thread(const long unsigned int thread_id) {
 	// PyGILState_Release(gstate);
 }
 
-void UnicornFarm::finish(const long unsigned int thread_id, const bool remove_last) {
+void Rainbow::finish(const long unsigned int thread_id, const bool remove_last) {
 	std::lock_guard<std::mutex> guard(global_lock);
 	// PyGILState_STATE gstate; 
 	// gstate = PyGILState_Ensure();
@@ -205,7 +205,7 @@ void UnicornFarm::finish(const long unsigned int thread_id, const bool remove_la
 	// PyGILState_Release(gstate);
 }
 
-void UnicornFarm::save_session() {
+void Rainbow::save_session() {
 	std::lock_guard<std::mutex> guard(global_lock);
 	printf("Saving session\n");
 	// PyGILState_STATE gstate; 
@@ -223,7 +223,7 @@ void UnicornFarm::save_session() {
 	printf("Saved session\n");
 }
 
-void UnicornFarm::print_errors() {
+void Rainbow::print_errors() {
 	std::lock_guard<std::mutex> guard(global_lock);
 
 	PyErr_Print();

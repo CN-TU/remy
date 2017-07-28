@@ -27,7 +27,7 @@ remy_SOURCES = $(common_source) remy.cc ratbreeder.cc ratbreeder.hh \
 	breeder.cc breeder.hh
 
 remy_unicorn_SOURCES = $(common_source) remy-unicorn.cc unicornbreeder.cc unicornbreeder.hh \
-	breeder.cc breeder.hh unicornfarm.cc unicornfarm.hh unicornevaluator.cc unicornevaluator.hh \
+	breeder.cc breeder.hh rainbow.cc rainbow.hh unicornevaluator.cc unicornevaluator.hh \
 	unicorn.hh unicorn.cc
 
 remy_poisson_SOURCES = $(common_source) remy-poisson.cc breeder.cc breeder.hh fishbreeder.cc fishbreeder.hh

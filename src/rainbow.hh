@@ -1,5 +1,5 @@
-#ifndef UNICORN_FARM_HH
-#define UNICORN_FARM_HH
+#ifndef RAINBOW_HH
+#define RAINBOW_HH
 
 #include <vector>
 #include <mutex>
@@ -11,7 +11,7 @@ typedef struct action_struct {
 	double intersend;
 } action_struct;
 
-class UnicornFarm
+class Rainbow
 {
 private:
 	// FIXME: Replace global_lock by Python's GIL
@@ -23,13 +23,13 @@ private:
 	PyObject* pDeleteFunc;
 	PyObject* pFinishFunc;
 	PyObject* pSaveFunc;
-	UnicornFarm();
+	Rainbow();
 
 public:
-	UnicornFarm(UnicornFarm const&) = delete;
-	void operator=(UnicornFarm const&) = delete;
+	Rainbow(Rainbow const&) = delete;
+	void operator=(Rainbow const&) = delete;
 	
-	static UnicornFarm& getInstance();
+	static Rainbow& getInstance();
 	long unsigned int create_thread();
 	action_struct get_action(const long unsigned int thread_id, const std::vector<double> state);
 	void put_reward(const long unsigned int thread_id, const double reward);

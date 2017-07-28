@@ -10,7 +10,7 @@
 #include "memory.hh"
 #include "simulationresults.pb.h"
 
-#include "unicornfarm.hh"
+#include "rainbow.hh"
 #include <cmath>
 
 // #define MAX_WINDOW 1000000
@@ -36,7 +36,7 @@ private:
   int _largest_ack;
 
   long unsigned int _thread_id;
-  UnicornFarm& _unicorn_farm;
+  Rainbow& _rainbow;
   // long unsigned int _previous_attempts;
   // long unsigned int _previous_attempts_acknowledged;
   void put_lost_rewards(int number);

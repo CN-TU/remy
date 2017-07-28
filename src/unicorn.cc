@@ -24,7 +24,7 @@ Unicorn::Unicorn()
      _largest_ack( -1 ),
     //  _most_recent_ack ( -1 ),
      _thread_id(0),
-     _unicorn_farm(UnicornFarm::getInstance()),
+     _rainbow(Rainbow::getInstance()),
     //  _outstanding_rewards()
     _put_actions(0),
     _put_rewards(0)
@@ -66,7 +66,7 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
     // }
     // Ensure that the reward is never smaller or equal to the loss reward
     // assert(reward > 0);
-    _unicorn_farm.put_reward(_thread_id, reward);
+    _rainbow.put_reward(_thread_id, reward);
     _put_rewards += 1;
 
     _packets_received += 1;
@@ -97,7 +97,7 @@ void Unicorn::reset( const double & )
   if (_thread_id > 0) {
     printf("%lu: Lost rewards at reset\n", _thread_id);
     put_lost_rewards(_packets_sent-_largest_ack);
-    // _unicorn_farm.put_reward(_thread_id, LOSS_REWARD);
+    // _rainbow.put_reward(_thread_id, LOSS_REWARD);
     // _put_rewards += 1;
     finish();
   }
@@ -119,7 +119,7 @@ void Unicorn::reset( const double & )
   assert( _flow_id != 0 );
 
   if (_thread_id == 0) {
-    _thread_id = _unicorn_farm.create_thread();
+    _thread_id = _rainbow.create_thread();
     printf("Assigned thread id %lu to Unicorn\n", _thread_id);
     // get_action();
   }
@@ -148,8 +148,8 @@ double Unicorn::next_event_time( const double & tickno ) const
 }
 
 void Unicorn::get_action() {
-  // action_struct action = _unicorn_farm.get_action(_thread_id, {_memory.field(0), _memory.field(1), _memory.field(2), _memory.field(3), _memory.field(6), (double) _the_window/WINDOW_NORMALIZER});
-  action_struct action = _unicorn_farm.get_action(_thread_id, {_memory.field(0), _memory.field(1), _memory.field(2), _memory.field(3), _memory.field(6)});
+  // action_struct action = _rainbow.get_action(_thread_id, {_memory.field(0), _memory.field(1), _memory.field(2), _memory.field(3), _memory.field(6), (double) _the_window/WINDOW_NORMALIZER});
+  action_struct action = _rainbow.get_action(_thread_id, {_memory.field(0), _memory.field(1), _memory.field(2), _memory.field(3), _memory.field(6)});
   // action.intersend /= 100.0;
   printf("%lu: action is: %f, %f, %f\n", _thread_id, action.window_increment, action.window_multiple, action.intersend);
   _put_actions += 1;
@@ -161,20 +161,20 @@ void Unicorn::get_action() {
 void Unicorn::finish() {
   const bool at_least_one_packet_sent = _put_actions>1;
   if (!at_least_one_packet_sent) {
-    _unicorn_farm.put_reward(_thread_id, LOSS_REWARD);
+    _rainbow.put_reward(_thread_id, LOSS_REWARD);
     _put_rewards += 1;
   }
   // const bool at_least_one_packet_sent = true;
   printf("%lu: finish, _packets_sent: %u\n", _thread_id, _packets_sent);
-  // _unicorn_farm.finish(_thread_id, {_memory.field(0), _memory.field(1), _memory.field(2), _memory.field(3), _memory.field(6), (double) _the_window/WINDOW_NORMALIZER}, at_least_one_packet_sent);
-  _unicorn_farm.finish(_thread_id, at_least_one_packet_sent);
+  // _rainbow.finish(_thread_id, {_memory.field(0), _memory.field(1), _memory.field(2), _memory.field(3), _memory.field(6), (double) _the_window/WINDOW_NORMALIZER}, at_least_one_packet_sent);
+  _rainbow.finish(_thread_id, at_least_one_packet_sent);
 }
 
 void Unicorn::put_lost_rewards(int number) {
 
   printf("%lu: Going to put %d lost packets\n", _thread_id, number);
   for (int i=0; i<number; i++) {
-    _unicorn_farm.put_reward(_thread_id, LOSS_REWARD);
+    _rainbow.put_reward(_thread_id, LOSS_REWARD);
     _put_rewards += 1;
 
     // vector<Packet> packet_for_memory_update;
@@ -191,9 +191,9 @@ Unicorn::~Unicorn() {
   if (_thread_id > 0) {
     puts("Lost rewards at destruction");
     put_lost_rewards(_packets_sent-_largest_ack);
-    // _unicorn_farm.put_reward(_thread_id, LOSS_REWARD);
+    // _rainbow.put_reward(_thread_id, LOSS_REWARD);
     // _put_rewards += 1;
     finish();
-    _unicorn_farm.delete_thread(_thread_id);
+    _rainbow.delete_thread(_thread_id);
   }
 }

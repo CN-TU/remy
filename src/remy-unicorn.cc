@@ -7,7 +7,7 @@
 #include <fcntl.h>
 
 #include "unicornbreeder.hh"
-#include "unicornfarm.hh"
+#include "rainbow.hh"
 #include "configrange.hh"
 #include <thread>
 
@@ -27,7 +27,7 @@ void print_range( const Range & range, const string & name )
 void signal_handler(int s) {
   // UNUSED(s);
   printf("Signal Handler: Caught signal %d\n", s);
-  UnicornFarm& unicorn_farm = UnicornFarm::getInstance();
+  Rainbow& unicorn_farm = Rainbow::getInstance();
   unicorn_farm.save_session();
   exit(EXIT_SUCCESS);
 }
@@ -35,7 +35,7 @@ void signal_handler(int s) {
 // void debug_signal_handler(int s) {
 //   // UNUSED(s);
 //   printf("Debug Signal Handler: Caught signal %d\n",s);
-//   UnicornFarm& unicorn_farm = UnicornFarm::getInstance();
+//   Rainbow& unicorn_farm = Rainbow::getInstance();
 //   unicorn_farm.print_errors();
 //   exit(EXIT_FAILURE);
 // }

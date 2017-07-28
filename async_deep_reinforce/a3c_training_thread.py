@@ -159,8 +159,8 @@ class A3CTrainingThread(object):
 
     start_local_t = self.local_t
 
-    # if USE_LSTM:
-    #   start_lstm_state = self.local_network.lstm_state_out
+    if USE_LSTM:
+      start_lstm_state = self.local_network.lstm_state_out
     
     print(self.thread_index, "In process: len(rewards)", len(self.rewards), "len(states)", len(self.states), "len(actions)", len(self.actions), "len(values)", len(self.values))
 
