@@ -150,6 +150,7 @@ double Unicorn::next_event_time( const double & tickno ) const
 void Unicorn::get_action() {
   // action_struct action = _unicorn_farm.get_action(_thread_id, {_memory.field(0), _memory.field(1), _memory.field(2), _memory.field(3), _memory.field(6), (double) _the_window/WINDOW_NORMALIZER});
   action_struct action = _unicorn_farm.get_action(_thread_id, {_memory.field(0), _memory.field(1), _memory.field(2), _memory.field(3), _memory.field(6)});
+  // action.intersend /= 100.0;
   printf("%lu: action is: %f, %f, %f\n", _thread_id, action.window_increment, action.window_multiple, action.intersend);
   _put_actions += 1;
 

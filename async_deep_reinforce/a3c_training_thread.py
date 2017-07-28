@@ -59,6 +59,7 @@ class A3CTrainingThread(object):
     self.sync = self.local_network.sync_from(global_network)
         
     self.local_t = 0
+    self.episode_start_t = 0
 
     self.initial_learning_rate = initial_learning_rate
 
@@ -67,7 +68,7 @@ class A3CTrainingThread(object):
     # variable controling log output
     self.prev_local_t = 0
 
-    # self.acc_state = None
+    self.acc_state = None
 
   def get_network_vars(self):
     return self.local_network.get_vars()
@@ -78,11 +79,15 @@ class A3CTrainingThread(object):
       learning_rate = 0.0
     return learning_rate
 
-  # def choose_action(self, action):
+  # def choose_action(self, sess, pi_values):
+  #   print("choose action pi_values", pi_values)
   #   # actions = [norm.rvs(loc=mean, scale=np.sqrt(var)) for mean, var in zip(pi_values[0], pi_values[1])]
   #   # actions = [norm.rvs(loc=mean, scale=np.sqrt(var)) for mean, var in zip(pi_values[0], pi_values[1])]
   #   # actions[0] = max(0, actions[0]) # Make sure that multiplier isn't negative. There are no negative congestion windows. TODO: Maybe it would be a good idea?
   #   # actions[2] = max(0, actions[2]) # Make sure that the minimum time to wait until you send the next packet isn't negative. 
+  #   action = sess.run([self.local_network.gamma.sample()], feed_dict={self.local_network.pi: pi_values})
+  #   print("action", action)
+  #   assert(action > 0.0)
   #   return action
 
   def _record_score(self, sess, summary_writer, summary_op, score_input, score, global_t):
@@ -95,32 +100,29 @@ class A3CTrainingThread(object):
   def set_start_time(self, start_time):
     self.start_time = start_time
 
-  # def _accumulate(self, state):
-  #   state = np.array(state)
-  #   if self.acc_state is None:
-  #     self.acc_state = np.stack((state, state, state, state), axis=1)
-  #   else:
-  #     # print(self.acc_state)
-  #     state = np.expand_dims(state, 1)
-  #     # print(state)
-  #     self.acc_state = np.append(self.acc_state[:,1:], state, axis=1)
-  #   return self.acc_state.flatten()
+  def _accumulate(self, state):
+    state = np.array(state)
+    if self.acc_state is None:
+      self.acc_state = np.stack((state, state, state, state), axis=1)
+    else:
+      # print(self.acc_state)
+      state = np.expand_dims(state, 1)
+      # print(state)
+      self.acc_state = np.append(self.acc_state[:,1:], state, axis=1)
+    return self.acc_state.flatten()
 
   def action_step(self, sess, state):
 
-    # state = self._accumulate(state)
+    state = self._accumulate(state)
     # pi_, value_ = self.local_network.run_policy_and_value(sess, state)
     pi_, action, value_ = self.local_network.run_policy_action_and_value(sess, state)
+    # assert(action[0] > 0.0)
     # print("action_step", pi_)
-    # action = self.choose_action(pi_)
+    # action = self.choose_action(sess, pi_)
     # This whole accumulation thing is just a big hack that is also used in the game implementation. Fortunately with LSTM it's not needed anymore hopefully. 
 
     self.states.append(state)
     self.actions.append(action)
-
-    # if(value_.__class__.__name__!="float32"):
-    #   print(value_.__class__.__name__)
-    # assert(value_.__class__.__name__=="float32")
 
     self.values.append(value_)
     # if (self.thread_index == 0) and (self.local_t % LOG_INTERVAL == 0):
@@ -178,14 +180,15 @@ class A3CTrainingThread(object):
 
     if final:
       # assert(False)
-      print("score={}".format(self.episode_reward))
+      print("score={}".format(self.episode_reward/(self.local_t-self.episode_start_t)))
       self._record_score(sess, summary_writer, summary_op, score_input,
                           self.episode_reward, global_t) # TODO:NOW: is that "not terminal_end" correct?
       R = 0.0
+      self.episode_start_t = self.local_t
     else:
-      print("state", self.states[LOCAL_T_MAX])
+      # print("state", self.states[LOCAL_T_MAX])
       R = self.local_network.run_value(sess, self.states[LOCAL_T_MAX])
-    print(self.thread_index, "initial R", R)
+    # print(self.thread_index, "initial R", R)
 
     actions.reverse()
     states.reverse()
@@ -213,12 +216,12 @@ class A3CTrainingThread(object):
 
     print(self.thread_index, "Got the following rewards:", rewards, "values", values, "R", R)
     cur_learning_rate = self._anneal_learning_rate(global_t)
-    print(self.thread_index, "Still alive!", cur_learning_rate)
+    # print(self.thread_index, "Still alive!", cur_learning_rate)
 
-    print("All the batch stuff", "batch_si", batch_si,
-                  "batch_a", batch_a,
-                  "batch_td", batch_td,
-                  "batch_R", batch_R)
+    # print("All the batch stuff", "batch_si", batch_si,
+    #               "batch_a", batch_a,
+    #               "batch_td", batch_td,
+    #               "batch_R", batch_R)
 
     if USE_LSTM:
       batch_si.reverse()
