@@ -40,10 +40,11 @@ private:
   // long unsigned int _previous_attempts;
   // long unsigned int _previous_attempts_acknowledged;
   void put_lost_rewards(int number);
-  void get_action();
+  void get_action(const double & tickno);
   void finish();
   long unsigned int _put_actions;
   long unsigned int _put_rewards;
+  int _lost_since_last_time;
 
   // std::unordered_map<int, Packet> _sent_packets;
 

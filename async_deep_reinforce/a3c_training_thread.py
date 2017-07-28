@@ -7,7 +7,7 @@ import random
 import time
 import sys
 
-from game_ac_network import GameACFFNetwork#, GameACLSTMNetwork
+from game_ac_network import GameACFFNetwork, GameACLSTMNetwork
 
 from constants import GAMMA
 from constants import LOCAL_T_MAX
@@ -65,10 +65,10 @@ class A3CTrainingThread(object):
 
     self.episode_reward = 0
 
-    # variable controling log output
+    # variable controlling log output
     self.prev_local_t = 0
 
-    self.acc_state = None
+    # self.acc_state = None
 
   def get_network_vars(self):
     return self.local_network.get_vars()
@@ -100,20 +100,20 @@ class A3CTrainingThread(object):
   def set_start_time(self, start_time):
     self.start_time = start_time
 
-  def _accumulate(self, state):
-    state = np.array(state)
-    if self.acc_state is None:
-      self.acc_state = np.stack((state, state, state, state), axis=1)
-    else:
-      # print(self.acc_state)
-      state = np.expand_dims(state, 1)
-      # print(state)
-      self.acc_state = np.append(self.acc_state[:,1:], state, axis=1)
-    return self.acc_state.flatten()
+  # def _accumulate(self, state):
+  #   state = np.array(state)
+  #   if self.acc_state is None:
+  #     self.acc_state = np.stack((state, state, state, state), axis=1)
+  #   else:
+  #     # print(self.acc_state)
+  #     state = np.expand_dims(state, 1)
+  #     # print(state)
+  #     self.acc_state = np.append(self.acc_state[:,1:], state, axis=1)
+  #   return self.acc_state.flatten()
 
   def action_step(self, sess, state):
 
-    state = self._accumulate(state)
+    # state = self._accumulate(state)
     # pi_, value_ = self.local_network.run_policy_and_value(sess, state)
     pi_, action, value_ = self.local_network.run_policy_action_and_value(sess, state)
     # assert(action[0] > 0.0)

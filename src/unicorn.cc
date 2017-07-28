@@ -7,7 +7,7 @@
 #include <cmath>
 
 #define LOSS_REWARD 0
-// #define WINDOW_NORMALIZER (500.0)
+#define LAST_SENT_TIME_NORMALIZER (100.0)
 #define INITIAL_WINDOW 0
 
 using namespace std;
@@ -27,7 +27,8 @@ Unicorn::Unicorn()
      _rainbow(Rainbow::getInstance()),
     //  _outstanding_rewards()
     _put_actions(0),
-    _put_rewards(0)
+    _put_rewards(0),
+    _lost_since_last_time(0)
     // _sent_packets()
     // _sent_at_least_once(false)
 {
@@ -53,8 +54,9 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
     puts("Lost rewards at received");
     _memory.lost(packet.seq_num-_largest_ack-1);
     put_lost_rewards(packet.seq_num-_largest_ack-1);
+    _lost_since_last_time = packet.seq_num-_largest_ack-1;
 
-    const double alpha = 1000.0;
+    const double alpha = 100.0;
     const double beta = 100.0;
     const double packet_delay = 1.0/((packet.tick_received - packet.tick_sent)/alpha);
     // printf("%lu: last_received:%f, received:%f\n", _thread_id, _memory._last_tick_received, packet.tick_received);
@@ -89,7 +91,7 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
   assert (_largest_ack > previous_largest_ack);
 }
 
-void Unicorn::reset( const double & )
+void Unicorn::reset( const double & tickno )
 {
   // assert(false);
   printf("%lu: Resetting\n", _thread_id);
@@ -115,6 +117,7 @@ void Unicorn::reset( const double & )
   _largest_ack = _packets_sent - 1; /* Assume everything's been delivered */
   _put_actions = 0;
   _put_rewards = 0;
+  _lost_since_last_time = 0,
   // _sent_packets.clear();
   assert( _flow_id != 0 );
 
@@ -124,7 +127,7 @@ void Unicorn::reset( const double & )
     // get_action();
   }
   printf("%lu: Starting\n", _thread_id);
-  get_action();
+  get_action(tickno);
 
   /* initial window and intersend time */
   // const Whisker & current_whisker( _whiskers.use_whisker( _memory, _track ) );
@@ -147,9 +150,20 @@ double Unicorn::next_event_time( const double & tickno ) const
   // }
 }
 
-void Unicorn::get_action() {
+void Unicorn::get_action(const double& tickno) {
   // action_struct action = _rainbow.get_action(_thread_id, {_memory.field(0), _memory.field(1), _memory.field(2), _memory.field(3), _memory.field(6), (double) _the_window/WINDOW_NORMALIZER});
-  action_struct action = _rainbow.get_action(_thread_id, {_memory.field(0), _memory.field(1), _memory.field(2), _memory.field(3), _memory.field(6)});
+  action_struct action = _rainbow.get_action(
+    _thread_id, 
+    {
+      _memory.field(0), 
+      _memory.field(1), 
+      _memory.field(2), 
+      _memory.field(3), 
+      _memory.field(6),
+      (double) _lost_since_last_time,
+      (tickno - _memory._last_tick_received)/LAST_SENT_TIME_NORMALIZER,
+    }
+  );
   // action.intersend /= 100.0;
   printf("%lu: action is: %f, %f, %f\n", _thread_id, action.window_increment, action.window_multiple, action.intersend);
   _put_actions += 1;

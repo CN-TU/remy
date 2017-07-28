@@ -20,10 +20,11 @@ MAX_TIME_STEP = 10 * 10**7
 GRAD_NORM_CLIP = 40.0 # gradient norm clipping
 USE_GPU = False # To use GPU, set True
 # USE_LSTM = True # True for A3C LSTM, False for A3C FF
-USE_LSTM = False
+USE_LSTM = True
+N_LSTM_LAYERS = 3
 
 # Max's stuff
 # STATE_SIZE = 4
-STATE_SIZE = 5*4 # Using his weird hack of using the last 4 states.
-HIDDEN_SIZE = 256
+STATE_SIZE = 7 # Using his weird hack of using the last 4 states.
+HIDDEN_SIZE = 128
 ACTION_SIZE = 1 # action size
