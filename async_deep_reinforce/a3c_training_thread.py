@@ -185,6 +185,7 @@ class A3CTrainingThread(object):
                           self.episode_reward, global_t) # TODO:NOW: is that "not terminal_end" correct?
       R = 0.0
       self.episode_start_t = self.local_t
+      self.episode_reward = 0
     else:
       # print("state", self.states[LOCAL_T_MAX])
       R = self.local_network.run_value(sess, self.states[LOCAL_T_MAX])

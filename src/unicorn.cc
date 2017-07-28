@@ -101,9 +101,9 @@ void Unicorn::reset( const double & )
     // _put_rewards += 1;
     finish();
   }
-  // if (_put_actions != _put_rewards) {
-  //   printf("%lu: _put_actions: %lu, _put_rewards: %lu\n", _thread_id, _put_actions, _put_rewards);
-  // }
+  if (_put_actions != _put_rewards) {
+    printf("%lu: _put_actions: %lu, _put_rewards: %lu\n", _thread_id, _put_actions, _put_rewards);
+  }
   assert(_put_actions == _put_rewards);
   // assert(_sent_packets.size() == 0);
 

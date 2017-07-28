@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import datetime
+current_datetime = datetime.datetime.now().isoformat()[:-7]
 print("Loading a3c...")
 
 import tensorflow as tf
@@ -62,8 +64,7 @@ global_t = 0
 stop_requested = False
 
 if USE_LSTM:
-  # global_network = GameACLSTMNetwork(ACTION_SIZE, -1, device)
-  raise NotImplementedError("LSTM currently doesn't work, what a pity!")
+  global_network = GameACLSTMNetwork(-1, device)
 else:
   global_network = GameACFFNetwork(-1, device)
 
@@ -99,7 +100,7 @@ score_input = tf.placeholder(tf.int32)
 tf.summary.scalar("score", score_input)
 
 summary_op = tf.summary.merge_all()
-summary_writer = tf.summary.FileWriter(LOG_FILE, sess.graph)
+summary_writer = tf.summary.FileWriter(LOG_FILE+'/'+current_datetime, sess.graph)
 
 # init or load checkpoint with saver
 saver = tf.train.Saver()
