@@ -17,7 +17,7 @@ import os
 import time
 import sys
 
-from game_ac_network import GameACFFNetwork, GameACLSTMNetwork
+from game_ac_network import GameACLSTMNetwork#, GameACFFNetwork
 from a3c_training_thread import A3CTrainingThread
 from rmsprop_applier import RMSPropApplier
 
@@ -47,8 +47,8 @@ def initialize_uninitialized(sess):
     is_not_initialized   = sess.run([tf.is_variable_initialized(var) for var in global_vars])
     not_initialized_vars = [v for (v, f) in zip(global_vars, is_not_initialized) if not f]
 
-    print([str(i.name) for i in not_initialized_vars]) # only for testing
-    if len(not_initialized_vars):
+    print("initializing uninitialized variables:", [str(i.name) for i in not_initialized_vars]) # only for testing
+    if len(not_initialized_vars) > 0:
         sess.run(tf.variables_initializer(not_initialized_vars))
 
 device = "/cpu:0"

@@ -36,10 +36,10 @@ class GameACNetwork(object):
 	def prepare_loss(self, entropy_beta):
 		with tf.device(self._device):
 			# taken action (input for policy)
-			self.a = tf.placeholder("float", [None, self._action_size])
+			self.a = tf.placeholder("float", [None, self._action_size], name="a")
 		
 			# temporary difference (R-V) (input for policy)
-			self.td = tf.placeholder("float", [None])
+			self.td = tf.placeholder("float", [None], name="td")
 
 			# avoid NaN with clipping when value in pi becomes zero
 			# log_pi = tf.log(tf.clip_by_value(item, 1e-20, 1.0))
@@ -49,12 +49,12 @@ class GameACNetwork(object):
 
 			# entropy = 0.5 * tf.reduce_sum( tf.log(tf.clip_by_value(2*math.pi*self.current_gamma.stddev()**2, 1e-20, float("inf")) ) + 1, axis=1) # TODO: Not sure if minus is required here or not...
 			
-			entropy = 0.5 * tf.reduce_sum( tf.log(2*math.pi*self.gamma.variance()) + 1, axis=1) # TODO: Not sure if minus is required here or not...
+			entropy = 0.5 * tf.reduce_sum( tf.log(2*math.pi*self.pi[1]**2) + 1, axis=1 ) # TODO: Not sure if minus is required here or not...
 			
 			# FIXME: axis=1 is stupid because now we only have one action
 			# FIXME: Is it a good idea to take the logits of a CDF?
 			#                                  this minus isn't necessary...
-			action_loss = tf.reduce_sum( tf.square(tf.subtract( self.gamma.mean(), self.a )), axis=1 )
+			action_loss = tf.reduce_sum( tf.square(tf.subtract( self.pi[0], self.a )), axis=1 )
 			# policy loss (output)  (Adding minus, because the original paper's objective function is for gradient ascent, but we use gradient descent optimizer.)
 			# policy_loss = - tf.reduce_sum( tf.reduce_sum( tf.multiply( log_pi, self.a ), axis=1 ) * self.td + entropy * entropy_beta )
 
@@ -62,7 +62,7 @@ class GameACNetwork(object):
 			# policy_loss = tf.reduce_sum( action_loss * self.td )
 
 			# R (input for value)
-			self.r = tf.placeholder("float", [None])
+			self.r = tf.placeholder("float", [None], name="r")
 			
 			# value loss (output)
 			# (Learning rate for Critic is half of Actor's, so multiply by 0.5)
@@ -112,75 +112,75 @@ class GameACNetwork(object):
 		bias   = tf.Variable(tf.random_uniform(bias_shape,   minval=lower, maxval=upper))
 		return weight, bias
 
-# Actor-Critic FF Network
-class GameACFFNetwork(GameACNetwork):
-	def __init__(self,
-							 thread_index, # -1 for global
-							 device="/cpu:0"):
-		GameACNetwork.__init__(self, thread_index, device)
+# # Actor-Critic FF Network
+# class GameACFFNetwork(GameACNetwork):
+# 	def __init__(self,
+# 							 thread_index, # -1 for global
+# 							 device="/cpu:0"):
+# 		GameACNetwork.__init__(self, thread_index, device)
 
-		scope_name = "net_" + str(self._thread_index)
-		with tf.device(self._device), tf.variable_scope(scope_name) as scope:
+# 		scope_name = "net_" + str(self._thread_index)
+# 		with tf.device(self._device), tf.variable_scope(scope_name) as scope:
 
-			self.W_state_to_hidden_fc, self.b_state_to_hidden_fc = self._fc_variable([STATE_SIZE, HIDDEN_SIZE])
+# 			self.W_state_to_hidden_fc, self.b_state_to_hidden_fc = self._fc_variable([STATE_SIZE, HIDDEN_SIZE])
 
-			# print("self.W_state_to_hidden_fc", self.W_state_to_hidden_fc, "self.b_state_to_hidden_fc", self.b_state_to_hidden_fc)
+# 			# print("self.W_state_to_hidden_fc", self.W_state_to_hidden_fc, "self.b_state_to_hidden_fc", self.b_state_to_hidden_fc)
 
-			# weight for policy output layer
-			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 100, 1000)
-			self.W_hidden_to_action_var_fc, self.b_hidden_to_action_var_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 1, 10)
+# 			# weight for policy output layer
+# 			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 100, 1000)
+# 			self.W_hidden_to_action_var_fc, self.b_hidden_to_action_var_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 1, 10)
 
-			# weight for value output layer
-			self.W_hidden_to_value_fc, self.b_hidden_to_value_fc = self._fc_variable([HIDDEN_SIZE, 1])
+# 			# weight for value output layer
+# 			self.W_hidden_to_value_fc, self.b_hidden_to_value_fc = self._fc_variable([HIDDEN_SIZE, 1])
 
-			# state (input)
-			self.s = tf.placeholder("float", [None, STATE_SIZE])
+# 			# state (input)
+# 			self.s = tf.placeholder("float", [None, STATE_SIZE])
 
-			# h_fc = tf.nn.relu(tf.matmul(self.s, self.W_state_to_hidden_fc) + self.b_state_to_hidden_fc)
-			h_fc = tf.matmul(self.s, self.W_state_to_hidden_fc) + self.b_state_to_hidden_fc
+# 			# h_fc = tf.nn.relu(tf.matmul(self.s, self.W_state_to_hidden_fc) + self.b_state_to_hidden_fc)
+# 			h_fc = tf.matmul(self.s, self.W_state_to_hidden_fc) + self.b_state_to_hidden_fc
 
-			raw_pi_loc = tf.matmul(h_fc, self.W_hidden_to_action_mean_fc) + self.b_hidden_to_action_mean_fc
-			raw_pi_scale = tf.matmul(h_fc, self.W_hidden_to_action_var_fc) + self.b_hidden_to_action_var_fc
-			# pi_mean = tf.concat([tf.slice(raw_pi_mean,(0,0),(-1,2)), tf.nn.softplus(tf.slice(raw_pi_mean,(0,2),(-1,-1)))], axis=1)
-			# pi_mean = raw_pi_mean
-			# policy (output)
-			# TODO: Now the network is completely linear. And can't map non-linear relationships
-			self.pi = (
-				# tf.nn.softplus(raw_pi_loc), # mean
-				# tf.nn.softplus(raw_pi_scale) #var
-				tf.nn.softplus(raw_pi_loc), # mean
-				tf.nn.softplus(raw_pi_scale) #var
-			)
+# 			raw_pi_loc = tf.matmul(h_fc, self.W_hidden_to_action_mean_fc) + self.b_hidden_to_action_mean_fc
+# 			raw_pi_scale = tf.matmul(h_fc, self.W_hidden_to_action_var_fc) + self.b_hidden_to_action_var_fc
+# 			# pi_mean = tf.concat([tf.slice(raw_pi_mean,(0,0),(-1,2)), tf.nn.softplus(tf.slice(raw_pi_mean,(0,2),(-1,-1)))], axis=1)
+# 			# pi_mean = raw_pi_mean
+# 			# policy (output)
+# 			# TODO: Now the network is completely linear. And can't map non-linear relationships
+# 			self.pi = (
+# 				# tf.nn.softplus(raw_pi_loc), # mean
+# 				# tf.nn.softplus(raw_pi_scale) #var
+# 				tf.nn.softplus(raw_pi_loc), # mean
+# 				tf.nn.softplus(raw_pi_scale) #var
+# 			)
 
-			self.gamma = tf.contrib.distributions.Gamma(self.pi[0], self.pi[1], allow_nan_stats=False, validate_args=True)
-			self.chosen_action = tf.clip_by_value(self.gamma.sample(), tiny, float("inf"))
-			# value (output)
-			v_ = tf.matmul(h_fc, self.W_hidden_to_value_fc) + self.b_hidden_to_value_fc
-			self.v = tf.reshape( v_, [-1] )
+# 			self.gamma = tf.contrib.distributions.Gamma(self.pi[0], self.pi[1], allow_nan_stats=False, validate_args=True)
+# 			self.chosen_action = tf.clip_by_value(self.gamma.sample(), tiny, float("inf"))
+# 			# value (output)
+# 			v_ = tf.matmul(h_fc, self.W_hidden_to_value_fc) + self.b_hidden_to_value_fc
+# 			self.v = tf.reshape( v_, [-1] )
 
-	def run_policy_and_value(self, sess, s_t):
-		pi_out, v_out = sess.run( [self.pi, self.v], feed_dict = {self.s : [s_t]} )
-		# print("run_policy_and_value", pi_out, v_out)
-		return ((pi_out[0][0], pi_out[1][0]), v_out[0])
+# 	def run_policy_and_value(self, sess, s_t):
+# 		pi_out, v_out = sess.run( [self.pi, self.v], feed_dict = {self.s : [s_t]} )
+# 		# print("run_policy_and_value", pi_out, v_out)
+# 		return ((pi_out[0][0], pi_out[1][0]), v_out[0])
 
-	def run_policy_action_and_value(self, sess, s_t):
-		pi_out, action_out, v_out = sess.run( [self.pi, self.chosen_action, self.v], feed_dict = {self.s : [s_t]} )
-		# print("run_policy_and_value", pi_out, v_out)
-		return ((pi_out[0][0], pi_out[1][0]), action_out[0], v_out[0])
+# 	def run_policy_action_and_value(self, sess, s_t):
+# 		pi_out, action_out, v_out = sess.run( [self.pi, self.chosen_action, self.v], feed_dict = {self.s : [s_t]} )
+# 		# print("run_policy_and_value", pi_out, v_out)
+# 		return ((pi_out[0][0], pi_out[1][0]), action_out[0], v_out[0])
 
-	def run_policy(self, sess, s_t):
-		pi_out = sess.run( self.pi, feed_dict = {self.s : [s_t]} )
-		return pi_out[0]
+# 	def run_policy(self, sess, s_t):
+# 		pi_out = sess.run( self.pi, feed_dict = {self.s : [s_t]} )
+# 		return pi_out[0]
 
-	def run_value(self, sess, s_t):
-		v_out = sess.run( self.v, feed_dict = {self.s : [s_t]} )
-		return v_out[0]
+# 	def run_value(self, sess, s_t):
+# 		v_out = sess.run( self.v, feed_dict = {self.s : [s_t]} )
+# 		return v_out[0]
 
-	def get_vars(self):
-		return [self.W_state_to_hidden_fc, self.b_state_to_hidden_fc,
-						self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc,
-						self.W_hidden_to_action_var_fc, self.b_hidden_to_action_var_fc,
-						self.W_hidden_to_value_fc, self.b_hidden_to_value_fc]
+# 	def get_vars(self):
+# 		return [self.W_state_to_hidden_fc, self.b_state_to_hidden_fc,
+# 						self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc,
+# 						self.W_hidden_to_action_var_fc, self.b_hidden_to_action_var_fc,
+# 						self.W_hidden_to_value_fc, self.b_hidden_to_value_fc]
 
 def create_cell(n_hidden):
 	return tf.contrib.rnn.LSTMCell(n_hidden)
@@ -212,7 +212,7 @@ class GameACLSTMNetwork(GameACNetwork):
 
 			# weight for policy output layer
 			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 50, 60)
-			self.W_hidden_to_action_var_fc, self.b_hidden_to_action_var_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 1, 2)
+			self.W_hidden_to_action_var_fc, self.b_hidden_to_action_var_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 5, 10)
 
 			# weight for value output layer
 			self.W_hidden_to_value_fc, self.b_hidden_to_value_fc = self._fc_variable([HIDDEN_SIZE, 1])
@@ -252,7 +252,7 @@ class GameACLSTMNetwork(GameACNetwork):
 			lstm_outputs = tf.reshape(lstm_outputs, [-1,HIDDEN_SIZE])
 
 			raw_pi_loc = tf.matmul(lstm_outputs, self.W_hidden_to_action_mean_fc) + self.b_hidden_to_action_mean_fc
-			raw_pi_scale = tf.matmul(lstm_outputs, self.W_hidden_to_action_var_fc) + self.b_hidden_to_action_var_fc
+			raw_pi_std = tf.matmul(lstm_outputs, self.W_hidden_to_action_var_fc) + self.b_hidden_to_action_var_fc
 			# pi_mean = tf.concat([tf.slice(raw_pi_mean,(0,0),(-1,2)), tf.nn.softplus(tf.slice(raw_pi_mean,(0,2),(-1,-1)))], axis=1)
 			# pi_mean = raw_pi_mean
 			# policy (output)
@@ -260,12 +260,10 @@ class GameACLSTMNetwork(GameACNetwork):
 			self.pi = (
 				# tf.nn.softplus(raw_pi_loc), # mean
 				# tf.nn.softplus(raw_pi_scale) #var
-				tf.clip_by_value(tf.nn.softplus(raw_pi_loc), tiny, float("inf")), # mean
-				tf.clip_by_value(tf.nn.softplus(raw_pi_scale), tiny, float("inf")) #var
+				tf.nn.softplus(raw_pi_loc), # mean
+				tf.nn.softplus(raw_pi_std) #std
 			)
 
-			self.gamma = tf.contrib.distributions.Gamma(self.pi[0], self.pi[1], allow_nan_stats=False, validate_args=True)
-			self.chosen_action = tf.clip_by_value(self.gamma.sample(), 0.1, float("inf"))
 			# value (output)
 			v_ = tf.matmul(h_fc, self.W_hidden_to_value_fc) + self.b_hidden_to_value_fc
 			self.v = tf.reshape( v_, [-1] )
@@ -291,17 +289,17 @@ class GameACLSTMNetwork(GameACNetwork):
 		# pi_out: (1,3), v_out: (1)
 		return ((pi_out[0][0], pi_out[1][0]), v_out[0])
 
-	def run_policy_action_and_value(self, sess, s_t):
-		# This run_policy_and_value() is used when forward propagating.
-		# so the step size is 1.
-		pi_out, action_out, v_out, self.lstm_state_out = sess.run( [self.pi, self.chosen_action, self.v, self.lstm_state],
-																									 feed_dict = {self.s : [s_t],
-																																self.initial_lstm_state : self.lstm_state_out,
-																																# self.initial_lstm_state0 : self.lstm_state_out[0],
-																																# self.initial_lstm_state1 : self.lstm_state_out[1],
-																																self.step_size : [1]} )
-		# pi_out: (1,3), v_out: (1)
-		return ((pi_out[0][0], pi_out[1][0]), action_out[0], v_out[0])
+	# def run_policy_action_and_value(self, sess, s_t):
+	# 	# This run_policy_and_value() is used when forward propagating.
+	# 	# so the step size is 1.
+	# 	pi_out, action_out, v_out, self.lstm_state_out = sess.run( [self.pi, self.chosen_action, self.v, self.lstm_state],
+	# 																								 feed_dict = {self.s : [s_t],
+	# 																															self.initial_lstm_state : self.lstm_state_out,
+	# 																															# self.initial_lstm_state0 : self.lstm_state_out[0],
+	# 																															# self.initial_lstm_state1 : self.lstm_state_out[1],
+	# 																															self.step_size : [1]} )
+	# 	# pi_out: (1,3), v_out: (1)
+	# 	return ((pi_out[0][0], pi_out[1][0]), action_out[0], v_out[0])
 
 	def run_policy(self, sess, s_t):
 		# This run_policy() is used for displaying the result with display tool.    
@@ -312,7 +310,7 @@ class GameACLSTMNetwork(GameACNetwork):
 																												#  self.initial_lstm_state1 : self.lstm_state_out[1],
 																												 self.step_size : [1]} )
 
-		return pi_out[0]
+		return (pi_out[0][0], pi_out[1][0])
 
 	def run_value(self, sess, s_t):
 		# This run_value() is used for calculating V for bootstrapping at the 
@@ -330,11 +328,6 @@ class GameACLSTMNetwork(GameACNetwork):
 		# roll back lstm state
 		self.lstm_state_out = prev_lstm_state_out
 		return v_out[0]
-
-	def run_policy_and_value(self, sess, s_t):
-		pi_out, v_out = sess.run( [self.pi, self.v], feed_dict = {self.s : [s_t]} )
-		# print("run_policy_and_value", pi_out, v_out)
-		return ((pi_out[0][0], pi_out[1][0]), v_out[0])
 
 	def get_vars(self):
 		return [self.W_state_to_hidden_fc, self.b_state_to_hidden_fc,
