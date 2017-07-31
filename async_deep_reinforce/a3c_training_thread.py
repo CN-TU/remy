@@ -217,10 +217,10 @@ class A3CTrainingThread(object):
     cur_learning_rate = self._anneal_learning_rate(global_t)
     # print(self.thread_index, "Still alive!", cur_learning_rate)
 
-    print("All the batch stuff", "batch_si", batch_si,
-                  "batch_a", batch_a,
-                  "batch_td", batch_td,
-                  "batch_R", batch_R)
+    # print("All the batch stuff", "batch_si", batch_si,
+    #               "batch_a", batch_a,
+    #               "batch_td", batch_td,
+    #               "batch_R", batch_R)
 
     if USE_LSTM:
       batch_si.reverse()

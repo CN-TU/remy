@@ -108,7 +108,7 @@ class GameACNetwork(object):
 		if upper is None:
 			upper = d
 		bias_shape = [output_channels]
-		weight = tf.Variable(tf.random_uniform(weight_shape, minval=lower, maxval=upper))
+		weight = tf.Variable(tf.random_uniform(weight_shape))
 		bias   = tf.Variable(tf.random_uniform(bias_shape,   minval=lower, maxval=upper))
 		return weight, bias
 
