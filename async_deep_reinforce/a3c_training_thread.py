@@ -82,15 +82,19 @@ class A3CTrainingThread(object):
 
   def choose_action(self, pi_values):
     print("choose action pi_values", pi_values)
-    actions = [norm.rvs(loc=mean, scale=np.sqrt(std)) for mean, var in zip(pi_values[0], pi_values[1])]
+    actions = [norm.rvs(loc=mean, scale=np.sqrt(var)) for mean, var in zip(pi_values[0], pi_values[1])]
     # actions[0] = max(0, actions[0]) # Make sure that multiplier isn't negative. There are no negative congestion windows. TODO: Maybe it would be a good idea?
     actions[0] = math.log(1+math.exp(actions[0].item())) # Make sure that the minimum time to wait until you send the next packet isn't negative. 
     # print("action", actions[0])
     return actions
 
-  def _record_score(self, sess, summary_writer, summary_op, score_input, score, global_t):
+  def _record_score(self, sess, summary_writer, summary_op, summary_inputs, things, global_t):
     summary_str = sess.run(summary_op, feed_dict={
-      score_input: score
+      summary_inputs["score"]: things["score"],
+      summary_inputs["entropy"]: things["entropy"],
+      summary_inputs["action_loss"]: things["action_loss"],
+      summary_inputs["value_loss"]: things["value_loss"],
+      summary_inputs["total_loss"]: things["total_loss"]
     })
     summary_writer.add_summary(summary_str, global_t)
     summary_writer.flush()
@@ -129,29 +133,29 @@ class A3CTrainingThread(object):
       print(" V={}".format(value_))
     return (0, 0, action[0])
 
-  def reward_step(self, sess, global_t, summary_writer, summary_op, score_input, reward):
+  def reward_step(self, sess, global_t, summary_writer, summary_op, summary_inputs, reward):
     self.rewards.append(reward)
 
     # There must be always at least 1 item left in the next batch:
     # one to be removed and one to finish the sequence. 
     if len(self.rewards)-1>=LOCAL_T_MAX:
-      return self.process(sess, global_t, summary_writer, summary_op, score_input)
+      return self.process(sess, global_t, summary_writer, summary_op, summary_inputs)
     # implicitly returns None otherwise
 
-  def final_step(self, sess, global_t, summary_writer, summary_op, score_input, final):
+  def final_step(self, sess, global_t, summary_writer, summary_op, summary_inputs, final):
     # if remove_last:
     #   self.actions = self.actions[:-1]
     #   self.states = self.states[:-1]
     #   # self.rewards = self.rewards[:-1]
     #   self.values = self.values[:-1]
     # if len(self.rewards) > 0:
-    #   final_output = self.process(sess, global_t, summary_writer, summary_op, score_input, final)
+    #   final_output = self.process(sess, global_t, summary_writer, summary_op, summary_inputs, final)
     # else:
     #   final_output = 0
     # return final_output
-    return self.process(sess, global_t, summary_writer, summary_op, score_input, final)
+    return self.process(sess, global_t, summary_writer, summary_op, summary_inputs, final)
 
-  def process(self, sess, global_t, summary_writer, summary_op, score_input, final=False):
+  def process(self, sess, global_t, summary_writer, summary_op, summary_inputs, final=False):
     # copy weights from shared to local
     sess.run( self.sync )
 
@@ -177,13 +181,7 @@ class A3CTrainingThread(object):
       self.local_t += 1
 
     if final:
-      # assert(False)
-      print("score={}".format(self.episode_reward/(self.local_t-self.episode_start_t)))
-      self._record_score(sess, summary_writer, summary_op, score_input,
-                          self.episode_reward, global_t) # TODO:NOW: is that "not terminal_end" correct?
       R = 0.0
-      self.episode_start_t = self.local_t
-      self.episode_reward = 0
     else:
       # print("state", self.states[LOCAL_T_MAX])
       R = self.local_network.run_value(sess, self.states[LOCAL_T_MAX])
@@ -196,7 +194,7 @@ class A3CTrainingThread(object):
     # print("values", values)
 
     batch_si = []
-    batch_a = []
+    batch_ai = []
     batch_td = []
     batch_R = []
 
@@ -209,40 +207,54 @@ class A3CTrainingThread(object):
       # a[ai] = 1
 
       batch_si.append(si)
-      batch_a.append(ai)
+      batch_ai.append(ai)
       batch_td.append(td)
       batch_R.append(R)
+
+    if final:
+      normalized_final_score = self.episode_reward/(self.local_t-self.episode_start_t)
+      print("score={}".format(normalized_final_score))
+      entropy, action_loss, value_loss, total_loss = self.local_network.run_loss(sess, batch_si[-1], batch_ai[-1], batch_td[-1], batch_R[-1])
+      things = {"score": normalized_final_score, 
+        "action_loss": action_loss.item(),
+        "value_loss": value_loss,
+        "entropy": entropy.item(),
+        "total_loss": total_loss}
+      print("things", things)
+      self._record_score(sess, summary_writer, summary_op, summary_inputs,things, global_t) # TODO:NOW: is that "not terminal_end" correct?
+      self.episode_start_t = self.local_t
+      self.episode_reward = 0
 
     print(self.thread_index, "Got the following rewards:", rewards, "values", values, "R", R)
     cur_learning_rate = self._anneal_learning_rate(global_t)
     # print(self.thread_index, "Still alive!", cur_learning_rate)
 
     # print("All the batch stuff", "batch_si", batch_si,
-    #               "batch_a", batch_a,
+    #               "batch_ai", batch_ai,
     #               "batch_td", batch_td,
     #               "batch_R", batch_R)
 
     if USE_LSTM:
       batch_si.reverse()
-      batch_a.reverse()
+      batch_ai.reverse()
       batch_td.reverse()
       batch_R.reverse()
 
       sess.run( self.apply_gradients,
                 feed_dict = {
                   self.local_network.s: batch_si,
-                  self.local_network.a: batch_a,
+                  self.local_network.a: batch_ai,
                   self.local_network.td: batch_td,
                   self.local_network.r: batch_R,
                   self.local_network.initial_lstm_state: start_lstm_state,
-                  self.local_network.step_size : [len(batch_a)],
+                  self.local_network.step_size : [len(batch_ai)],
                   self.learning_rate_input: cur_learning_rate } )
     else:
       # print("learning_rate_input", cur_learning_rate)
       sess.run( self.apply_gradients,
                 feed_dict = {
                   self.local_network.s: batch_si,
-                  self.local_network.a: batch_a,
+                  self.local_network.a: batch_ai,
                   self.local_network.td: batch_td,
                   self.local_network.r: batch_R,
                   self.learning_rate_input: cur_learning_rate} )

@@ -49,17 +49,18 @@ class GameACNetwork(object):
 
 			# entropy = 0.5 * tf.reduce_sum( tf.log(tf.clip_by_value(2*math.pi*self.current_gamma.stddev()**2, 1e-20, float("inf")) ) + 1, axis=1) # TODO: Not sure if minus is required here or not...
 			
-			entropy = -0.5 * tf.reduce_sum( tf.log(2.0*math.pi*self.pi[1]) + 1, axis=1 ) # TODO: Not sure if minus is required here or not...
+			self.entropy = entropy_beta * 0.5 * tf.reduce_sum( tf.log(2.0*math.pi*self.pi[1]) + 1, axis=1 ) # TODO: Not sure if minus is required here or not...
 			
 			# FIXME: axis=1 is stupid because now we only have one action
 			# FIXME: Is it a good idea to take the logits of a CDF?
 			#                                  this minus isn't necessary...
 			# action_loss = tf.reduce_sum( tf.square(tf.subtract( self.pi[0], self.a )), axis=1 )
-			action_loss = - tf.reduce_sum( tf.square(tf.subtract( self.pi[0], self.a ) / (2.0 * self.pi[1])), axis=1 )
+			# self.action_loss = tf.reduce_sum( tf.square(tf.subtract( self.pi[0], self.a ) / (2.0 * self.pi[1])), axis=1 )
+			self.action_loss = - tf.reduce_sum( tf.square(tf.subtract( self.pi[0], self.a ) ), axis=1 ) * self.td
 			# policy loss (output)  (Adding minus, because the original paper's objective function is for gradient ascent, but we use gradient descent optimizer.)
 			# policy_loss = - tf.reduce_sum( tf.reduce_sum( tf.multiply( log_pi, self.a ), axis=1 ) * self.td + entropy * entropy_beta )
 
-			policy_loss = - tf.reduce_sum( action_loss * self.td + entropy * entropy_beta )
+			self.policy_loss = tf.reduce_sum( self.action_loss - self.entropy )
 			# policy_loss = tf.reduce_sum( action_loss * self.td )
 
 			# R (input for value)
@@ -67,10 +68,10 @@ class GameACNetwork(object):
 			
 			# value loss (output)
 			# (Learning rate for Critic is half of Actor's, so multiply by 0.5)
-			value_loss = 0.5 * tf.nn.l2_loss(self.r - self.v)
+			self.value_loss = 0.5 * tf.nn.l2_loss(self.r - self.v)
 
 			# gradienet of policy and value are summed up
-			self.total_loss = policy_loss + value_loss
+			self.total_loss = self.policy_loss + self.value_loss
 
 	def run_policy_and_value(self, sess, s_t):
 		raise NotImplementedError()
@@ -212,8 +213,8 @@ class GameACLSTMNetwork(GameACNetwork):
 				cells, state_is_tuple=True)
 
 			# weight for policy output layer
-			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 40, 50)
-			self.W_hidden_to_action_var_fc, self.b_hidden_to_action_var_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 0, 10)
+			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 20, 30)
+			self.W_hidden_to_action_var_fc, self.b_hidden_to_action_var_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 5, 10)
 
 			# weight for value output layer
 			self.W_hidden_to_value_fc, self.b_hidden_to_value_fc = self._fc_variable([HIDDEN_SIZE, 1])
@@ -241,11 +242,11 @@ class GameACLSTMNetwork(GameACNetwork):
 			# When forward propagating, step_size is 1.
 			# (time_major = False, so output shape is [batch_size, max_time, cell.output_size])
 			lstm_outputs, self.lstm_state = tf.nn.dynamic_rnn(self.lstm,
-																												h_fc_reshaped,
-																												initial_state = self.initial_lstm_state,
-																												sequence_length = self.step_size,
-																												time_major = False,
-																												scope = scope)
+															h_fc_reshaped,
+															initial_state = self.initial_lstm_state,
+															sequence_length = self.step_size,
+															time_major = False,
+															scope = scope)
 
 			# lstm_outputs: (1,5,256) for back prop, (1,1,256) for forward prop.
 			# print("lstm_outputs", lstm_outputs)
@@ -282,34 +283,22 @@ class GameACLSTMNetwork(GameACNetwork):
 		# This run_policy_and_value() is used when forward propagating.
 		# so the step size is 1.
 		pi_out, v_out, self.lstm_state_out = sess.run( [self.pi, self.v, self.lstm_state],
-																									 feed_dict = {self.s : [s_t],
-																																self.initial_lstm_state : self.lstm_state_out,
-																																# self.initial_lstm_state : self.lstm_state_out[0],
-																																# self.initial_lstm_state1 : self.lstm_state_out[1],
-																																self.step_size : [1]} )
+														feed_dict = {self.s : [s_t],
+														self.initial_lstm_state : self.lstm_state_out,
+														# self.initial_lstm_state : self.lstm_state_out[0],
+														# self.initial_lstm_state1 : self.lstm_state_out[1],
+														self.step_size : [1]} )
 		# pi_out: (1,3), v_out: (1)
 		return ((pi_out[0][0], pi_out[1][0]), v_out[0])
-
-	# def run_policy_action_and_value(self, sess, s_t):
-	# 	# This run_policy_and_value() is used when forward propagating.
-	# 	# so the step size is 1.
-	# 	pi_out, action_out, v_out, self.lstm_state_out = sess.run( [self.pi, self.chosen_action, self.v, self.lstm_state],
-	# 																								 feed_dict = {self.s : [s_t],
-	# 																															self.initial_lstm_state : self.lstm_state_out,
-	# 																															# self.initial_lstm_state0 : self.lstm_state_out[0],
-	# 																															# self.initial_lstm_state1 : self.lstm_state_out[1],
-	# 																															self.step_size : [1]} )
-	# 	# pi_out: (1,3), v_out: (1)
-	# 	return ((pi_out[0][0], pi_out[1][0]), action_out[0], v_out[0])
 
 	def run_policy(self, sess, s_t):
 		# This run_policy() is used for displaying the result with display tool.    
 		pi_out, self.lstm_state_out = sess.run( [self.pi, self.lstm_state],
-																						feed_dict = {self.s : [s_t],
-																												self.initial_lstm_state : self.lstm_state_out,
-																												#  self.initial_lstm_state0 : self.lstm_state_out[0],
-																												#  self.initial_lstm_state1 : self.lstm_state_out[1],
-																												 self.step_size : [1]} )
+													feed_dict = {self.s : [s_t],
+													self.initial_lstm_state : self.lstm_state_out,
+													#  self.initial_lstm_state0 : self.lstm_state_out[0],
+													#  self.initial_lstm_state1 : self.lstm_state_out[1],
+													self.step_size : [1]} )
 
 		return (pi_out[0][0], pi_out[1][0])
 
@@ -320,15 +309,32 @@ class GameACLSTMNetwork(GameACNetwork):
 		# so we don't update LSTM state here.
 		prev_lstm_state_out = self.lstm_state_out
 		v_out, _ = sess.run( [self.v, self.lstm_state],
-												 feed_dict = {self.s : [s_t],
-												 							self.initial_lstm_state : self.lstm_state_out,
-																			# self.initial_lstm_state0 : self.lstm_state_out[0],
-																			# self.initial_lstm_state1 : self.lstm_state_out[1],
-																			self.step_size : [1]} )
+								feed_dict = {self.s : [s_t],
+								self.initial_lstm_state : self.lstm_state_out,
+								# self.initial_lstm_state0 : self.lstm_state_out[0],
+								# self.initial_lstm_state1 : self.lstm_state_out[1],
+								self.step_size : [1]} )
 		
 		# roll back lstm state
 		self.lstm_state_out = prev_lstm_state_out
 		return v_out[0]
+
+	def run_loss(self, sess, si, ai, td, r):
+		# This run_value() is used for calculating V for bootstrapping at the 
+		# end of LOCAL_T_MAX time step sequence.
+		# When next sequcen starts, V will be calculated again with the same state using updated network weights,
+		# so we don't update LSTM state here.
+		prev_lstm_state_out = self.lstm_state_out
+		entropy, action, value, total, _ = sess.run( [self.entropy, self.action_loss, self.value_loss, self.total_loss, self.lstm_state],
+								feed_dict = {self.s : [si], self.a: [ai], self.td: [td], self.r: [r],
+								self.initial_lstm_state : self.lstm_state_out,
+								# self.initial_lstm_state0 : self.lstm_state_out[0],
+								# self.initial_lstm_state1 : self.lstm_state_out[1],
+								self.step_size : [1]} )
+		
+		# roll back lstm state
+		self.lstm_state_out = prev_lstm_state_out
+		return entropy, action, value, total
 
 	def get_vars(self):
 		return [self.W_state_to_hidden_fc, self.b_state_to_hidden_fc,

@@ -96,8 +96,23 @@ sess.run(init)
 # print("\n\n\nRMSPropApplier", grad_applier, "\n\n\n")
 
 # summary for tensorboard
-score_input = tf.placeholder(tf.int32)
-tf.summary.scalar("score", score_input)
+score = tf.placeholder(tf.float32, name="score")
+entropy = tf.placeholder(tf.float32, name="entropy")
+action_loss = tf.placeholder(tf.float32, name="action_loss")
+value_loss = tf.placeholder(tf.float32, name="value_loss")
+total_loss = tf.placeholder(tf.float32, name="total_loss")
+tf.summary.scalar("score", score)
+tf.summary.scalar("entropy", entropy)
+tf.summary.scalar("action_loss", action_loss)
+tf.summary.scalar("value_loss", value_loss)
+tf.summary.scalar("total_loss", total_loss)
+summary_inputs = {
+  "score": score,
+  "entropy": entropy,
+  "action_loss": action_loss,
+  "value_loss": value_loss,
+  "total_loss": total_loss
+}
 
 summary_op = tf.summary.merge_all()
 summary_writer = tf.summary.FileWriter(LOG_FILE+'/'+current_datetime, sess.graph)
@@ -159,28 +174,28 @@ def create_training_thread():
 
 def delete_training_thread(thread_id):
   print("Deleting thread with id", thread_id)
-  global sess, global_t, summary_writer, summary_op, score_input
+  global sess, global_t, summary_writer, summary_op, summary_inputs
   idle_threads.add(thread_id)
   # del training_threads[thread_id]
 
 def call_process_action(thread_id, state):
   print("call_process_action", thread_id, state)
-  global sess, global_t, summary_writer, summary_op, score_input
+  global sess, global_t, summary_writer, summary_op, summary_inputs
   chosen_action = tuple(training_threads[thread_id].action_step(sess, state))
   # print("call_process_action", chosen_action)
   return chosen_action
 
 def call_process_reward(thread_id, reward):
   print("call_process_reward", thread_id, reward)
-  global sess, global_t, summary_writer, summary_op, score_input
-  diff_global_t = training_threads[thread_id].reward_step(sess, global_t, summary_writer, summary_op, score_input, reward)
+  global sess, global_t, summary_writer, summary_op, summary_inputs
+  diff_global_t = training_threads[thread_id].reward_step(sess, global_t, summary_writer, summary_op, summary_inputs, reward)
   if diff_global_t is not None:
     global_t += diff_global_t
 
 def call_process_finished(thread_id):
   print("call_process_finished", thread_id)
-  global sess, global_t, summary_writer, summary_op, score_input
-  diff_global_t = training_threads[thread_id].final_step(sess, global_t, summary_writer, summary_op, score_input, True)
+  global sess, global_t, summary_writer, summary_op, summary_inputs
+  diff_global_t = training_threads[thread_id].final_step(sess, global_t, summary_writer, summary_op, summary_inputs, True)
   global_t += diff_global_t
 
 def save_session():
@@ -213,7 +228,7 @@ def save_session():
 #       break
 
 #     diff_global_t = training_thread.process(sess, global_t, summary_writer,
-#                                             summary_op, score_input)
+#                                             summary_op, summary_inputs)
 #     global_t += diff_global_t
     
     
