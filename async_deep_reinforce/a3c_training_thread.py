@@ -82,7 +82,7 @@ class A3CTrainingThread(object):
 
   def choose_action(self, pi_values):
     print("choose action pi_values", pi_values)
-    actions = [norm.rvs(loc=mean, scale=std) for mean, std in zip(pi_values[0], pi_values[1])]
+    actions = [norm.rvs(loc=mean, scale=np.sqrt(std)) for mean, var in zip(pi_values[0], pi_values[1])]
     # actions[0] = max(0, actions[0]) # Make sure that multiplier isn't negative. There are no negative congestion windows. TODO: Maybe it would be a good idea?
     actions[0] = math.log(1+math.exp(actions[0].item())) # Make sure that the minimum time to wait until you send the next packet isn't negative. 
     # print("action", actions[0])
