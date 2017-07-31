@@ -138,7 +138,7 @@ class A3CTrainingThread(object):
       return self.process(sess, global_t, summary_writer, summary_op, score_input)
     # implicitly returns None otherwise
 
-  def final_step(self, sess, global_t, summary_writer, summary_op, score_input, final, remove_last):
+  def final_step(self, sess, global_t, summary_writer, summary_op, score_input, final):
     # if remove_last:
     #   self.actions = self.actions[:-1]
     #   self.states = self.states[:-1]

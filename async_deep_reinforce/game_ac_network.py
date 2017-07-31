@@ -49,13 +49,13 @@ class GameACNetwork(object):
 
 			# entropy = 0.5 * tf.reduce_sum( tf.log(tf.clip_by_value(2*math.pi*self.current_gamma.stddev()**2, 1e-20, float("inf")) ) + 1, axis=1) # TODO: Not sure if minus is required here or not...
 			
-			entropy = 0.5 * tf.reduce_sum( tf.log(2*math.pi*self.pi[1]) + 1, axis=1 ) # TODO: Not sure if minus is required here or not...
+			entropy = -0.5 * tf.reduce_sum( tf.log(2.0*math.pi*self.pi[1]) + 1, axis=1 ) # TODO: Not sure if minus is required here or not...
 			
 			# FIXME: axis=1 is stupid because now we only have one action
 			# FIXME: Is it a good idea to take the logits of a CDF?
 			#                                  this minus isn't necessary...
 			# action_loss = tf.reduce_sum( tf.square(tf.subtract( self.pi[0], self.a )), axis=1 )
-			action_loss = tf.reduce_sum( tf.square(tf.subtract( self.pi[0], self.a ) / (2.0 * self.pi[1])), axis=1 )
+			action_loss = - tf.reduce_sum( tf.square(tf.subtract( self.pi[0], self.a ) / (2.0 * self.pi[1])), axis=1 )
 			# policy loss (output)  (Adding minus, because the original paper's objective function is for gradient ascent, but we use gradient descent optimizer.)
 			# policy_loss = - tf.reduce_sum( tf.reduce_sum( tf.multiply( log_pi, self.a ), axis=1 ) * self.td + entropy * entropy_beta )
 
@@ -212,8 +212,8 @@ class GameACLSTMNetwork(GameACNetwork):
 				cells, state_is_tuple=True)
 
 			# weight for policy output layer
-			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 50, 60)
-			self.W_hidden_to_action_var_fc, self.b_hidden_to_action_var_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 5, 10)
+			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 40, 50)
+			self.W_hidden_to_action_var_fc, self.b_hidden_to_action_var_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 0, 10)
 
 			# weight for value output layer
 			self.W_hidden_to_value_fc, self.b_hidden_to_value_fc = self._fc_variable([HIDDEN_SIZE, 1])

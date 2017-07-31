@@ -51,7 +51,7 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
   for ( auto const &packet : packets ) {
     printf("%lu: packet.seq_num: %d, _largest_ack: %d\n", _thread_id, packet.seq_num, _largest_ack);
 
-    puts("Lost rewards at received");
+    printf("%lu: Lost rewards at received", _thread_id);
     _memory.lost(packet.seq_num-_largest_ack-1);
     put_lost_rewards(packet.seq_num-_largest_ack-1);
     _lost_since_last_time = packet.seq_num-_largest_ack-1;
@@ -98,7 +98,7 @@ void Unicorn::reset( const double & tickno )
   // _largest_ack -= 1;
   if (_thread_id > 0) {
     printf("%lu: Lost rewards at reset\n", _thread_id);
-    put_lost_rewards(_packets_sent-_largest_ack);
+    // put_lost_rewards(_packets_sent-_largest_ack);
     // _rainbow.put_reward(_thread_id, LOSS_REWARD);
     // _put_rewards += 1;
     finish();
@@ -173,15 +173,16 @@ void Unicorn::get_action(const double& tickno) {
 }
 
 void Unicorn::finish() {
-  const bool at_least_one_packet_sent = _put_actions>1;
-  if (!at_least_one_packet_sent) {
-    _rainbow.put_reward(_thread_id, LOSS_REWARD);
-    _put_rewards += 1;
-  }
+  // const bool at_least_one_packet_sent = _put_actions>1;
+  // if (!at_least_one_packet_sent) {
+  //   _rainbow.put_reward(_thread_id, LOSS_REWARD);
+  //   _put_rewards += 1;
+  // }
+  put_lost_rewards(_packets_sent-_largest_ack);
   // const bool at_least_one_packet_sent = true;
   printf("%lu: finish, _packets_sent: %u\n", _thread_id, _packets_sent);
   // _rainbow.finish(_thread_id, {_memory.field(0), _memory.field(1), _memory.field(2), _memory.field(3), _memory.field(6), (double) _the_window/WINDOW_NORMALIZER}, at_least_one_packet_sent);
-  _rainbow.finish(_thread_id, at_least_one_packet_sent);
+  _rainbow.finish(_thread_id);
 }
 
 void Unicorn::put_lost_rewards(int number) {
@@ -203,8 +204,8 @@ void Unicorn::put_lost_rewards(int number) {
 Unicorn::~Unicorn() {
   printf("Destroying Unicorn with thread id %lu\n", _thread_id);
   if (_thread_id > 0) {
-    puts("Lost rewards at destruction");
-    put_lost_rewards(_packets_sent-_largest_ack);
+    printf("%lu: Lost rewards at destruction\n", _thread_id);
+    // put_lost_rewards(_packets_sent-_largest_ack);
     // _rainbow.put_reward(_thread_id, LOSS_REWARD);
     // _put_rewards += 1;
     finish();
