@@ -2,8 +2,9 @@
 import tensorflow as tf
 import numpy as np
 
-tiny = np.finfo(np.float32).tiny
+# tiny = np.finfo(np.float32).tiny
 tiny = 1e-20
+quite_tiny = 1e-10
 
 from constants import STATE_SIZE
 from constants import HIDDEN_SIZE
@@ -279,7 +280,7 @@ class GameACLSTMNetwork(GameACNetwork):
 			# TODO: Now the network is completely linear. And can't map non-linear relationships
 			self.pi = (
 				tf.nn.softplus(raw_pi_mean), # mean
-				tf.nn.softplus(raw_pi_var) #var
+				tf.clip_by_value(tf.nn.softplus(raw_pi_var), quite_tiny, float("inf")) #var
 				# tf.clip_by_value(tf.nn.softplus(raw_pi_mean), 1.0, float("inf")), # mean
 				# tf.nn.softplus(raw_pi_var) #std
 			)
