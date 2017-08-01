@@ -56,11 +56,15 @@ class GameACNetwork(object):
 			#                                  this minus isn't necessary...
 			# action_loss = tf.reduce_sum( tf.square(tf.subtract( self.pi[0], self.a )), axis=1 )
 			# self.action_loss = tf.reduce_sum( tf.square(tf.subtract( self.pi[0], self.a ) / (2.0 * self.pi[1])), axis=1 )
-			self.action_loss = - tf.reduce_sum( tf.square(tf.subtract( self.pi[0], self.a ) ), axis=1 ) * self.td
+			self.action_loss = tf.reduce_sum( 
+				tf.contrib.distributions.Normal(
+					loc=self.pi[0], scale=tf.sqrt(self.pi[1]), allow_nan_stats=False, validate_args=True
+				).log_prob(self.a), axis=1 
+			) * self.td
 			# policy loss (output)  (Adding minus, because the original paper's objective function is for gradient ascent, but we use gradient descent optimizer.)
 			# policy_loss = - tf.reduce_sum( tf.reduce_sum( tf.multiply( log_pi, self.a ), axis=1 ) * self.td + entropy * entropy_beta )
 
-			self.policy_loss = tf.reduce_sum( self.action_loss - self.entropy )
+			self.policy_loss = - tf.reduce_sum( self.action_loss + self.entropy )
 			# policy_loss = tf.reduce_sum( action_loss * self.td )
 
 			# R (input for value)
@@ -214,7 +218,7 @@ class GameACLSTMNetwork(GameACNetwork):
 
 			# weight for policy output layer
 			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 20, 30)
-			self.W_hidden_to_action_var_fc, self.b_hidden_to_action_var_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 5, 10)
+			self.W_hidden_to_action_var_fc, self.b_hidden_to_action_var_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 1, 5)
 
 			# weight for value output layer
 			self.W_hidden_to_value_fc, self.b_hidden_to_value_fc = self._fc_variable([HIDDEN_SIZE, 1])
@@ -260,10 +264,10 @@ class GameACLSTMNetwork(GameACNetwork):
 			# policy (output)
 			# TODO: Now the network is completely linear. And can't map non-linear relationships
 			self.pi = (
-				# tf.nn.softplus(raw_pi_loc), # mean
-				# tf.nn.softplus(raw_pi_scale) #var
 				tf.nn.softplus(raw_pi_mean), # mean
-				tf.nn.softplus(raw_pi_var) #std
+				tf.nn.softplus(raw_pi_var) #var
+				# tf.clip_by_value(tf.nn.softplus(raw_pi_mean), 1.0, float("inf")), # mean
+				# tf.nn.softplus(raw_pi_var) #std
 			)
 
 			# value (output)
