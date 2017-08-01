@@ -34,6 +34,8 @@ class A3CTrainingThread(object):
     self.rewards = []
     self.values = []
 
+    self.start_lstm_states = []
+
     self.thread_index = thread_index
     self.learning_rate_input = learning_rate_input
     self.max_global_time_step = max_global_time_step
@@ -116,6 +118,12 @@ class A3CTrainingThread(object):
 
   def action_step(self, sess, state):
 
+    if len(self.actions) % LOCAL_T_MAX == 0:
+      # Sync for the next iteration
+      sess.run( self.sync )
+      if USE_LSTM:
+        self.start_lstm_states.append(self.local_network.lstm_state_out)
+
     # state = self._accumulate(state)
     # pi_, value_ = self.local_network.run_policy_and_value(sess, state)
     pi_, value_ = self.local_network.run_policy_and_value(sess, state)
@@ -157,13 +165,8 @@ class A3CTrainingThread(object):
     return self.process(sess, global_t, summary_writer, summary_op, summary_inputs, final)
 
   def process(self, sess, global_t, summary_writer, summary_op, summary_inputs, final=False):
-    # copy weights from shared to local
-    sess.run( self.sync )
 
     start_local_t = self.local_t
-
-    if USE_LSTM:
-      start_lstm_state = self.local_network.lstm_state_out
     
     print(self.thread_index, "In process: len(rewards)", len(self.rewards), "len(states)", len(self.states), "len(actions)", len(self.actions), "len(values)", len(self.values))
 
@@ -183,6 +186,8 @@ class A3CTrainingThread(object):
 
     if final:
       R = 0.0
+      if USE_LSTM:
+        self.local_network.reset_state()
     else:
       # print("state", self.states[LOCAL_T_MAX])
       R = self.local_network.run_value(sess, self.states[LOCAL_T_MAX])
@@ -230,10 +235,10 @@ class A3CTrainingThread(object):
     cur_learning_rate = self._anneal_learning_rate(global_t)
     # print(self.thread_index, "Still alive!", cur_learning_rate)
 
-    # print("All the batch stuff", "batch_si", batch_si,
-    #               "batch_ai", batch_ai,
-    #               "batch_td", batch_td,
-    #               "batch_R", batch_R)
+    print("All the batch stuff", "batch_si", batch_si,
+                  "batch_ai", batch_ai,
+                  "batch_td", batch_td,
+                  "batch_R", batch_R)
 
     if USE_LSTM:
       batch_si.reverse()
@@ -247,7 +252,7 @@ class A3CTrainingThread(object):
                   self.local_network.a: batch_ai,
                   self.local_network.td: batch_td,
                   self.local_network.r: batch_R,
-                  self.local_network.initial_lstm_state: start_lstm_state,
+                  self.local_network.initial_lstm_state: self.start_lstm_states[0],
                   self.local_network.step_size : [len(batch_ai)],
                   self.learning_rate_input: cur_learning_rate } )
     else:
@@ -272,7 +277,9 @@ class A3CTrainingThread(object):
     self.states = self.states[LOCAL_T_MAX:]
     self.values = self.values[LOCAL_T_MAX:]
     self.rewards = self.rewards[LOCAL_T_MAX:]
+    self.start_lstm_states = self.start_lstm_states[1:]
     # return advanced local step size
     diff_local_t = self.local_t - start_local_t
+
     return diff_local_t
     

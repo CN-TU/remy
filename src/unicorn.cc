@@ -57,7 +57,7 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
     _lost_since_last_time = packet.seq_num-_largest_ack-1;
 
     const double alpha = 100.0;
-    const double beta = 100.0;
+    const double beta = 10.0;
     const double packet_delay = 1.0/((packet.tick_received - packet.tick_sent)/alpha);
     // printf("%lu: last_received:%f, received:%f\n", _thread_id, _memory._last_tick_received, packet.tick_received);
     const double throughput = 1.0/((packet.tick_received-_memory._last_tick_received)/beta);
