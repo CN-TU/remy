@@ -160,8 +160,9 @@ void Unicorn::get_action(const double& tickno) {
       // _memory.field(2), 
       // _memory.field(3), 
       _memory.field(6), // loss rate
+      // (double) tickno - _last_send_time;
       (double) tickno - _memory._last_tick_sent, // time since last send
-      (double) tickno - _memory._last_tick_sent, // time since last receive
+      (double) tickno - _memory._last_tick_received, // time since last receive
       (double) _lost_since_last_time // losses since last receive
       // (tickno - _memory._last_tick_received)/LAST_SENT_TIME_NORMALIZER,
     }

@@ -10,17 +10,18 @@ from constants import HIDDEN_SIZE
 from constants import ACTION_SIZE
 from constants import N_LSTM_LAYERS
 import math
+import itertools
 
 from tensorflow.python.ops import variable_scope as vs
 
 # # Super cool for debugging reasons! 
 # def verbose(original_function):
-#     # make a new function that prints a message when original_function starts and finishes
-#     def new_function(*args, **kwargs):
-#         print('get variable:', '/'.join((tf.get_variable_scope().name, args[0])))
-#         result = original_function(*args, **kwargs)
-#         return result
-#     return new_function
+# 		# make a new function that prints a message when original_function starts and finishes
+# 		def new_function(*args, **kwargs):
+# 			print('get variable:', '/'.join((tf.get_variable_scope().name, args[0])))
+# 			result = original_function(*args, **kwargs)
+# 			return result
+# 		return new_function
 # vs.get_variable = verbose(vs.get_variable)
 
 # Actor-Critic Network Base Class
@@ -189,7 +190,20 @@ class GameACNetwork(object):
 # 						self.W_hidden_to_value_fc, self.b_hidden_to_value_fc]
 
 def create_cell(n_hidden):
-	return tf.contrib.rnn.LSTMCell(n_hidden)
+	return tf.contrib.rnn.LayerNormBasicLSTMCell(n_hidden, dropout_keep_prob=1.0)
+	# return tf.contrib.rnn.LSTMCell(n_hidden)
+
+all_cell_weight_names = ["/layer_norm_basic_lstm_cell/kernel",
+"/layer_norm_basic_lstm_cell/input/gamma",
+"/layer_norm_basic_lstm_cell/input/beta",
+"/layer_norm_basic_lstm_cell/transform/gamma",
+"/layer_norm_basic_lstm_cell/transform/beta",
+"/layer_norm_basic_lstm_cell/forget/gamma",
+"/layer_norm_basic_lstm_cell/forget/beta",
+"/layer_norm_basic_lstm_cell/output/gamma",
+"/layer_norm_basic_lstm_cell/output/beta",
+"/layer_norm_basic_lstm_cell/state/gamma",
+"/layer_norm_basic_lstm_cell/state/beta"]
 
 def lstm_state_tuple(use_np=False):
 	if not use_np:
@@ -217,8 +231,8 @@ class GameACLSTMNetwork(GameACNetwork):
 				cells, state_is_tuple=True)
 
 			# weight for policy output layer
-			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 20, 30)
-			self.W_hidden_to_action_var_fc, self.b_hidden_to_action_var_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 1, 5)
+			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 40, 50)
+			self.W_hidden_to_action_var_fc, self.b_hidden_to_action_var_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 10, 20)
 
 			# weight for value output layer
 			self.W_hidden_to_value_fc, self.b_hidden_to_value_fc = self._fc_variable([HIDDEN_SIZE, 1])
@@ -275,8 +289,8 @@ class GameACLSTMNetwork(GameACNetwork):
 			self.v = tf.reshape( v_, [-1] )
 
 			scope.reuse_variables()
-			self.W_lstms = [tf.get_variable("multi_rnn_cell/cell_"+str(index)+"/lstm_cell/kernel") for index in range(N_LSTM_LAYERS)]
-			self.b_lstms = [tf.get_variable("multi_rnn_cell/cell_"+str(index)+"/lstm_cell/bias") for index in range(N_LSTM_LAYERS)]
+
+			self.LSTM_variables = [tf.get_variable("multi_rnn_cell/cell_"+str(index)+item) for index, item in itertools.product(range(N_LSTM_LAYERS), all_cell_weight_names)]
 
 			self.reset_state()
 			
@@ -344,4 +358,4 @@ class GameACLSTMNetwork(GameACNetwork):
 		return [self.W_state_to_hidden_fc, self.b_state_to_hidden_fc,
 						self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc,
 						self.W_hidden_to_action_var_fc, self.b_hidden_to_action_var_fc,
-						self.W_hidden_to_value_fc, self.b_hidden_to_value_fc] + self.W_lstms + self.b_lstms
+						self.W_hidden_to_value_fc, self.b_hidden_to_value_fc] + self.LSTM_variables
