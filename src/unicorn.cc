@@ -155,13 +155,15 @@ void Unicorn::get_action(const double& tickno) {
   action_struct action = _rainbow.get_action(
     _thread_id, 
     {
-      _memory.field(0), 
-      _memory.field(1), 
-      _memory.field(2), 
-      _memory.field(3), 
-      _memory.field(6),
-      (double) _lost_since_last_time,
-      (tickno - _memory._last_tick_received)/LAST_SENT_TIME_NORMALIZER,
+      // _memory.field(0), 
+      // _memory.field(1), 
+      // _memory.field(2), 
+      // _memory.field(3), 
+      _memory.field(6), // loss rate
+      (double) tickno - _memory._last_tick_sent, // time since last send
+      (double) tickno - _memory._last_tick_sent, // time since last receive
+      (double) _lost_since_last_time // losses since last receive
+      // (tickno - _memory._last_tick_received)/LAST_SENT_TIME_NORMALIZER,
     }
   );
   // action.intersend /= 100.0;
