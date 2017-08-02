@@ -232,8 +232,8 @@ class GameACLSTMNetwork(GameACNetwork):
 				cells, state_is_tuple=True)
 
 			# weight for policy output layer
-			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 40, 50)
-			self.W_hidden_to_action_var_fc, self.b_hidden_to_action_var_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 10, 20)
+			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE])
+			self.W_hidden_to_action_var_fc, self.b_hidden_to_action_var_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE])
 
 			# weight for value output layer
 			self.W_hidden_to_value_fc, self.b_hidden_to_value_fc = self._fc_variable([HIDDEN_SIZE, 1])
@@ -279,7 +279,7 @@ class GameACLSTMNetwork(GameACNetwork):
 			# policy (output)
 			# TODO: Now the network is completely linear. And can't map non-linear relationships
 			self.pi = (
-				tf.nn.softplus(raw_pi_mean), # mean
+				raw_pi_mean, # mean
 				tf.clip_by_value(tf.nn.softplus(raw_pi_var), quite_tiny, float("inf")) #var
 				# tf.clip_by_value(tf.nn.softplus(raw_pi_mean), 1.0, float("inf")), # mean
 				# tf.nn.softplus(raw_pi_var) #std

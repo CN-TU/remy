@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 #include <limits>
-#include <unordered_map>
+#include <queue>
 
 #include "packet.hh"
 #include "memory.hh"
@@ -40,11 +40,17 @@ private:
   // long unsigned int _previous_attempts;
   // long unsigned int _previous_attempts_acknowledged;
   void put_lost_rewards(int number);
-  void get_action(const double & tickno);
+  void get_action(const double & tickno, const double* action_to_put);
   void finish();
   long unsigned int _put_actions;
   long unsigned int _put_rewards;
   int _lost_since_last_time;
+
+  double _throughput_acc;
+  double _delay_acc;
+  unsigned int _last_packets_received_at_send_time;
+  unsigned int _num_packets_received_from_send_time_acc;
+  std::queue<double> _receive_times_queue;
 
   // std::unordered_map<int, Packet> _sent_packets;
 

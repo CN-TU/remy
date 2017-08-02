@@ -26,13 +26,13 @@ void Unicorn::send( const unsigned int id, NextHop & next, const double & tickno
     // FIXME: Why exactly is that needed? Is it needed? Try removing it...
     /* Have we reached the end of the flow for now? */
 
-    Packet p( id, _flow_id, tickno, _packets_sent);
+    Packet p( id, _flow_id, tickno, _packets_sent, _packets_received);
     // _sent_packets.insert({_packets_sent, p});
     _packets_sent++;
 
     _memory.packet_sent( p );
     next.accept( p, tickno );
-    get_action(tickno);
+    // get_action(tickno);
     _last_send_time = tickno;
     printf("%lu: Sent packet\n", _thread_id);
   } else {

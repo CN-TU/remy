@@ -143,11 +143,8 @@ global_thread_index = 1 # TODO: Is this actually necessary?
 idle_threads = set()
 
 def create_training_thread():
-  print("Before idle_threads")
   global global_t, global_thread_index, wall_t, sess
-  # print("idle_threads", idle_threads)
   if len(idle_threads) == 0:
-    print("After idle threads none")
     print("Creating new thread", global_thread_index)
     created_thread = A3CTrainingThread(global_thread_index, global_network, initial_learning_rate,
                                         learning_rate_input,
@@ -160,7 +157,6 @@ def create_training_thread():
     # sess.run(init_new_vars)
     initialize_uninitialized(sess)
   else:
-    print("After idle threads some")
     return_index = idle_threads.pop()
     print("Recycling thread", return_index)
     created_thread = training_threads[return_index]
@@ -178,10 +174,10 @@ def delete_training_thread(thread_id):
   idle_threads.add(thread_id)
   # del training_threads[thread_id]
 
-def call_process_action(thread_id, state):
-  print("call_process_action", thread_id, state)
+def call_process_action(thread_id, state, action_to_put):
+  print("call_process_action", thread_id, state, action_to_put)
   global sess, global_t, summary_writer, summary_op, summary_inputs
-  chosen_action = tuple(training_threads[thread_id].action_step(sess, state))
+  chosen_action = tuple(training_threads[thread_id].action_step(sess, state, action_to_put))
   # print("call_process_action", chosen_action)
   return chosen_action
 

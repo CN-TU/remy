@@ -119,7 +119,9 @@ Memory::Memory( const bool is_lower_limit, const RemyBuffers::Memory & dna )
     _loss(0), //FIXME: Should change "DNA" at some point
     _last_tick_sent( 0 ),
     _last_tick_received( 0 ),
-    _min_rtt( 0 )
+    _min_rtt( 0 ),
+    _send(0),
+    _rec(0)
 {
   assert(false);
 }
