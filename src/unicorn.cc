@@ -51,17 +51,17 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
   for ( auto const &packet : packets ) {
     printf("%lu: packet.seq_num: %d, _largest_ack: %d\n", _thread_id, packet.seq_num, _largest_ack);
 
-    printf("%lu: Lost rewards at received", _thread_id);
+    printf("%lu: Lost rewards at received\n", _thread_id);
     _memory.lost(packet.seq_num-_largest_ack-1);
     put_lost_rewards(packet.seq_num-_largest_ack-1);
     _lost_since_last_time = packet.seq_num-_largest_ack-1;
 
-    const double alpha = 100.0;
+    const double alpha = 10.0;
     const double beta = 10.0;
-    const double packet_delay = 1.0/((packet.tick_received - packet.tick_sent)/alpha);
+    const double packet_delay = alpha*log(packet.tick_received - packet.tick_sent);
     // printf("%lu: last_received:%f, received:%f\n", _thread_id, _memory._last_tick_received, packet.tick_received);
-    const double throughput = 1.0/((packet.tick_received-_memory._last_tick_received)/beta);
-    const double reward = packet_delay+throughput;
+    const double throughput = beta*log(packet.tick_received-_memory._last_tick_received);
+    const double reward = throughput-packet_delay;
     printf("%lu: Calculated reward delay:%f, throughput:%f\n", _thread_id, packet_delay, throughput);
     // if (reward < 0) {
     //   printf("delay: %f, throughput: %f\n", reward_delay, reward_throughput);
@@ -163,7 +163,9 @@ void Unicorn::get_action(const double& tickno) {
       // (double) tickno - _last_send_time;
       (double) tickno - _memory._last_tick_sent, // time since last send
       (double) tickno - _memory._last_tick_received, // time since last receive
-      (double) _lost_since_last_time // losses since last receive
+      (double) _lost_since_last_time, // losses since last receive
+      _memory._send,
+      _memory._rec
       // (tickno - _memory._last_tick_received)/LAST_SENT_TIME_NORMALIZER,
     }
   );
