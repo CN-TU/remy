@@ -26,7 +26,7 @@ void Unicorn::send( const unsigned int id, NextHop & next, const double & tickno
     // FIXME: Why exactly is that needed? Is it needed? Try removing it...
     /* Have we reached the end of the flow for now? */
 
-    Packet p( id, _flow_id, tickno, _packets_sent, _packets_received);
+    Packet p( id, _flow_id, tickno, _packets_sent);
     // _sent_packets.insert({_packets_sent, p});
     _packets_sent++;
 

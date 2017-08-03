@@ -31,7 +31,7 @@ public:
 	
 	static Rainbow& getInstance();
 	long unsigned int create_thread();
-	action_struct get_action(const long unsigned int thread_id, const std::vector<double> state, const action_struct* action_to_put_struct);
+	action_struct get_action(const long unsigned int thread_id, const std::vector<double> state);
 	void put_reward(const long unsigned int thread_id, const double reward);
 	void finish(const long unsigned int thread_id);
 	void delete_thread(const long unsigned int thread_id);

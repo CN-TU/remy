@@ -26,6 +26,7 @@ public:
   double _min_rtt;
   double _send;
   double _rec;
+  int _lost_since_last_time;
   
   Memory( const std::vector< DataType > & s_data )
     : _rec_send_ewma( s_data.at( 0 ) ),
@@ -39,7 +40,8 @@ public:
       _last_tick_received( 0 ),
       _min_rtt( 0 ),
       _send (0),
-      _rec(0)
+      _rec(0),
+      _lost_since_last_time(0)
   {}
 
   Memory()
@@ -54,10 +56,11 @@ public:
       _last_tick_received( 0 ),
       _min_rtt( 0 ),
       _send(0),
-      _rec(0)
+      _rec(0),
+      _lost_since_last_time(0)
   {}
 
-  void reset( void ) { _rec_send_ewma = _rec_rec_ewma = _rtt_ratio = _slow_rec_rec_ewma = _rtt_diff = _queueing_delay = _last_tick_sent = _last_tick_received = _min_rtt = _loss = 0; }
+  void reset( void ) { _rec_send_ewma = _rec_rec_ewma = _rtt_ratio = _slow_rec_rec_ewma = _rtt_diff = _queueing_delay = _last_tick_sent = _last_tick_received = _min_rtt = _loss = _send = _rec = _lost_since_last_time = 0; }
 
   static const unsigned int datasize = 6;
 

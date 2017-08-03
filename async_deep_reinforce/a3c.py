@@ -174,10 +174,10 @@ def delete_training_thread(thread_id):
   idle_threads.add(thread_id)
   # del training_threads[thread_id]
 
-def call_process_action(thread_id, state, action_to_put):
-  print("call_process_action", thread_id, state, action_to_put)
+def call_process_action(thread_id, state):
+  print("call_process_action", thread_id, state)
   global sess, global_t, summary_writer, summary_op, summary_inputs
-  chosen_action = tuple(training_threads[thread_id].action_step(sess, state, action_to_put))
+  chosen_action = tuple(training_threads[thread_id].action_step(sess, state))
   # print("call_process_action", chosen_action)
   return chosen_action
 

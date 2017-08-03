@@ -5,6 +5,8 @@
 #include <string>
 #include <limits>
 #include <queue>
+#include <list>
+#include <tuple>
 
 #include "packet.hh"
 #include "memory.hh"
@@ -14,7 +16,7 @@
 #include <cmath>
 
 // #define MAX_WINDOW 1000000
-#define MIN_WINDOW 0.0
+#define MIN_WINDOW 1.0
 #define MAX_WINDOW 10000.0
 
 class Unicorn
@@ -39,28 +41,22 @@ private:
   Rainbow& _rainbow;
   // long unsigned int _previous_attempts;
   // long unsigned int _previous_attempts_acknowledged;
-  void put_lost_rewards(int number);
-  void get_action(const double & tickno, const double* action_to_put);
+  void put_lost_rewards();
+  void get_action(const double& tickno);
   void finish();
   long unsigned int _put_actions;
   long unsigned int _put_rewards;
-  int _lost_since_last_time;
 
-  double _throughput_acc;
-  double _delay_acc;
-  unsigned int _last_packets_received_at_send_time;
-  unsigned int _num_packets_received_from_send_time_acc;
-  std::queue<double> _receive_times_queue;
+  //                   window        received      lost          start_t end_t   delay_acc last_packet_id
+  std::list<std::tuple<unsigned int, unsigned int, unsigned int, double, double, double,   int>> _outstanding_rewards;
 
-  // std::unordered_map<int, Packet> _sent_packets;
+  // static double soft_ceil(const double x) {
+  //   return MAX_WINDOW-log(1+exp(MAX_WINDOW-x));
+  // }
 
-  static double soft_ceil(const double x) {
-    return MAX_WINDOW-log(1+exp(MAX_WINDOW-x));
-  }
-
-  static double soft_floor(const double x) {
-    return log(1+exp(x+MIN_WINDOW))-MIN_WINDOW;
-  }
+  // static double soft_floor(const double x) {
+  //   return log(1+exp(x+MIN_WINDOW))-MIN_WINDOW;
+  // }
 
 public:
   Unicorn();

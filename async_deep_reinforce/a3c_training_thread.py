@@ -116,7 +116,7 @@ class A3CTrainingThread(object):
   #     self.acc_state = np.append(self.acc_state[:,1:], state, axis=1)
   #   return self.acc_state.flatten()
 
-  def action_step(self, sess, state, action_to_put):
+  def action_step(self, sess, state):
 
     if len(self.actions) % LOCAL_T_MAX == 0:
       # Sync for the next iteration
@@ -129,10 +129,7 @@ class A3CTrainingThread(object):
     pi_, value_ = self.local_network.run_policy_and_value(sess, state)
     # assert(action[0] > 0.0)
     # print("action_step", pi_)
-    if action_to_put is None:
-      action = self.choose_action(pi_)
-    else:
-      action = [action_to_put]
+    action = self.choose_action(pi_)
     # This whole accumulation thing is just a big hack that is also used in the game implementation. Fortunately with LSTM it's not needed anymore hopefully. 
 
     self.states.append(state)

@@ -101,7 +101,7 @@ Rainbow::Rainbow() :
 	// PyGILState_Release(gstate);
 }
 
-action_struct Rainbow::get_action(const long unsigned int thread_id, const std::vector<double> state, const action_struct* action_to_put_struct) {
+action_struct Rainbow::get_action(const long unsigned int thread_id, const std::vector<double> state) {
 	std::lock_guard<std::mutex> guard(global_lock);
 	// PyGILState_STATE gstate; 
 	// gstate = PyGILState_Ensure();
@@ -110,14 +110,8 @@ action_struct Rainbow::get_action(const long unsigned int thread_id, const std::
 	for (size_t i=0; i<state.size(); i++) {
 		PyTuple_SetItem(pState, i, PyFloat_FromDouble(state[i]));
 	}
-	PyObject* action_to_put = NULL;
-	if (action_to_put_struct==NULL) {
-		Py_INCREF(Py_None); 
-		action_to_put = Py_None;
-	} else {
-		action_to_put = PyFloat_FromDouble(action_to_put_struct->window_increment);
-	}
-	PyObject* pArgs = Py_BuildValue("(iOd)", (long) thread_id, pState, action_to_put);
+
+	PyObject* pArgs = Py_BuildValue("(iO)", (long) thread_id, pState);
 
 	PyObject* pActionArrayValue = PyObject_CallObject(pActionFunc, pArgs);
 	if (pActionArrayValue == NULL) {

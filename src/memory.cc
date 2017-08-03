@@ -15,6 +15,7 @@ void Memory::lost(const int lost) {
   for (auto i=0; i<lost; i++) {
     _loss = (1 - alpha) * _loss + alpha * 1;
   }
+  _lost_since_last_time = lost;
 }
 
 void Memory::packets_received( const vector< Packet > & packets, const unsigned int flow_id,
@@ -121,7 +122,8 @@ Memory::Memory( const bool is_lower_limit, const RemyBuffers::Memory & dna )
     _last_tick_received( 0 ),
     _min_rtt( 0 ),
     _send(0),
-    _rec(0)
+    _rec(0),
+    _lost_since_last_time(0)
 {
   assert(false);
 }
