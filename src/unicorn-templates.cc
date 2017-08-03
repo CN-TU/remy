@@ -32,7 +32,15 @@ void Unicorn::send( const unsigned int id, NextHop & next, const double & tickno
 
     _memory.packet_sent( p );
     next.accept( p, tickno );
-    // get_action(tickno);
+    
+    // for (auto &tuple : _outstanding_rewards) {
+    //   printf("%lu: Seq num: %d, target num: %d\n", _thread_id, p.seq_num ,get<6>(tuple));
+    //   if (get<6>(tuple) == p.seq_num+2) {
+    //     printf("%lu: Setting end_time to %f!\n", _thread_id, p.tick_sent);
+    //     get<4>(tuple) = p.tick_sent;
+    //   }
+    // }
+
     _last_send_time = tickno;
     printf("%lu: Sent packet\n", _thread_id);
   } else {

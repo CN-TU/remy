@@ -8,8 +8,8 @@
 
 using namespace std;
 
-#define alpha 1.0
-#define beta 1.0
+#define alpha 0.1
+#define beta 0.1
 
 Unicorn::Unicorn()
   : _memory(),
@@ -50,9 +50,11 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
 
     // Add new packets to tuples
     for (auto &tuple : _outstanding_rewards) {
-      if (get<6>(tuple) == packet.seq_num) {
-        get<4>(tuple) = packet.tick_sent;
-      }
+      // printf("%lu: Seq num: %d, target num: %d\n", _thread_id, p.seq_num ,get<6>(tuple));
+      // if (get<6>(tuple) == p.seq_num+2) {
+      //   printf("%lu: Setting end_time to %f!\n", _thread_id, p.tick_sent);
+      //   get<4>(tuple) = p.tick_sent;
+      // }
       get<2>(tuple) += min(get<0>(tuple)-get<1>(tuple)-get<2>(tuple), lost_since_last_time);
       if (get<1>(tuple)+get<2>(tuple)<get<0>(tuple)) {
         get<5>(tuple) += delay;
@@ -63,6 +65,11 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
     // Check if tuple is full and if it is, put the corresponding reward for it
     for (auto &tuple : _outstanding_rewards) {
       if (get<0>(tuple) == get<1>(tuple) + get<2>(tuple)) {
+        get<4>(tuple) = packet.tick_received;
+        if (get<4>(tuple)-get<3>(tuple) == 0) {
+          printf("%lu: get<4>(tuple): %f, get<3>(tuple): %f\n", _thread_id, get<4>(tuple), get<3>(tuple));
+        }
+        assert(get<4>(tuple)-get<3>(tuple) != 0);
         const double throughput_final = alpha*log(get<1>(tuple)/(get<4>(tuple)-get<3>(tuple)));
         const double delay_final = beta*log(get<5>(tuple)/get<1>(tuple));
         printf("%lu: Calculated reward delay:%f, throughput:%f\n", _thread_id, -delay_final, throughput_final);
@@ -108,7 +115,7 @@ void Unicorn::reset( const double & tickno)
   printf("%lu: Resetting\n", _thread_id);
   // _largest_ack -= 1;
   if (_thread_id > 0) {
-    // printf("%lu: Lost rewards at reset\n", _thread_id);
+    printf("%lu: Lost rewards at reset\n", _thread_id);
     // put_lost_rewards(_packets_sent-_largest_ack);
     // _rainbow.put_reward(_thread_id, LOSS_REWARD);
     // _put_rewards += 1;
@@ -184,7 +191,8 @@ void Unicorn::get_action(const double& tickno) {
   _put_actions += 1;
 
   _the_window = window(_the_window, action.window_increment, action.window_multiple);
-  _outstanding_rewards.push_back({int(floor(_the_window)), 0, 0, tickno, -1, 0.0, _packets_sent + int(floor(_the_window))});
+  printf("%lu: target num: %d\n", _thread_id, _packets_sent + int(floor(_the_window)));
+  _outstanding_rewards.push_back({int(floor(_the_window)), 0, 0, tickno, -1.0, 0.0, _packets_sent + int(floor(_the_window))});
 }
 
 void Unicorn::finish() {
@@ -201,7 +209,6 @@ void Unicorn::finish() {
 }
 
 void Unicorn::put_lost_rewards() {
-
   // printf("%lu: Going to put loss rewards for %d intervals\n", _thread_id, number);
   for (auto &tuple : _outstanding_rewards) {
     get<2>(tuple) = get<0>(tuple) - get<1>(tuple);
@@ -216,7 +223,7 @@ void Unicorn::put_lost_rewards() {
 Unicorn::~Unicorn() {
   printf("Destroying Unicorn with thread id %lu\n", _thread_id);
   if (_thread_id > 0) {
-    // printf("%lu: Lost rewards at destruction\n", _thread_id);
+    printf("%lu: Lost rewards at destruction\n", _thread_id);
     // put_lost_rewards(_packets_sent-_largest_ack);
     // _rainbow.put_reward(_thread_id, LOSS_REWARD);
     // _put_rewards += 1;
