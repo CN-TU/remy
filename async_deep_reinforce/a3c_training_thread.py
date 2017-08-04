@@ -156,7 +156,10 @@ class A3CTrainingThread(object):
     self.states = self.states[:-actions_to_remove]
     self.values = self.values[:-actions_to_remove]
 
-    return self.process(sess, global_t, summary_writer, summary_op, summary_inputs, final)
+    if len(self.rewards) > 0:
+      return self.process(sess, global_t, summary_writer, summary_op, summary_inputs, final)
+    else:
+      return 0
 
   def process(self, sess, global_t, summary_writer, summary_op, summary_inputs, final=False):
 

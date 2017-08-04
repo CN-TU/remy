@@ -233,7 +233,7 @@ class GameACLSTMNetwork(GameACNetwork):
 
 			# weight for policy output layer
 			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE])
-			self.W_hidden_to_action_var_fc, self.b_hidden_to_action_var_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 1, 5)
+			self.W_hidden_to_action_var_fc, self.b_hidden_to_action_var_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 2, 5)
 
 			# weight for value output layer
 			self.W_hidden_to_value_fc, self.b_hidden_to_value_fc = self._fc_variable([HIDDEN_SIZE, 1])
