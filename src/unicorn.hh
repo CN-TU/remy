@@ -41,7 +41,7 @@ private:
   Rainbow& _rainbow;
   // long unsigned int _previous_attempts;
   // long unsigned int _previous_attempts_acknowledged;
-  void put_lost_rewards();
+  // void put_lost_rewards();
   void get_action(const double& tickno);
   void finish();
   long unsigned int _put_actions;

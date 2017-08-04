@@ -183,7 +183,7 @@ void Rainbow::delete_thread(const long unsigned int thread_id) {
 	// PyGILState_Release(gstate);
 }
 
-void Rainbow::finish(const long unsigned int thread_id) {
+void Rainbow::finish(const long unsigned int thread_id, size_t actions_to_remove) {
 	std::lock_guard<std::mutex> guard(global_lock);
 	// PyGILState_STATE gstate; 
 	// gstate = PyGILState_Ensure();
@@ -192,7 +192,7 @@ void Rainbow::finish(const long unsigned int thread_id) {
 	// for (size_t i=0; i<state.size(); i++) {
 	// 	PyTuple_SetItem(pState, i, PyFloat_FromDouble(state[i]));
 	// }
-	PyObject* pArgs = Py_BuildValue("(i)", (long) thread_id);
+	PyObject* pArgs = Py_BuildValue("(ii)", (long) thread_id, (long) actions_to_remove);
 	if (pArgs == NULL) {
 		PyErr_Print();
 	}

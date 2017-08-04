@@ -33,7 +33,7 @@ public:
 	long unsigned int create_thread();
 	action_struct get_action(const long unsigned int thread_id, const std::vector<double> state);
 	void put_reward(const long unsigned int thread_id, const double reward);
-	void finish(const long unsigned int thread_id);
+	void finish(const long unsigned int thread_id, size_t actions_to_remove);
 	void delete_thread(const long unsigned int thread_id);
 	void save_session();
 	void print_errors();

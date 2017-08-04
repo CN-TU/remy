@@ -72,7 +72,8 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
         assert(get<4>(tuple)-get<3>(tuple) != 0);
         const double throughput_final = alpha*log(get<1>(tuple)/(get<4>(tuple)-get<3>(tuple)));
         const double delay_final = beta*log(get<5>(tuple)/get<1>(tuple));
-        printf("%lu: Calculated reward delay:%f, throughput:%f\n", _thread_id, -delay_final, throughput_final);
+        printf("%lu: end time: %f, start time: %f\n", _thread_id, get<4>(tuple), get<3>(tuple));
+        printf("%lu: Calculated reward when receiving packet delay:%f, throughput:%f\n", _thread_id, -delay_final, throughput_final);
         _rainbow.put_reward(_thread_id, throughput_final-delay_final);
         _put_rewards += 1;
 
@@ -164,6 +165,7 @@ double Unicorn::next_event_time( const double & tickno ) const
     // }
   } else {
     /* window is currently closed */
+    // printf("%lu: Window is closed...\n", _thread_id);
     return std::numeric_limits<double>::max();
   }
 }
@@ -201,24 +203,26 @@ void Unicorn::finish() {
   //   _rainbow.put_reward(_thread_id, LOSS_REWARD);
   //   _put_rewards += 1;
   // }
-  put_lost_rewards();
+  // put_lost_rewards();
   // const bool at_least_one_packet_sent = true;
   printf("%lu: finish, _packets_sent: %u\n", _thread_id, _packets_sent);
   // _rainbow.finish(_thread_id, {_memory.field(0), _memory.field(1), _memory.field(2), _memory.field(3), _memory.field(6), (double) _the_window/WINDOW_NORMALIZER}, at_least_one_packet_sent);
-  _rainbow.finish(_thread_id);
+  _rainbow.finish(_thread_id, _outstanding_rewards.size());
+  _put_actions -= _outstanding_rewards.size();
 }
 
-void Unicorn::put_lost_rewards() {
+// void Unicorn::put_lost_rewards() {
   // printf("%lu: Going to put loss rewards for %d intervals\n", _thread_id, number);
-  for (auto &tuple : _outstanding_rewards) {
-    get<2>(tuple) = get<0>(tuple) - get<1>(tuple);
-    const double throughput_final = alpha*log(get<1>(tuple)/(get<4>(tuple)-get<3>(tuple)));
-    const double delay_final = beta*log(get<5>(tuple)/get<1>(tuple));
-    printf("%lu: Calculated reward delay:%f, throughput:%f\n", _thread_id, -delay_final, throughput_final);
-    _rainbow.put_reward(_thread_id, throughput_final-delay_final);
-    _put_rewards += 1;
-  }
-}
+  // for (auto &tuple : _outstanding_rewards) {
+  //   get<2>(tuple) = get<0>(tuple) - get<1>(tuple);
+  //   const double throughput_final = alpha*log(get<1>(tuple)/(get<4>(tuple)-get<3>(tuple)));
+  //   const double delay_final = beta*log(get<5>(tuple)/get<1>(tuple));
+  //   printf("%lu: end time: %f, start time: %f, lost: %u, received: %u, window: %u\n", _thread_id, get<4>(tuple), get<3>(tuple), get<2>(tuple), get<1>(tuple), get<0>(tuple));
+  //   printf("%lu: Calculated reward at lost packets delay:%f, throughput:%f\n", _thread_id, -delay_final, throughput_final);
+  //   _rainbow.put_reward(_thread_id, throughput_final-delay_final);
+  //   _put_rewards += 1;
+  // }
+// }
 
 Unicorn::~Unicorn() {
   printf("Destroying Unicorn with thread id %lu\n", _thread_id);

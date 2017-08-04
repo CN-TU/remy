@@ -83,7 +83,7 @@ class A3CTrainingThread(object):
     return learning_rate
 
   def choose_action(self, pi_values):
-    print("choose action pi_values", pi_values)
+    print(self.thread_index,"choose action pi_values", pi_values)
     actions = [norm.rvs(loc=mean, scale=np.sqrt(var)) for mean, var in zip(pi_values[0], pi_values[1])]
     # actions[0] = max(0, actions[0]) # Make sure that multiplier isn't negative. There are no negative congestion windows. TODO: Maybe it would be a good idea?
     # actions[0] = math.log(1+math.exp(actions[0].item())) # Make sure that the minimum time to wait until you send the next packet isn't negative. 
@@ -151,17 +151,11 @@ class A3CTrainingThread(object):
       return self.process(sess, global_t, summary_writer, summary_op, summary_inputs)
     # implicitly returns None otherwise
 
-  def final_step(self, sess, global_t, summary_writer, summary_op, summary_inputs, final):
-    # if remove_last:
-    #   self.actions = self.actions[:-1]
-    #   self.states = self.states[:-1]
-    #   # self.rewards = self.rewards[:-1]
-    #   self.values = self.values[:-1]
-    # if len(self.rewards) > 0:
-    #   final_output = self.process(sess, global_t, summary_writer, summary_op, summary_inputs, final)
-    # else:
-    #   final_output = 0
-    # return final_output
+  def final_step(self, sess, global_t, summary_writer, summary_op, summary_inputs, final, actions_to_remove):
+    self.actions = self.actions[:-actions_to_remove]
+    self.states = self.states[:-actions_to_remove]
+    self.values = self.values[:-actions_to_remove]
+
     return self.process(sess, global_t, summary_writer, summary_op, summary_inputs, final)
 
   def process(self, sess, global_t, summary_writer, summary_op, summary_inputs, final=False):

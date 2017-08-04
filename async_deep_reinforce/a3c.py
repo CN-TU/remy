@@ -188,10 +188,10 @@ def call_process_reward(thread_id, reward):
   if diff_global_t is not None:
     global_t += diff_global_t
 
-def call_process_finished(thread_id):
+def call_process_finished(thread_id, actions_to_remove):
   print("call_process_finished", thread_id)
   global sess, global_t, summary_writer, summary_op, summary_inputs
-  diff_global_t = training_threads[thread_id].final_step(sess, global_t, summary_writer, summary_op, summary_inputs, True)
+  diff_global_t = training_threads[thread_id].final_step(sess, global_t, summary_writer, summary_op, summary_inputs, True, actions_to_remove)
   global_t += diff_global_t
 
 def save_session():
