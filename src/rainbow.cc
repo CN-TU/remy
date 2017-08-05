@@ -101,7 +101,7 @@ Rainbow::Rainbow() :
 	// PyGILState_Release(gstate);
 }
 
-action_struct Rainbow::get_action(const long unsigned int thread_id, const std::vector<double> state) {
+double Rainbow::get_action(const long unsigned int thread_id, const std::vector<double> state) {
 	std::lock_guard<std::mutex> guard(global_lock);
 	// PyGILState_STATE gstate; 
 	// gstate = PyGILState_Ensure();
@@ -117,11 +117,12 @@ action_struct Rainbow::get_action(const long unsigned int thread_id, const std::
 	if (pActionArrayValue == NULL) {
 		PyErr_Print();
 	}
-	action_struct action = {
-		PyFloat_AsDouble(PyTuple_GetItem(pActionArrayValue, 0)),
-		1.0,
-		0.0,
-	};
+	// action_struct action = {
+	// 	PyFloat_AsDouble(PyTuple_GetItem(pActionArrayValue, 0)),
+	// 	1.0,
+	// 	0.0,
+	// };
+	double action = PyFloat_AsDouble(PyTuple_GetItem(pActionArrayValue, 0));
 	// printf("%f, %f, %f\n", action.window_increment, action.window_multiple, action.intersend);
 	Py_DECREF(pActionArrayValue);
 	Py_DECREF(pArgs);	

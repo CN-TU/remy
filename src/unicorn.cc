@@ -165,7 +165,7 @@ double Unicorn::next_event_time( const double & tickno ) const
 
 void Unicorn::get_action(const double& tickno, const double& end_time) {
   
-  action_struct action = _rainbow.get_action(
+  const double action = _rainbow.get_action(
     _thread_id, 
     {
       _memory.field(0),
@@ -183,11 +183,12 @@ void Unicorn::get_action(const double& tickno, const double& end_time) {
     }
   );
   // action.intersend /= 100.0;
-  printf("%lu: action is: %f, %f, %f\n", _thread_id, action.window_increment, action.window_multiple, action.intersend);
+  // printf("%lu: action is: %f, %f, %f\n", _thread_id, action.window_increment, action.window_multiple, action.intersend);
+  printf("%lu: action is: %f\n", _thread_id, action);
   _put_actions += 1;
 
   // _the_window = window(_the_window, action.window_increment, action.window_multiple);
-  _the_window = std::min(std::max(action.window_increment, MIN_WINDOW), MAX_WINDOW);
+  _the_window = std::min(std::max(action, MIN_WINDOW), MAX_WINDOW);
   printf("%lu: window: %f\n", _thread_id, _the_window);
   _outstanding_rewards.push_back({{"received", 0.0}, {"start_time", tickno}, {"end_time", end_time}, {"delay_acc", 0.0}});
   // _outstanding_rewards.push_back({int(floor(_the_window)), 0, 0, tickno, -1.0, 0.0, _packets_sent + int(floor(_the_window))});

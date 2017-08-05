@@ -5,11 +5,11 @@
 #include <mutex>
 #include <Python.h>
 
-typedef struct action_struct {
-	double window_increment;
-	double window_multiple;
-	double intersend;
-} action_struct;
+// typedef struct action_struct {
+// 	double window_increment;
+// 	double window_multiple;
+// 	double intersend;
+// } action_struct;
 
 class Rainbow
 {
@@ -31,7 +31,7 @@ public:
 	
 	static Rainbow& getInstance();
 	long unsigned int create_thread();
-	action_struct get_action(const long unsigned int thread_id, const std::vector<double> state);
+	double get_action(const long unsigned int thread_id, const std::vector<double> state);
 	void put_reward(const long unsigned int thread_id, const double reward);
 	void finish(const long unsigned int thread_id, size_t actions_to_remove);
 	void delete_thread(const long unsigned int thread_id);
