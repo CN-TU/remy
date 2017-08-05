@@ -101,17 +101,20 @@ entropy = tf.placeholder(tf.float32, name="entropy")
 action_loss = tf.placeholder(tf.float32, name="action_loss")
 value_loss = tf.placeholder(tf.float32, name="value_loss")
 total_loss = tf.placeholder(tf.float32, name="total_loss")
+window = tf.placeholder(tf.float32, name="window")
 tf.summary.scalar("score", score)
 tf.summary.scalar("entropy", entropy)
 tf.summary.scalar("action_loss", action_loss)
 tf.summary.scalar("value_loss", value_loss)
 tf.summary.scalar("total_loss", total_loss)
+tf.summary.scalar("window", window)
 summary_inputs = {
   "score": score,
   "entropy": entropy,
   "action_loss": action_loss,
   "value_loss": value_loss,
-  "total_loss": total_loss
+  "total_loss": total_loss,
+  "window": window
 }
 
 summary_op = tf.summary.merge_all()

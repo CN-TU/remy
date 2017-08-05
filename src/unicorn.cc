@@ -8,8 +8,8 @@
 
 using namespace std;
 
-#define alpha 0.1
-#define beta 0.1
+#define ALPHA 0.1
+#define BETA 0.1
 
 Unicorn::Unicorn()
   : _memory(),
@@ -50,33 +50,26 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
 
     // Add new packets to tuples
     for (auto &tuple : _outstanding_rewards) {
-      // printf("%lu: Seq num: %d, target num: %d\n", _thread_id, p.seq_num ,get<6>(tuple));
-      // if (get<6>(tuple) == p.seq_num+2) {
-      //   printf("%lu: Setting end_time to %f!\n", _thread_id, p.tick_sent);
-      //   get<4>(tuple) = p.tick_sent;
-      // }
-      get<2>(tuple) += min(get<0>(tuple)-get<1>(tuple)-get<2>(tuple), lost_since_last_time);
-      if (get<1>(tuple)+get<2>(tuple)<get<0>(tuple)) {
-        get<5>(tuple) += delay;
-        get<1>(tuple) += 1;
+      if (packet.tick_sent <= tuple["end_time"]) {
+        tuple["delay_acc"] += delay;
+        tuple["received"] += 1;
+        if (tuple["end_time"] == std::numeric_limits<double>::max()) {
+          // printf("%lu: end_time is infinity, fixing it!\n", _thread_id);
+          tuple["end_time"] = packet.tick_received;
+          // printf("%lu: tuple['end_time']=%f", _thread_id, tuple["end_time"]);
+        }
       }
     }
 
     // Check if tuple is full and if it is, put the corresponding reward for it
     for (auto &tuple : _outstanding_rewards) {
-      if (get<0>(tuple) == get<1>(tuple) + get<2>(tuple)) {
-        get<4>(tuple) = packet.tick_received;
-        if (get<4>(tuple)-get<3>(tuple) == 0) {
-          printf("%lu: get<4>(tuple): %f, get<3>(tuple): %f\n", _thread_id, get<4>(tuple), get<3>(tuple));
-        }
-        assert(get<4>(tuple)-get<3>(tuple) != 0);
-        const double throughput_final = alpha*log(get<1>(tuple)/(get<4>(tuple)-get<3>(tuple)));
-        const double delay_final = beta*log(get<5>(tuple)/get<1>(tuple));
-        printf("%lu: end time: %f, start time: %f\n", _thread_id, get<4>(tuple), get<3>(tuple));
+      if (tuple["end_time"] < packet.tick_sent) {
+        const double throughput_final = ALPHA*log(tuple["received"]/(tuple["end_time"]-tuple["start_time"]));
+        const double delay_final = BETA*log(tuple["delay_acc"]/tuple["received"]);
+        printf("%lu: end time: %f, start time: %f\n", _thread_id, tuple["end_time"], tuple["start_time"]);
         printf("%lu: Calculated reward when receiving packet delay:%f, throughput:%f\n", _thread_id, -delay_final, throughput_final);
         _rainbow.put_reward(_thread_id, throughput_final-delay_final);
         _put_rewards += 1;
-
       } else {
         break;
       }
@@ -85,7 +78,7 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
     // Remove the all the tuples for the beginning for which the reward has been accounted for
     auto i = _outstanding_rewards.begin();
     while (i != _outstanding_rewards.end()) {
-      if (get<0>(*i) == get<1>(*i) + get<2>(*i))   {
+      if ((*i)["end_time"] < packet.tick_sent) {
         _outstanding_rewards.erase(i++);  // alternatively, i = items.erase(i);
       } else {
         break;
@@ -99,7 +92,7 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
 
     _largest_ack = packet.seq_num;
 
-    get_action(packet.tick_received);
+    get_action(packet.tick_received, packet.tick_received+(packet.tick_received-packet.tick_sent));
   }
 
   // FIXME: Why could _largest_ack already be larger than the current last packet?
@@ -146,7 +139,7 @@ void Unicorn::reset( const double & tickno)
     // get_action();
   }
   printf("%lu: Starting\n", _thread_id);
-  get_action(tickno);
+  get_action(tickno, std::numeric_limits<double>::max());
 
   /* initial window and intersend time */
   // const Whisker & current_whisker( _whiskers.use_whisker( _memory, _track ) );
@@ -170,7 +163,7 @@ double Unicorn::next_event_time( const double & tickno ) const
   }
 }
 
-void Unicorn::get_action(const double& tickno) {
+void Unicorn::get_action(const double& tickno, const double& end_time) {
   
   action_struct action = _rainbow.get_action(
     _thread_id, 
@@ -180,11 +173,12 @@ void Unicorn::get_action(const double& tickno) {
       _memory.field(2), 
       _memory.field(3), 
       _memory.field(6), // loss rate
-      // (double) tickno - _memory._last_tick_sent, // time since last send
-      // (double) tickno - _memory._last_tick_received, // time since last receive
+      (double) tickno - _memory._last_tick_sent, // time since last send
+      (double) tickno - _memory._last_tick_received, // time since last receive
       (double) _memory._lost_since_last_time, // losses since last receive
       _memory._send,
       _memory._rec
+      // _the_window
       // (tickno - _memory._last_tick_received)/LAST_SENT_TIME_NORMALIZER,
     }
   );
@@ -192,9 +186,11 @@ void Unicorn::get_action(const double& tickno) {
   printf("%lu: action is: %f, %f, %f\n", _thread_id, action.window_increment, action.window_multiple, action.intersend);
   _put_actions += 1;
 
-  _the_window = window(_the_window, action.window_increment, action.window_multiple);
-  printf("%lu: target num: %d\n", _thread_id, _packets_sent + int(floor(_the_window)));
-  _outstanding_rewards.push_back({int(floor(_the_window)), 0, 0, tickno, -1.0, 0.0, _packets_sent + int(floor(_the_window))});
+  // _the_window = window(_the_window, action.window_increment, action.window_multiple);
+  _the_window = std::min(std::max(action.window_increment, MIN_WINDOW), MAX_WINDOW);
+  printf("%lu: window: %f\n", _thread_id, _the_window);
+  _outstanding_rewards.push_back({{"received", 0.0}, {"start_time", tickno}, {"end_time", end_time}, {"delay_acc", 0.0}});
+  // _outstanding_rewards.push_back({int(floor(_the_window)), 0, 0, tickno, -1.0, 0.0, _packets_sent + int(floor(_the_window))});
 }
 
 void Unicorn::finish() {
@@ -214,10 +210,10 @@ void Unicorn::finish() {
 // void Unicorn::put_lost_rewards() {
   // printf("%lu: Going to put loss rewards for %d intervals\n", _thread_id, number);
   // for (auto &tuple : _outstanding_rewards) {
-  //   get<2>(tuple) = get<0>(tuple) - get<1>(tuple);
-  //   const double throughput_final = alpha*log(get<1>(tuple)/(get<4>(tuple)-get<3>(tuple)));
-  //   const double delay_final = beta*log(get<5>(tuple)/get<1>(tuple));
-  //   printf("%lu: end time: %f, start time: %f, lost: %u, received: %u, window: %u\n", _thread_id, get<4>(tuple), get<3>(tuple), get<2>(tuple), get<1>(tuple), get<0>(tuple));
+  //   get<2>(tuple) = get<0>(tuple) - tuple["received"];
+  //   const double throughput_final = ALPHA*log(tuple["received"]/(tuple["end_time"]-tuple["start_time"]));
+  //   const double delay_final = BETA*log(tuple["delay_acc"]/tuple["received"]);
+  //   printf("%lu: end time: %f, start time: %f, lost: %u, received: %u, window: %u\n", _thread_id, tuple["end_time"], tuple["start_time"], get<2>(tuple), tuple["received"], get<0>(tuple));
   //   printf("%lu: Calculated reward at lost packets delay:%f, throughput:%f\n", _thread_id, -delay_final, throughput_final);
   //   _rainbow.put_reward(_thread_id, throughput_final-delay_final);
   //   _put_rewards += 1;

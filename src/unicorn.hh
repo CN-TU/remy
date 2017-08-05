@@ -4,9 +4,9 @@
 #include <vector>
 #include <string>
 #include <limits>
-#include <queue>
 #include <list>
-#include <tuple>
+#include <unordered_map>
+#include <string>
 
 #include "packet.hh"
 #include "memory.hh"
@@ -42,13 +42,13 @@ private:
   // long unsigned int _previous_attempts;
   // long unsigned int _previous_attempts_acknowledged;
   // void put_lost_rewards();
-  void get_action(const double& tickno);
+  void get_action(const double& tickno, const double& end_time);
   void finish();
   long unsigned int _put_actions;
   long unsigned int _put_rewards;
 
   //                   window        received      lost          start_t end_t   delay_acc last_packet_id
-  std::list<std::tuple<unsigned int, unsigned int, unsigned int, double, double, double,   int>> _outstanding_rewards;
+  std::list<std::unordered_map<std::string, double>> _outstanding_rewards;
 
   // static double soft_ceil(const double x) {
   //   return MAX_WINDOW-log(1+exp(MAX_WINDOW-x));
