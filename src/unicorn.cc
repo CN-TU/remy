@@ -62,6 +62,7 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
     }
 
     // Check if tuple is full and if it is, put the corresponding reward for it
+    size_t finished_rewards = 0;
     for (auto &tuple : _outstanding_rewards) {
       if (tuple["end_time"] < packet.tick_sent) {
         const double throughput_final = ALPHA*log(tuple["received"]/(tuple["end_time"]-tuple["start_time"]));
@@ -70,9 +71,13 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
         printf("%lu: Calculated reward when receiving packet delay:%f, throughput:%f\n", _thread_id, -delay_final, throughput_final);
         _rainbow.put_reward(_thread_id, throughput_final-delay_final);
         _put_rewards += 1;
+        finished_rewards += 1;
       } else {
         break;
       }
+    }
+    if (finished_rewards != 1) {
+      printf("%lu: finished_rewards=%lu", _thread_id, finished_rewards);
     }
 
     // Remove the all the tuples for the beginning for which the reward has been accounted for
