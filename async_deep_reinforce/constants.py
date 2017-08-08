@@ -23,7 +23,7 @@ USE_GPU = False # To use GPU, set True
 USE_LSTM = True
 N_LSTM_LAYERS = 3
 
-STATE_SIZE = 8
+STATE_SIZE = 10
 # STATE_SIZE = 7 # Using his weird hack of using the last 4 states.
 HIDDEN_SIZE = 128
 ACTION_SIZE = 1 # action size

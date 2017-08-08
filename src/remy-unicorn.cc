@@ -16,8 +16,6 @@
 
 using namespace std;
 
-#define UNUSED(x) (void)(x)
-
 void print_range( const Range & range, const string & name )
 {
   printf( "Optimizing for %s over [%f : %f : %f]\n", name.c_str(),
@@ -25,20 +23,11 @@ void print_range( const Range & range, const string & name )
 }
 
 void signal_handler(int s) {
-  // UNUSED(s);
   printf("Signal Handler: Caught signal %d\n", s);
   Rainbow& unicorn_farm = Rainbow::getInstance();
   unicorn_farm.save_session();
   exit(EXIT_SUCCESS);
 }
-
-// void debug_signal_handler(int s) {
-//   // UNUSED(s);
-//   printf("Debug Signal Handler: Caught signal %d\n",s);
-//   Rainbow& unicorn_farm = Rainbow::getInstance();
-//   unicorn_farm.print_errors();
-//   exit(EXIT_FAILURE);
-// }
 
 void unicorn_thread(const size_t thread_id, const BreederOptionsUnicorn options, const size_t iterations_per_thread) {
   printf("Creating thread no %zd\n", thread_id);

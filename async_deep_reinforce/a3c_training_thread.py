@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 import tensorflow as tf
 import numpy as np
-import scipy as sp
-from scipy.stats import norm, gamma
+import numpy.random
+# import scipy as sp
+# from scipy.stats import norm, gamma
 import random
 import time
 import sys
@@ -18,6 +19,9 @@ from constants import ACTION_SIZE
 
 LOG_INTERVAL = 100
 PERFORMANCE_LOG_INTERVAL = 1000
+
+def sigmoid(x):
+  return 1.0 / (1. + np.exp(-x))
 
 class A3CTrainingThread(object):
   def __init__(self,
@@ -82,14 +86,18 @@ class A3CTrainingThread(object):
       learning_rate = 0.0
     return learning_rate
 
-  # def choose_action(self, pi_values):
-  #   print(self.thread_index,"choose action pi_values", pi_values)
-  #   actions = [norm.rvs(loc=mean, scale=np.sqrt(var)) for mean, var in zip(pi_values[0], pi_values[1])]
-  #   # actions[0] = max(0, actions[0]) # Make sure that multiplier isn't negative. There are no negative congestion windows. TODO: Maybe it would be a good idea?
-  #   # actions[0] = math.log(1+math.exp(actions[0].item())) # Make sure that the minimum time to wait until you send the next packet isn't negative. 
-  #   actions[0] = actions[0].item()
-  #   # print("action", actions[0])
-  #   return actions
+  def choose_action(self, pi_values):
+    # print(self.thread_index,"choose action pi_values", pi_values)
+    # pi_values = (pi_values[0].astype(np.float64), pi_values[1].astype(np.float64))
+    print("pi_values", pi_values)
+    try:
+      actions = [float(np.random.binomial(n, sigmoid(p))) + 1.0 for p, n in zip(pi_values[0], pi_values[1])]
+    except:
+      print("n, p", [(n, sigmoid(p)) for p, n in zip(pi_values[0], pi_values[1])])
+      sys.exit()
+    # actions[0] = actions[0].item()
+    print("actions", actions)
+    return actions
 
   def _record_score(self, sess, summary_writer, summary_op, summary_inputs, things, global_t):
     summary_str = sess.run(summary_op, feed_dict={
@@ -125,13 +133,8 @@ class A3CTrainingThread(object):
       if USE_LSTM:
         self.start_lstm_states.append(self.local_network.lstm_state_out)
 
-    # state = self._accumulate(state)
-    # pi_, value_ = self.local_network.run_policy_and_value(sess, state)
-    pi_, action, value_ = self.local_network.run_policy_action_and_value(sess, state)
-    # assert(action[0] > 0.0)
-    # print("action_step", pi_)
-    # action = self.choose_action(pi_)
-    # This whole accumulation thing is just a big hack that is also used in the game implementation. Fortunately with LSTM it's not needed anymore hopefully. 
+    pi_, value_ = self.local_network.run_policy_and_value(sess, state)
+    action = self.choose_action(pi_)
 
     self.states.append(state)
     self.actions.append(action)
@@ -139,7 +142,11 @@ class A3CTrainingThread(object):
     self.values.append(value_)
     # if (self.thread_index == 0) and (self.local_t % LOG_INTERVAL == 0):
     if self.local_t % LOG_INTERVAL == 0:
-      print("pi={}".format(pi_))
+      print("raw pi={}".format(pi_))
+      p = sigmoid(pi_[0])
+      print("p", p)
+      mean, var = GameACLSTMNetwork.calculate_mean_and_var_from_p_and_n(p, pi_[1])
+      print("pi={}".format([mean, np.sqrt(var)]))
       print(" V={}".format(value_))
     return (action[0], 0, 0)
 
@@ -224,7 +231,7 @@ class A3CTrainingThread(object):
         "value_loss": value_loss,
         "entropy": entropy.item(),
         "total_loss": total_loss,
-        "window": window}
+        "window": window.item()}
       print("things", things)
       self._record_score(sess, summary_writer, summary_op, summary_inputs,things, global_t) # TODO:NOW: is that "not terminal_end" correct?
       self.episode_start_t = self.local_t
