@@ -86,18 +86,18 @@ class A3CTrainingThread(object):
       learning_rate = 0.0
     return learning_rate
 
-  def choose_action(self, pi_values):
-    # print(self.thread_index,"choose action pi_values", pi_values)
-    # pi_values = (pi_values[0].astype(np.float64), pi_values[1].astype(np.float64))
-    print("pi_values", pi_values)
-    try:
-      actions = [float(np.random.binomial(n, sigmoid(p))) + 1.0 for p, n in zip(pi_values[0], pi_values[1])]
-    except:
-      print("n, p", [(n, sigmoid(p)) for p, n in zip(pi_values[0], pi_values[1])])
-      sys.exit()
-    # actions[0] = actions[0].item()
-    print("actions", actions)
-    return actions
+  # def choose_action(self, pi_values):
+  #   # print(self.thread_index,"choose action pi_values", pi_values)
+  #   # pi_values = (pi_values[0].astype(np.float64), pi_values[1].astype(np.float64))
+  #   print("pi_values", pi_values)
+  #   try:
+  #     actions = [float(np.random.binomial(n, sigmoid(p))) + 1.0 for p, n in zip(pi_values[0], pi_values[1])]
+  #   except:
+  #     print("n, p", [(n, sigmoid(p)) for p, n in zip(pi_values[0], pi_values[1])])
+  #     sys.exit()
+  #   # actions[0] = actions[0].item()
+  #   print("actions", actions)
+  #   return actions
 
   def _record_score(self, sess, summary_writer, summary_op, summary_inputs, things, global_t):
     summary_str = sess.run(summary_op, feed_dict={
@@ -133,8 +133,9 @@ class A3CTrainingThread(object):
       if USE_LSTM:
         self.start_lstm_states.append(self.local_network.lstm_state_out)
 
-    pi_, value_ = self.local_network.run_policy_and_value(sess, state)
-    action = self.choose_action(pi_)
+    pi_, action, value_ = self.local_network.run_policy_action_and_value(sess, state)
+    print("pi_values:",pi_)
+    # action = self.choose_action(pi_)
 
     self.states.append(state)
     self.actions.append(action)
@@ -142,11 +143,7 @@ class A3CTrainingThread(object):
     self.values.append(value_)
     # if (self.thread_index == 0) and (self.local_t % LOG_INTERVAL == 0):
     if self.local_t % LOG_INTERVAL == 0:
-      print("raw pi={}".format(pi_))
-      p = sigmoid(pi_[0])
-      print("p", p)
-      mean, var = GameACLSTMNetwork.calculate_mean_and_var_from_p_and_n(p, pi_[1])
-      print("pi={}".format([mean, np.sqrt(var)]))
+      print("pi={}".format(pi_))
       print(" V={}".format(value_))
     return (action[0], 0, 0)
 
