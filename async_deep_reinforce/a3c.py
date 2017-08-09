@@ -33,6 +33,7 @@ from constants import RMSP_ALPHA
 from constants import GRAD_NORM_CLIP
 from constants import USE_GPU
 from constants import USE_LSTM
+from constants import PRECISION
 
 print("Loaded a3c!")
 
@@ -68,7 +69,7 @@ if USE_LSTM:
 else:
   global_network = GameACFFNetwork(-1, device)
 
-learning_rate_input = tf.placeholder("float")
+learning_rate_input = tf.placeholder(PRECISION)
 
 grad_applier = RMSPropApplier(learning_rate = learning_rate_input,
                               decay = RMSP_ALPHA,
@@ -96,12 +97,12 @@ sess.run(init)
 # print("\n\n\nRMSPropApplier", grad_applier, "\n\n\n")
 
 # summary for tensorboard
-score = tf.placeholder(tf.float32, name="score")
-entropy = tf.placeholder(tf.float32, name="entropy")
-action_loss = tf.placeholder(tf.float32, name="action_loss")
-value_loss = tf.placeholder(tf.float32, name="value_loss")
-total_loss = tf.placeholder(tf.float32, name="total_loss")
-window = tf.placeholder(tf.float32, name="window")
+score = tf.placeholder(PRECISION, name="score")
+entropy = tf.placeholder(PRECISION, name="entropy")
+action_loss = tf.placeholder(PRECISION, name="action_loss")
+value_loss = tf.placeholder(PRECISION, name="value_loss")
+total_loss = tf.placeholder(PRECISION, name="total_loss")
+window = tf.placeholder(PRECISION, name="window")
 tf.summary.scalar("score", score)
 tf.summary.scalar("entropy", entropy)
 tf.summary.scalar("action_loss", action_loss)

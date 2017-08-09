@@ -76,9 +76,9 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
         break;
       }
     }
-    if (finished_rewards != 1) {
-      printf("%lu: finished_rewards=%lu\n", _thread_id, finished_rewards);
-    }
+    // if (finished_rewards != 1) {
+    //   printf("%lu: finished_rewards=%lu\n", _thread_id, finished_rewards);
+    // }
 
     // Remove the all the tuples for the beginning for which the reward has been accounted for
     auto i = _outstanding_rewards.begin();

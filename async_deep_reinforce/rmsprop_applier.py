@@ -4,6 +4,8 @@ import tensorflow as tf
 from tensorflow.python.training import training_ops
 from tensorflow.python.training import slot_creator
 
+from constants import PRECISION
+
 class RMSPropApplier(object):
 
   def __init__(self,
@@ -40,12 +42,12 @@ class RMSPropApplier(object):
 
   def _prepare(self):
       self._learning_rate_tensor = tf.convert_to_tensor(self._learning_rate,
-                                                      name="learning_rate")
-      self._decay_tensor = tf.convert_to_tensor(self._decay, name="decay")
+                                                      name="learning_rate", dtype=PRECISION)
+      self._decay_tensor = tf.convert_to_tensor(self._decay, name="decay", dtype=PRECISION)
       self._momentum_tensor = tf.convert_to_tensor(self._momentum,
-                                                 name="momentum")
+                                                 name="momentum", dtype=PRECISION)
       self._epsilon_tensor = tf.convert_to_tensor(self._epsilon,
-                                                name="epsilon")
+                                                name="epsilon", dtype=PRECISION)
 
   def _slot_dict(self, slot_name):
     named_slots = self._slots.get(slot_name, None)

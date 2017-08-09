@@ -5,12 +5,15 @@ import numpy as np
 # tiny = np.finfo(np.float32).tiny
 tiny = 1e-20
 quite_tiny = 1e-10
-logit_quite_tiny = 15
+not_that_tiny = 1e-5
+not_tiny_at_all = 1e-1
+one = 1
 
 from constants import STATE_SIZE
 from constants import HIDDEN_SIZE
 from constants import ACTION_SIZE
 from constants import N_LSTM_LAYERS
+from constants import PRECISION
 import math
 import itertools
 import numpy as np
@@ -42,20 +45,23 @@ class GameACNetwork(object):
 	def prepare_loss(self, entropy_beta):
 		with tf.device(self._device):
 			# taken action (input for policy)
-			self.a = tf.placeholder("float", [None, self._action_size], name="a")
+			self.a = tf.placeholder(PRECISION, [None, self._action_size], name="a")
 		
 			# temporary difference (R-V) (input for policy)
-			self.td = tf.placeholder("float", [None], name="td")
+			self.td = tf.placeholder(PRECISION, [None], name="td")
 
 			# avoid NaN with clipping when value in pi becomes zero
 			# log_pi = tf.log(tf.clip_by_value(item, 1e-20, 1.0))
-			variance = tf.clip_by_value(tf.log((self.pi[1]*self.pi[1])/(self.pi[0]*self.pi[0])+1.0), tiny, float("inf"))
-			self.distribution = ds.TransformedDistribution(
-					distribution=ds.Normal(loc=tf.log(self.pi[0])-variance/2.0, scale=tf.sqrt(variance), allow_nan_stats=False, validate_args=True),
-					bijector=ds.bijectors.Exp(),
-					name="LogNormalTransformedDistribution")
-			self.distribution_mean = tf.exp(self.distribution.distribution.mean()+self.distribution.distribution.variance()/2)+1.0
-			self.chosen_action = self.distribution.sample()+1.0
+			variance = tf.log((self.pi[1]*self.pi[1])/(self.pi[0]*self.pi[0])+1.0)
+			
+			assert_op = tf.Assert(tf.reduce_all(tf.is_finite(variance)), [variance])
+			with tf.control_dependencies([assert_op]):
+				self.distribution = ds.TransformedDistribution(
+						distribution=ds.Normal(loc=tf.log(self.pi[0])-variance/2.0, scale=tf.sqrt(variance), allow_nan_stats=False, validate_args=True),
+						bijector=ds.bijectors.Exp(),
+						name="LogNormalTransformedDistribution")
+				self.distribution_mean = tf.exp(self.distribution.distribution.mean()+self.distribution.distribution.variance()/2) + 1.0
+				self.chosen_action = self.distribution.sample() + 1.0
 
 			# policy entropy
 			self.entropy = entropy_beta * (tf.reduce_sum(self.distribution.distribution.mean(), axis=1) + 0.5 * tf.reduce_sum( tf.log(2.0*math.pi*math.e*self.distribution.distribution.variance()) + 1.0, axis=1 ))
@@ -67,7 +73,7 @@ class GameACNetwork(object):
 			self.policy_loss = - tf.reduce_sum( self.action_loss + self.entropy )
 
 			# R (input for value)
-			self.r = tf.placeholder("float", [None], name="r")
+			self.r = tf.placeholder(PRECISION, [None], name="r")
 			
 			# value loss (output)
 			# (Learning rate for Critic is half of Actor's, so multiply by 0.5)
@@ -113,8 +119,8 @@ class GameACNetwork(object):
 		if upper is None:
 			upper = d
 		bias_shape = [output_channels]
-		weight = tf.Variable(tf.random_uniform(weight_shape))
-		bias   = tf.Variable(tf.random_uniform(bias_shape, minval=lower, maxval=upper))
+		weight = tf.Variable(tf.random_uniform(weight_shape, dtype=PRECISION))
+		bias   = tf.Variable(tf.random_uniform(bias_shape, minval=lower, maxval=upper, dtype=PRECISION))
 		return weight, bias
 
 # # Actor-Critic FF Network
@@ -139,7 +145,7 @@ class GameACNetwork(object):
 # 			self.W_hidden_to_value_fc, self.b_hidden_to_value_fc = self._fc_variable([HIDDEN_SIZE, 1])
 
 # 			# state (input)
-# 			self.s = tf.placeholder("float", [None, STATE_SIZE])
+# 			self.s = tf.placeholder(PRECISION, [None, STATE_SIZE])
 
 # 			# h_fc = tf.nn.relu(tf.matmul(self.s, self.W_state_to_hidden_fc) + self.b_state_to_hidden_fc)
 # 			h_fc = tf.matmul(self.s, self.W_state_to_hidden_fc) + self.b_state_to_hidden_fc
@@ -189,7 +195,7 @@ class GameACNetwork(object):
 
 def lstm_state_tuple(use_np=False):
 	if not use_np:
-		return tuple([tf.contrib.rnn.LSTMStateTuple(tf.placeholder(tf.float32, [1, HIDDEN_SIZE]),tf.placeholder(tf.float32, [1, HIDDEN_SIZE]))  for _ in range(N_LSTM_LAYERS)])
+		return tuple([tf.contrib.rnn.LSTMStateTuple(tf.placeholder(PRECISION, [1, HIDDEN_SIZE]),tf.placeholder(PRECISION, [1, HIDDEN_SIZE]))  for _ in range(N_LSTM_LAYERS)])
 	else:
 		return tuple([tf.contrib.rnn.LSTMStateTuple(np.zeros([1, HIDDEN_SIZE]),np.zeros([1, HIDDEN_SIZE]))  for _ in range(N_LSTM_LAYERS)])
 
@@ -207,10 +213,13 @@ class GameACLSTMNetwork(GameACNetwork):
 		"/layer_norm_basic_lstm_cell/output/beta",
 		"/layer_norm_basic_lstm_cell/state/gamma",
 		"/layer_norm_basic_lstm_cell/state/beta"
+		# "/basic_lstm_cell/kernel",
+		# "/basic_lstm_cell/bias"
 	]
 
 	@staticmethod
 	def create_cell(n_hidden):
+		# return tf.contrib.rnn.BasicLSTMCell(n_hidden)
 		return tf.contrib.rnn.LayerNormBasicLSTMCell(n_hidden, dropout_keep_prob=1.0)
 
 	# @staticmethod
@@ -243,14 +252,14 @@ class GameACLSTMNetwork(GameACNetwork):
 			# lower_mean_and_var = GameACLSTMNetwork.calculate_p_and_n_from_mean_and_var(1,0.5)
 			# upper_mean_and_var = GameACLSTMNetwork.calculate_p_and_n_from_mean_and_var(2,0.5)
 			# weight for policy output layer
-			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 1, 2)
-			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 5, 10)
+			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 4, 5)
+			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 10, 11)
 
 			# weight for value output layer
 			self.W_hidden_to_value_fc, self.b_hidden_to_value_fc = self._fc_variable([HIDDEN_SIZE, 1])
 
 			# state (input)
-			self.s = tf.placeholder("float", [None, STATE_SIZE])
+			self.s = tf.placeholder(PRECISION, [None, STATE_SIZE])
 		
 			h_fc = tf.matmul(self.s, self.W_state_to_hidden_fc) + self.b_state_to_hidden_fc
 			# h_fc = tf.matmul(self.s, self.W_state_to_hidden_fc) + self.b_state_to_hidden_fc
@@ -258,10 +267,10 @@ class GameACLSTMNetwork(GameACNetwork):
 			h_fc_reshaped = tf.reshape(h_fc, [1,-1,HIDDEN_SIZE])
 
 			# place holder for LSTM unrolling time step size.
-			self.step_size = tf.placeholder(tf.float32, [1])
+			self.step_size = tf.placeholder(PRECISION, [1])
 
-			# self.initial_lstm_state0 = tf.placeholder(tf.float32, [1, HIDDEN_SIZE])
-			# self.initial_lstm_state1 = tf.placeholder(tf.float32, [1, HIDDEN_SIZE])
+			# self.initial_lstm_state0 = tf.placeholder(PRECISION, [1, HIDDEN_SIZE])
+			# self.initial_lstm_state1 = tf.placeholder(PRECISION, [1, HIDDEN_SIZE])
 			# self.initial_lstm_state = tf.contrib.rnn.LSTMStateTuple(self.initial_lstm_state0,
 			# 																												self.initial_lstm_state1)
 			self.initial_lstm_state = lstm_state_tuple()
@@ -271,12 +280,14 @@ class GameACLSTMNetwork(GameACNetwork):
 			# Unrolling step size is applied via self.step_size placeholder.
 			# When forward propagating, step_size is 1.
 			# (time_major = False, so output shape is [batch_size, max_time, cell.output_size])
-			lstm_outputs, self.lstm_state = tf.nn.dynamic_rnn(self.lstm,
+			lstm_outputs, self.lstm_state = tf.nn.dynamic_rnn(
+															self.lstm,
 															h_fc_reshaped,
 															initial_state = self.initial_lstm_state,
 															sequence_length = self.step_size,
 															time_major = False,
-															scope = scope)
+															scope = scope,
+															dtype = PRECISION)
 
 			# lstm_outputs: (1,5,256) for back prop, (1,1,256) for forward prop.
 			# print("lstm_outputs", lstm_outputs)
@@ -287,8 +298,8 @@ class GameACLSTMNetwork(GameACNetwork):
 			raw_pi_std = tf.matmul(lstm_outputs, self.W_hidden_to_action_std_fc) + self.b_hidden_to_action_std_fc
 			# policy (output)
 			self.pi = (
-				tf.nn.softplus(raw_pi_mean),
-				tf.nn.softplus(raw_pi_std)
+				tf.clip_by_value(tf.nn.softplus(raw_pi_mean), not_tiny_at_all, float("inf")),
+				tf.clip_by_value(tf.nn.softplus(raw_pi_std), not_that_tiny, float("inf"))
 			)
 
 			# value (output)
@@ -297,7 +308,7 @@ class GameACLSTMNetwork(GameACNetwork):
 
 			scope.reuse_variables()
 
-			self.LSTM_variables = [tf.get_variable("multi_rnn_cell/cell_"+str(index)+item) for index, item in itertools.product(range(N_LSTM_LAYERS), GameACLSTMNetwork.ALL_CELL_WEIGHT_NAMES)]
+			self.LSTM_variables = [tf.get_variable("multi_rnn_cell/cell_"+str(index)+item, dtype=PRECISION) for index, item in itertools.product(range(N_LSTM_LAYERS), GameACLSTMNetwork.ALL_CELL_WEIGHT_NAMES)]
 
 			self.reset_state()
 			
