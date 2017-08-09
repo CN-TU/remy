@@ -189,7 +189,7 @@ void Unicorn::get_action(const double& tickno, const double& end_time) {
   );
   // action.intersend /= 100.0;
   // printf("%lu: action is: %f, %f, %f\n", _thread_id, action.window_increment, action.window_multiple, action.intersend);
-  printf("%lu: action is: %f\n", _thread_id, action);
+  // printf("%lu: action is: %f\n", _thread_id, action);
   _put_actions += 1;
 
   // _the_window = window(_the_window, action.window_increment, action.window_multiple);

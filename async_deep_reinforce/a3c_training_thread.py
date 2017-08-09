@@ -138,7 +138,10 @@ class A3CTrainingThread(object):
     # action = self.choose_action(pi_)
 
     self.states.append(state)
-    self.actions.append(action)
+    # action = np.copy(action)
+    action[0] = max(action[0], 1.0)
+    # self.actions.append(np.copy(action))
+    self.actions.append(np.copy(action))
 
     self.values.append(value_)
     # if (self.thread_index == 0) and (self.local_t % LOG_INTERVAL == 0):

@@ -52,23 +52,18 @@ class GameACNetwork(object):
 
 			# avoid NaN with clipping when value in pi becomes zero
 			# log_pi = tf.log(tf.clip_by_value(item, 1e-20, 1.0))
-			variance = tf.log((self.pi[1]*self.pi[1])/(self.pi[0]*self.pi[0])+1.0)
 			
-			assert_op = tf.Assert(tf.reduce_all(tf.is_finite(variance)), [variance])
-			with tf.control_dependencies([assert_op]):
-				self.distribution = ds.TransformedDistribution(
-						distribution=ds.Normal(loc=tf.log(self.pi[0])-variance/2.0, scale=tf.sqrt(variance), allow_nan_stats=False, validate_args=True),
-						bijector=ds.bijectors.Exp(),
-						name="LogNormalTransformedDistribution")
-				self.distribution_mean = tf.exp(self.distribution.distribution.mean()+self.distribution.distribution.variance()/2) + 1.0
-				self.chosen_action = self.distribution.sample() + 1.0
+			self.distribution = ds.Normal(loc=self.pi[0], scale=self.pi[1], allow_nan_stats=False, validate_args=True)
+			self.distribution_mean = self.distribution.mean()
+			self.chosen_action = self.distribution.sample()
 
 			# policy entropy
-			self.entropy = entropy_beta * (tf.reduce_sum(self.distribution.distribution.mean(), axis=1) + 0.5 * tf.reduce_sum( tf.log(2.0*math.pi*math.e*self.distribution.distribution.variance()) + 1.0, axis=1 ))
+			self.entropy = entropy_beta * 0.5 * tf.reduce_sum( tf.log(2.0*math.pi**self.distribution.variance()) + 1.0, axis=1 )
 			
-			self.action_loss = tf.reduce_sum(
-				self.distribution.log_prob(self.a - 1.0), axis=1
-			) * self.td
+			with tf.control_dependencies([tf.Assert(tf.reduce_all(tf.is_finite(self.distribution.log_prob(self.a))), [self.a])]):
+				self.action_loss = tf.reduce_sum(
+					self.distribution.log_prob(self.a), axis=1
+				) * self.td
 
 			self.policy_loss = - tf.reduce_sum( self.action_loss + self.entropy )
 
@@ -119,7 +114,7 @@ class GameACNetwork(object):
 		if upper is None:
 			upper = d
 		bias_shape = [output_channels]
-		weight = tf.Variable(tf.random_uniform(weight_shape, dtype=PRECISION))
+		weight = tf.Variable(tf.random_uniform(weight_shape, minval=-d, maxval=d, dtype=PRECISION))
 		bias   = tf.Variable(tf.random_uniform(bias_shape, minval=lower, maxval=upper, dtype=PRECISION))
 		return weight, bias
 
@@ -252,8 +247,8 @@ class GameACLSTMNetwork(GameACNetwork):
 			# lower_mean_and_var = GameACLSTMNetwork.calculate_p_and_n_from_mean_and_var(1,0.5)
 			# upper_mean_and_var = GameACLSTMNetwork.calculate_p_and_n_from_mean_and_var(2,0.5)
 			# weight for policy output layer
-			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 4, 5)
-			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 10, 11)
+			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 1, 2)
+			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 2, 3)
 
 			# weight for value output layer
 			self.W_hidden_to_value_fc, self.b_hidden_to_value_fc = self._fc_variable([HIDDEN_SIZE, 1])
@@ -298,7 +293,7 @@ class GameACLSTMNetwork(GameACNetwork):
 			raw_pi_std = tf.matmul(lstm_outputs, self.W_hidden_to_action_std_fc) + self.b_hidden_to_action_std_fc
 			# policy (output)
 			self.pi = (
-				tf.clip_by_value(tf.nn.softplus(raw_pi_mean), not_tiny_at_all, float("inf")),
+				tf.nn.softplus(raw_pi_mean) + 1.0,
 				tf.clip_by_value(tf.nn.softplus(raw_pi_std), not_that_tiny, float("inf"))
 			)
 
