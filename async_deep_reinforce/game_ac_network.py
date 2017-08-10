@@ -56,6 +56,8 @@ class GameACNetwork(object):
 			
 			if not LOG_NORMAL:
 				self.distribution = ds.Normal(loc=self.pi[0], scale=self.pi[1], allow_nan_stats=False, validate_args=True)
+				self.distribution_mean = self.distribution.mean()
+				self.chosen_action = self.distribution.sample() + 1.0
 			else:
 				variance = tf.log((self.pi[1]*self.pi[1])/(self.pi[0]*self.pi[0])+1.0)
 				
@@ -65,19 +67,19 @@ class GameACNetwork(object):
 							distribution=ds.Normal(loc=tf.log(self.pi[0])-variance/2.0, scale=tf.sqrt(variance), allow_nan_stats=False, validate_args=True),
 							bijector=ds.bijectors.Exp(),
 							name="LogNormalTransformedDistribution")
-
-			self.distribution_mean = self.distribution.mean()
-			self.chosen_action = self.distribution.sample()
+				self.distribution_mean = tf.exp(self.distribution.distribution.mean()+self.distribution.distribution.variance()/2)
+				self.chosen_action = self.distribution.sample() + 1.0
 
 			# policy entropy
 			if not LOG_NORMAL:
 				self.entropy = entropy_beta * 0.5 * tf.reduce_sum( tf.log(2.0*math.pi*self.distribution.variance()) + 1.0, axis=1 )
-			else:
-				self.entropy = entropy_beta * (tf.reduce_sum(self.distribution.distribution.mean(), axis=1) + 0.5 * tf.reduce_sum( tf.log(2.0*math.pi*math.e*self.distribution.distribution.variance()) + 1.0, axis=1 ))
-			
-			with tf.control_dependencies([tf.Assert(tf.reduce_all(tf.is_finite(self.distribution.log_prob(self.a))), [self.a])]):
 				self.action_loss = tf.reduce_sum(
 					self.distribution.log_prob(self.a), axis=1
+				) * self.td
+			else:
+				self.entropy = entropy_beta * (tf.reduce_sum(self.distribution.distribution.mean() + 0.5 * tf.log(2.0*math.pi*math.e*self.distribution.distribution.variance()), axis=1 ))
+				self.action_loss = tf.reduce_sum(
+					self.distribution.log_prob(self.a - 1.0), axis=1
 				) * self.td
 
 			self.policy_loss = - tf.reduce_sum( self.action_loss + self.entropy )
@@ -392,7 +394,7 @@ class GameACLSTMNetwork(GameACNetwork):
 		
 		# roll back lstm state
 		self.lstm_state_out = prev_lstm_state_out
-		return entropy, action, value, total, window
+		return entropy, action, value, total, window + 1.0
 
 	def get_vars(self):
 		return [self.W_state_to_hidden_fc, self.b_state_to_hidden_fc,
