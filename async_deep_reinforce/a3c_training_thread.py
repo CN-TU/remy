@@ -193,8 +193,6 @@ class A3CTrainingThread(object):
 
     if final:
       R = 0.0
-      if USE_LSTM:
-        self.local_network.reset_state()
     else:
       # print("state", self.states[LOCAL_T_MAX])
       R = self.local_network.run_value(sess, self.states[LOCAL_T_MAX])
@@ -224,30 +222,14 @@ class A3CTrainingThread(object):
       batch_td.append(td)
       batch_R.append(R)
 
-    if final:
-      normalized_final_score = self.episode_reward/(self.local_t-self.episode_start_t)
-      print("score={}".format(normalized_final_score))
-      entropy, action_loss, value_loss, total_loss, window, std = self.local_network.run_loss(sess, batch_si[-1], batch_ai[-1], batch_td[-1], batch_R[-1])
-      things = {"score": normalized_final_score, 
-        "action_loss": action_loss.item(),
-        "value_loss": value_loss,
-        "entropy": entropy.item(),
-        "total_loss": total_loss,
-        "window": window.item(),
-        "std": std.item()}
-      print("things", things)
-      self._record_score(sess, summary_writer, summary_op, summary_inputs,things, global_t) # TODO:NOW: is that "not terminal_end" correct?
-      self.episode_start_t = self.local_t
-      self.episode_reward = 0
-
-    print(self.thread_index, "Got the following rewards:", rewards, "values", values, "R", R)
+    # print(self.thread_index, "Got the following rewards:", rewards, "values", values, "R", R)
     cur_learning_rate = self._anneal_learning_rate(global_t)
     # print(self.thread_index, "Still alive!", cur_learning_rate)
 
-    print("All the batch stuff", "batch_si", batch_si,
-                  "batch_ai", batch_ai,
-                  "batch_td", batch_td,
-                  "batch_R", batch_R)
+    # print("All the batch stuff", "batch_si", batch_si,
+    #               "batch_ai", batch_ai,
+    #               "batch_td", batch_td,
+    #               "batch_R", batch_R)
 
     if USE_LSTM:
       batch_si.reverse()
@@ -281,6 +263,24 @@ class A3CTrainingThread(object):
       steps_per_sec = global_t / elapsed_time
       print("### Performance : {} STEPS in {:.0f} sec. {:.0f} STEPS/sec. {:.2f}M STEPS/hour".format(
         global_t,  elapsed_time, steps_per_sec, steps_per_sec * 3600 / 1000000.))
+
+    if final:
+      normalized_final_score = self.episode_reward/(self.local_t-self.episode_start_t)
+      print("score={}".format(normalized_final_score))
+      entropy, action_loss, value_loss, total_loss, window, std = self.local_network.run_loss(sess, batch_si[-1], batch_ai[-1], batch_td[-1], batch_R[-1])
+      things = {"score": normalized_final_score, 
+        "action_loss": action_loss.item(),
+        "value_loss": value_loss,
+        "entropy": entropy.item(),
+        "total_loss": total_loss,
+        "window": window.item(),
+        "std": std.item()}
+      print("things", things)
+      self._record_score(sess, summary_writer, summary_op, summary_inputs, things, global_t) # TODO:NOW: is that "not terminal_end" correct?
+      self.episode_start_t = self.local_t
+      self.episode_reward = 0
+      if USE_LSTM:
+        self.local_network.reset_state()
 
     self.actions = self.actions[LOCAL_T_MAX:]
     self.states = self.states[LOCAL_T_MAX:]

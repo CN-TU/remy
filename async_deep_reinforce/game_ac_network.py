@@ -56,8 +56,10 @@ class GameACNetwork(object):
 			
 			if not LOG_NORMAL:
 				self.distribution = ds.Normal(loc=self.pi[0], scale=self.pi[1], allow_nan_stats=False, validate_args=True)
-				self.distribution_mean = self.distribution.mean()
-				self.distribution_std = self.distribution.stddev()
+				# self.distribution_mean = self.distribution.mean()
+				# self.distribution_std = self.distribution.stddev()
+				self.distribution_mean = self.pi[0]
+				self.distribution_std = self.pi[1]
 				self.chosen_action = self.distribution.sample() + 1.0
 			else:
 				variance = tf.log((self.pi[1]*self.pi[1])/(self.pi[0]*self.pi[0])+1.0)
@@ -68,8 +70,10 @@ class GameACNetwork(object):
 							distribution=ds.Normal(loc=tf.log(self.pi[0])-variance/2.0, scale=tf.sqrt(variance), allow_nan_stats=False, validate_args=True),
 							bijector=ds.bijectors.Exp(),
 							name="LogNormalTransformedDistribution")
-				self.distribution_mean = tf.exp(self.distribution.distribution.mean()+self.distribution.distribution.variance()/2)
-				self.distribution_std = tf.sqrt((tf.exp(self.distribution.distribution.variance())-1.0) * tf.exp(2.0*self.distribution.distribution.mean()+self.distribution.distribution.variance()))
+				# self.distribution_mean = tf.exp(self.distribution.distribution.mean()+self.distribution.distribution.variance()/2)
+				# self.distribution_std = tf.sqrt((tf.exp(self.distribution.distribution.variance())-1.0) * tf.exp(2.0*self.distribution.distribution.mean()+self.distribution.distribution.variance()))
+				self.distribution_mean = self.pi[0]
+				self.distribution_std = self.pi[1]
 				self.chosen_action = self.distribution.sample() + 1.0
 
 			# policy entropy
@@ -236,16 +240,6 @@ class GameACLSTMNetwork(GameACNetwork):
 		return tf.contrib.rnn.BasicLSTMCell(n_hidden)
 		# return tf.contrib.rnn.LayerNormBasicLSTMCell(n_hidden, dropout_keep_prob=1.0)
 
-	# @staticmethod
-	# def calculate_p_and_n_from_mean_and_var(mean, var):
-	# 	# print("(1-(var/mean), (mean*mean)/(mean - var))", (1-(var/mean), (mean*mean)/(mean - var)))
-	# 	return (1-(var/mean), (mean*mean)/(mean - var))
-
-	# @staticmethod
-	# def calculate_mean_and_var_from_p_and_n(p, n):
-	# 	# print("(n*p, n*p*(1-p))", (n*p, n*p*(1-p)))
-	# 	return (n*p, n*p*(1-p))
-
 	def __init__(self,
 							 thread_index, # -1 for global
 							 device="/cpu:0" ):
@@ -267,7 +261,7 @@ class GameACLSTMNetwork(GameACNetwork):
 			# upper_mean_and_var = GameACLSTMNetwork.calculate_p_and_n_from_mean_and_var(2,0.5)
 			# weight for policy output layer
 			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 4, 5)
-			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 1, 2)
+			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 0, 1)
 
 			# weight for value output layer
 			self.W_hidden_to_value_fc, self.b_hidden_to_value_fc = self._fc_variable([HIDDEN_SIZE, 1])
