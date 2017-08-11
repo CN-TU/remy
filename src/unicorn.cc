@@ -184,7 +184,7 @@ void Unicorn::get_action(const double& tickno, const double& end_time) {
       // _memory._send,
       _memory._rec,
       _memory._last_tick_received - _memory._last_tick_sent,
-      _largest_ack + 1.0 + _the_window - _packets_sent,
+      // _largest_ack + 1.0 + _the_window - _packets_sent,
       _the_window
       // (tickno - _memory._last_tick_received)/LAST_SENT_TIME_NORMALIZER,
     }

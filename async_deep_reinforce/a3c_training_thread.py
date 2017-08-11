@@ -106,7 +106,8 @@ class A3CTrainingThread(object):
       summary_inputs["action_loss"]: things["action_loss"],
       summary_inputs["value_loss"]: things["value_loss"],
       summary_inputs["total_loss"]: things["total_loss"],
-      summary_inputs["window"]: things["window"]
+      summary_inputs["window"]: things["window"],
+      summary_inputs["std"]: things["std"]
     })
     summary_writer.add_summary(summary_str, global_t)
     summary_writer.flush()
@@ -226,13 +227,14 @@ class A3CTrainingThread(object):
     if final:
       normalized_final_score = self.episode_reward/(self.local_t-self.episode_start_t)
       print("score={}".format(normalized_final_score))
-      entropy, action_loss, value_loss, total_loss, window = self.local_network.run_loss(sess, batch_si[-1], batch_ai[-1], batch_td[-1], batch_R[-1])
+      entropy, action_loss, value_loss, total_loss, window, std = self.local_network.run_loss(sess, batch_si[-1], batch_ai[-1], batch_td[-1], batch_R[-1])
       things = {"score": normalized_final_score, 
         "action_loss": action_loss.item(),
         "value_loss": value_loss,
         "entropy": entropy.item(),
         "total_loss": total_loss,
-        "window": window.item()}
+        "window": window.item(),
+        "std": std.item()}
       print("things", things)
       self._record_score(sess, summary_writer, summary_op, summary_inputs,things, global_t) # TODO:NOW: is that "not terminal_end" correct?
       self.episode_start_t = self.local_t

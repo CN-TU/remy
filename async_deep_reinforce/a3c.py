@@ -3,12 +3,9 @@
 
 import datetime
 current_datetime = datetime.datetime.now().isoformat()[:-7]
-print("Loading a3c...")
 
 import tensorflow as tf
-print("Loaded tensorflow")
 import numpy as np
-print("Loaded numpy")
 
 import signal
 import random
@@ -34,8 +31,6 @@ from constants import GRAD_NORM_CLIP
 from constants import USE_GPU
 from constants import USE_LSTM
 from constants import PRECISION
-
-print("Loaded a3c!")
 
 def log_uniform(lo, hi, rate):
   log_lo = math.log(lo)
@@ -103,19 +98,22 @@ action_loss = tf.placeholder(PRECISION, name="action_loss")
 value_loss = tf.placeholder(PRECISION, name="value_loss")
 total_loss = tf.placeholder(PRECISION, name="total_loss")
 window = tf.placeholder(PRECISION, name="window")
+std = tf.placeholder(PRECISION, name="std")
 tf.summary.scalar("score", score)
 tf.summary.scalar("entropy", entropy)
 tf.summary.scalar("action_loss", action_loss)
 tf.summary.scalar("value_loss", value_loss)
 tf.summary.scalar("total_loss", total_loss)
 tf.summary.scalar("window", window)
+tf.summary.scalar("std", std)
 summary_inputs = {
   "score": score,
   "entropy": entropy,
   "action_loss": action_loss,
   "value_loss": value_loss,
   "total_loss": total_loss,
-  "window": window
+  "window": window,
+  "std": std
 }
 
 summary_op = tf.summary.merge_all()
@@ -143,7 +141,7 @@ else:
 training_threads = {}
 
 # First thread has index 1, 0 is invalid
-global_thread_index = 1 # TODO: Is this actually necessary?
+global_thread_index = 1
 idle_threads = set()
 
 def create_training_thread():
@@ -199,7 +197,6 @@ def call_process_finished(thread_id, actions_to_remove):
   global_t += diff_global_t
 
 def save_session():
-  return
   print("save_session")
   global global_t, sess, CHECKPOINT_DIR
   if not os.path.exists(CHECKPOINT_DIR):

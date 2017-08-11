@@ -57,6 +57,7 @@ class GameACNetwork(object):
 			if not LOG_NORMAL:
 				self.distribution = ds.Normal(loc=self.pi[0], scale=self.pi[1], allow_nan_stats=False, validate_args=True)
 				self.distribution_mean = self.distribution.mean()
+				self.distribution_std = self.distribution.stddev()
 				self.chosen_action = self.distribution.sample() + 1.0
 			else:
 				variance = tf.log((self.pi[1]*self.pi[1])/(self.pi[0]*self.pi[0])+1.0)
@@ -68,6 +69,7 @@ class GameACNetwork(object):
 							bijector=ds.bijectors.Exp(),
 							name="LogNormalTransformedDistribution")
 				self.distribution_mean = tf.exp(self.distribution.distribution.mean()+self.distribution.distribution.variance()/2)
+				self.distribution_std = tf.sqrt((tf.exp(self.distribution.distribution.variance())-1.0) * tf.exp(2.0*self.distribution.distribution.mean()+self.distribution.distribution.variance()))
 				self.chosen_action = self.distribution.sample() + 1.0
 
 			# policy entropy
@@ -214,25 +216,25 @@ def lstm_state_tuple(use_np=False):
 # Actor-Critic LSTM Network
 class GameACLSTMNetwork(GameACNetwork):
 	ALL_CELL_WEIGHT_NAMES = [
-		"/layer_norm_basic_lstm_cell/kernel",
-		"/layer_norm_basic_lstm_cell/input/gamma",
-		"/layer_norm_basic_lstm_cell/input/beta",
-		"/layer_norm_basic_lstm_cell/transform/gamma",
-		"/layer_norm_basic_lstm_cell/transform/beta",
-		"/layer_norm_basic_lstm_cell/forget/gamma",
-		"/layer_norm_basic_lstm_cell/forget/beta",
-		"/layer_norm_basic_lstm_cell/output/gamma",
-		"/layer_norm_basic_lstm_cell/output/beta",
-		"/layer_norm_basic_lstm_cell/state/gamma",
-		"/layer_norm_basic_lstm_cell/state/beta"
-		# "/basic_lstm_cell/kernel",
-		# "/basic_lstm_cell/bias"
+		# "/layer_norm_basic_lstm_cell/kernel",
+		# "/layer_norm_basic_lstm_cell/input/gamma",
+		# "/layer_norm_basic_lstm_cell/input/beta",
+		# "/layer_norm_basic_lstm_cell/transform/gamma",
+		# "/layer_norm_basic_lstm_cell/transform/beta",
+		# "/layer_norm_basic_lstm_cell/forget/gamma",
+		# "/layer_norm_basic_lstm_cell/forget/beta",
+		# "/layer_norm_basic_lstm_cell/output/gamma",
+		# "/layer_norm_basic_lstm_cell/output/beta",
+		# "/layer_norm_basic_lstm_cell/state/gamma",
+		# "/layer_norm_basic_lstm_cell/state/beta"
+		"/basic_lstm_cell/kernel",
+		"/basic_lstm_cell/bias"
 	]
 
 	@staticmethod
 	def create_cell(n_hidden):
-		# return tf.contrib.rnn.BasicLSTMCell(n_hidden)
-		return tf.contrib.rnn.LayerNormBasicLSTMCell(n_hidden, dropout_keep_prob=1.0)
+		return tf.contrib.rnn.BasicLSTMCell(n_hidden)
+		# return tf.contrib.rnn.LayerNormBasicLSTMCell(n_hidden, dropout_keep_prob=1.0)
 
 	# @staticmethod
 	# def calculate_p_and_n_from_mean_and_var(mean, var):
@@ -265,7 +267,7 @@ class GameACLSTMNetwork(GameACNetwork):
 			# upper_mean_and_var = GameACLSTMNetwork.calculate_p_and_n_from_mean_and_var(2,0.5)
 			# weight for policy output layer
 			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 4, 5)
-			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 3, 4)
+			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 1, 2)
 
 			# weight for value output layer
 			self.W_hidden_to_value_fc, self.b_hidden_to_value_fc = self._fc_variable([HIDDEN_SIZE, 1])
@@ -385,7 +387,7 @@ class GameACLSTMNetwork(GameACNetwork):
 		# When next sequcen starts, V will be calculated again with the same state using updated network weights,
 		# so we don't update LSTM state here.
 		prev_lstm_state_out = self.lstm_state_out
-		entropy, action, value, total, window, _ = sess.run( [self.entropy, self.action_loss, self.value_loss, self.total_loss, self.distribution_mean, self.lstm_state],
+		entropy, action, value, total, window, std, _ = sess.run( [self.entropy, self.action_loss, self.value_loss, self.total_loss, self.distribution_mean, self.distribution_std, self.lstm_state],
 								feed_dict = {self.s : [si], self.a: [ai], self.td: [td], self.r: [r],
 								self.initial_lstm_state : self.lstm_state_out,
 								# self.initial_lstm_state0 : self.lstm_state_out[0],
@@ -394,7 +396,7 @@ class GameACLSTMNetwork(GameACNetwork):
 		
 		# roll back lstm state
 		self.lstm_state_out = prev_lstm_state_out
-		return entropy, action, value, total, window + 1.0
+		return entropy, action, value, total, window + 1.0, std
 
 	def get_vars(self):
 		return [self.W_state_to_hidden_fc, self.b_state_to_hidden_fc,

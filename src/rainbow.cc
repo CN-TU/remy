@@ -5,7 +5,8 @@
 #include <cstdio>
 #include <cerrno>
 #include <cmath>
-// #include <Python.h>
+
+using namespace std;
 
 Rainbow& Rainbow::getInstance() {
 	// Apparently in C++11 all that code is thread_safe...

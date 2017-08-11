@@ -19,7 +19,7 @@ INITIAL_ALPHA_LOG_RATE = 0.4226 # log_uniform interpolate rate for learning rate
 GAMMA = 0.99 # discount factor for rewards
 # ENTROPY_BETA = 0.01 # entropy regurarlization constant (discrete actions)
 # ENTROPY_BETA = 10**(-4) # entropy regurarlization constant (continuous actions)
-ENTROPY_BETA = 10**(-4) # entropy regurarlization constant (continuous actions)
+ENTROPY_BETA = 10**(-3) # entropy regurarlization constant (continuous actions)
 MAX_TIME_STEP = 10 * 10**7
 GRAD_NORM_CLIP = 40.0 # gradient norm clipping
 USE_GPU = False # To use GPU, set True
@@ -27,7 +27,7 @@ USE_GPU = False # To use GPU, set True
 USE_LSTM = True
 N_LSTM_LAYERS = 3
 
-STATE_SIZE = 8
+STATE_SIZE = 9
 # STATE_SIZE = 7 # Using his weird hack of using the last 4 states.
 HIDDEN_SIZE = 128
 ACTION_SIZE = 1 # action size
