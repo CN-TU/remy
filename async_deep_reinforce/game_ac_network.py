@@ -261,7 +261,7 @@ class GameACLSTMNetwork(GameACNetwork):
 			# upper_mean_and_var = GameACLSTMNetwork.calculate_p_and_n_from_mean_and_var(2,0.5)
 			# weight for policy output layer
 			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 4, 5)
-			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 0, 1)
+			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, ACTION_SIZE], 1, 2)
 
 			# weight for value output layer
 			self.W_hidden_to_value_fc, self.b_hidden_to_value_fc = self._fc_variable([HIDDEN_SIZE, 1])
@@ -307,7 +307,8 @@ class GameACLSTMNetwork(GameACNetwork):
 			# policy (output)
 			self.pi = (
 				tf.nn.softplus(raw_pi_mean) + 1.0,
-				tf.nn.softplus(raw_pi_std) + 1.0
+				tf.nn.softplus(raw_pi_std) + 1.0 #FIXME: Not smooth but makes sure that it cannot get stuck somewhere
+				# tf.clip_by_value(tf.nn.softplus(raw_pi_std), quite_tiny, float("inf"))
 			)
 
 			# value (output)
