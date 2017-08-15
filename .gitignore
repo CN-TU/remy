@@ -5,6 +5,7 @@ Makefile
 Makefile.in
 *.log
 *.trs
+*.tmp
 
 /.vscode
 

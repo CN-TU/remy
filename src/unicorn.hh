@@ -4,7 +4,8 @@
 #include <vector>
 #include <string>
 #include <limits>
-#include <list>
+// #include <list>
+#include <map>
 #include <unordered_map>
 #include <string>
 
@@ -42,13 +43,14 @@ private:
   // long unsigned int _previous_attempts;
   // long unsigned int _previous_attempts_acknowledged;
   // void put_lost_rewards();
-  void get_action(const double& tickno, const double& end_time);
+  void get_action(const double& tickno);
   void finish();
   long unsigned int _put_actions;
   long unsigned int _put_rewards;
 
-  //                   window        received      lost          start_t end_t   delay_acc last_packet_id
-  std::list<std::unordered_map<std::string, double>> _outstanding_rewards;
+  // std::list<std::unordered_map<std::string, double>> _outstanding_rewards;
+  std::map<uint32_t, std::unordered_map<std::string, double>> _outstanding_rewards;
+  // std::unordered_map<uint32t_t, uint32_t> _packet_to_action;
 
   // static double soft_ceil(const double x) {
   //   return MAX_WINDOW-log(1+exp(MAX_WINDOW-x));

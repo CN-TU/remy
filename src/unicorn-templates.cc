@@ -17,17 +17,13 @@ void Unicorn::send( const unsigned int id, NextHop & next, const double & tickno
     return;
   }
 
-  // printf("Memory fields: %f,%f,%f,%f\n", _memory.field(0), _memory.field(1), _memory.field(2), _memory.field(3));
-
   if (
-    (int(_packets_sent) < _largest_ack + 1 + int(_the_window) ) && 
+    (int(_packets_sent) < _largest_ack + 1 + int(_the_window) ) &&
     // (_last_send_time + _intersend_time <= tickno) && 
     (_packets_sent < packets_sent_cap)) {
-    // FIXME: Why exactly is that needed? Is it needed? Try removing it...
-    /* Have we reached the end of the flow for now? */
 
-    Packet p( id, _flow_id, tickno, _packets_sent);
-    // _sent_packets.insert({_packets_sent, p});
+    Packet p( id, _flow_id, tickno, _packets_sent, _put_actions );
+    _outstanding_rewards[_put_actions]["sent"] += 1;
     _packets_sent++;
 
     _memory.packet_sent( p );
