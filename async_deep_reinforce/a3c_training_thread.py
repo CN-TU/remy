@@ -16,6 +16,8 @@ from constants import LOCAL_T_MAX
 from constants import ENTROPY_BETA
 from constants import USE_LSTM
 from constants import ACTION_SIZE
+from constants import ALPHA
+from constants import BETA
 
 LOG_INTERVAL = 100
 PERFORMANCE_LOG_INTERVAL = 1000
@@ -36,6 +38,7 @@ class A3CTrainingThread(object):
     self.states = []
     self.actions = []
     self.rewards = []
+    self.durations = []
     self.values = []
 
     self.start_lstm_states = []
@@ -70,7 +73,8 @@ class A3CTrainingThread(object):
 
     self.initial_learning_rate = initial_learning_rate
 
-    self.episode_reward = 0
+    self.episode_reward_throughput = 0
+    self.episode_reward_delay = 0
 
     # variable controlling log output
     self.prev_local_t = 0
@@ -86,22 +90,10 @@ class A3CTrainingThread(object):
       learning_rate = 0.0
     return learning_rate
 
-  # def choose_action(self, pi_values):
-  #   # print(self.thread_index,"choose action pi_values", pi_values)
-  #   # pi_values = (pi_values[0].astype(np.float64), pi_values[1].astype(np.float64))
-  #   print("pi_values", pi_values)
-  #   try:
-  #     actions = [float(np.random.binomial(n, sigmoid(p))) + 1.0 for p, n in zip(pi_values[0], pi_values[1])]
-  #   except:
-  #     print("n, p", [(n, sigmoid(p)) for p, n in zip(pi_values[0], pi_values[1])])
-  #     sys.exit()
-  #   # actions[0] = actions[0].item()
-  #   print("actions", actions)
-  #   return actions
-
   def _record_score(self, sess, summary_writer, summary_op, summary_inputs, things, global_t):
     summary_str = sess.run(summary_op, feed_dict={
-      summary_inputs["score"]: things["score"],
+      summary_inputs["score_throughput"]: things["score_throughput"],
+      summary_inputs["score_delay"]: things["score_delay"],
       summary_inputs["entropy"]: things["entropy"],
       summary_inputs["action_loss"]: things["action_loss"],
       summary_inputs["value_loss"]: things["value_loss"],
@@ -152,8 +144,9 @@ class A3CTrainingThread(object):
       print(" V={}".format(value_))
     return (action[0], 0, 0)
 
-  def reward_step(self, sess, global_t, summary_writer, summary_op, summary_inputs, reward):
-    self.rewards.append(reward)
+  def reward_step(self, sess, global_t, summary_writer, summary_op, summary_inputs, reward_throughput, reward_delay, duration):
+    self.rewards.append((reward_throughput, reward_delay))
+    self.durations.append(duration)
 
     # There must be always at least 1 item left in the next batch:
     # one to be removed and one to finish the sequence. 
@@ -175,16 +168,20 @@ class A3CTrainingThread(object):
 
     start_local_t = self.local_t
     
-    print(self.thread_index, "In process: len(rewards)", len(self.rewards), "len(states)", len(self.states), "len(actions)", len(self.actions), "len(values)", len(self.values))
+    print(self.thread_index, "In process: len(rewards)", len(self.rewards), "len(durations)", len(self.durations), "len(states)", len(self.states), "len(actions)", len(self.actions), "len(values)", len(self.values))
 
     actions = self.actions[:LOCAL_T_MAX]
     states = self.states[:LOCAL_T_MAX]
     rewards = self.rewards[:LOCAL_T_MAX]
+    durations = self.durations[:LOCAL_T_MAX]
     values = self.values[:LOCAL_T_MAX]
+
+    print(self.thread_index, "In process: rewards", rewards, "durations", durations, "states", states, "actions", actions, "values", values)
 
     # t_max times loop
     for i in range(len(rewards)):
-      self.episode_reward += rewards[i]
+      self.episode_reward_throughput += rewards[i][0]*ALPHA
+      self.episode_reward_delay += rewards[i][1]*BETA
 
       # clip reward
       # rewards[i] = np.clip(rewards[i], -1, 1) ) # TODO: Why do this? Is the range from -1 to 1 problem-specific?
@@ -192,11 +189,18 @@ class A3CTrainingThread(object):
       self.local_t += 1
 
     if final:
-      R = 0.0
+      # R_throughput = R_delay = 0.0
+      # FIXME: This is a hack! It should evaluate how good the very last state is after the last action
+      R_throughput, R_delay = self.local_network.run_value(sess, self.states[-1])
+      print("R_throughput, R_delay", R_throughput, R_delay)
     else:
-      # print("state", self.states[LOCAL_T_MAX])
-      R = self.local_network.run_value(sess, self.states[LOCAL_T_MAX])
-    # print(self.thread_index, "initial R", R)
+      R_throughput, R_delay = self.local_network.run_value(sess, self.states[LOCAL_T_MAX])
+      print("R_throughput, R_delay", R_throughput, R_delay)
+
+    # R_throughput = R_delay = 0.0
+    R_throughput = np.exp(R_throughput)
+    R_delay = np.exp(-R_delay)*R_throughput
+    print("exp(R_throughput), exp(R_delay)", R_throughput, R_delay)
 
     actions.reverse()
     states.reverse()
@@ -206,55 +210,70 @@ class A3CTrainingThread(object):
 
     batch_si = []
     batch_ai = []
-    batch_td = []
-    batch_R = []
+    batch_td_throughput = []
+    batch_td_delay = []
+    batch_R_throughput = []
+    batch_R_delay = []
 
     # compute and accmulate gradients
-    for(ai, ri, si, Vi) in zip(actions, rewards, states, values):
-      R = ri + GAMMA * R
-      # print("R", R, "Vi", Vi)
-      td = R - Vi
-      # a = np.zeros([ACTION_SIZE])
-      # a[ai] = 1
+    for(ai, ri, di, si, Vi) in zip(actions, rewards, durations, states, values):
+      # print("ri[0]/di + GAMMA * R_throughput", ri[0]/di, GAMMA, R_throughput)
+      R_throughput = ri[0]*ALPHA + GAMMA * R_throughput
+      td_throughput = np.log(R_throughput) - Vi[0]
+
+      # print("(ri[1]/ri[0]) + GAMMA * R_delay", average_delay, GAMMA, R_delay)
+      R_delay = ri[1] + GAMMA * R_delay
+      td_delay = -np.log(R_delay/R_throughput) - Vi[1]
 
       batch_si.append(si)
       batch_ai.append(ai)
-      batch_td.append(td)
-      batch_R.append(R)
+      batch_td_throughput.append(td_throughput)
+      batch_td_delay.append(td_delay)
+      batch_R_throughput.append(np.log(R_throughput))
+      batch_R_delay.append(-np.log(R_delay/R_throughput))
+
+      print("batch_td_throughput[-1]", batch_td_throughput[-1], "batch_td_delay[-1]", batch_td_delay[-1], "batch_R_throughput[-1]", batch_R_throughput[-1], "batch_R_delay[-1]", batch_R_delay[-1])
+
+      assert(np.isfinite(batch_td_throughput[-1]))
+      assert(np.isfinite(batch_td_delay[-1]))
+      assert(np.isfinite(batch_R_throughput[-1]))
+      assert(np.isfinite(batch_R_delay[-1]))
 
     # print(self.thread_index, "Got the following rewards:", rewards, "values", values, "R", R)
     cur_learning_rate = self._anneal_learning_rate(global_t)
     # print(self.thread_index, "Still alive!", cur_learning_rate)
 
-    # print("All the batch stuff", "batch_si", batch_si,
-    #               "batch_ai", batch_ai,
-    #               "batch_td", batch_td,
-    #               "batch_R", batch_R)
+    print("All the batch stuff", "batch_si", batch_si, "batch_ai", batch_ai, "batch_td_throughput", batch_td_throughput, "batch_td_delay", batch_td_delay,"batch_R_throughput", batch_R_throughput, "batch_R_delay", batch_R_delay)
 
     if USE_LSTM:
       batch_si.reverse()
       batch_ai.reverse()
-      batch_td.reverse()
-      batch_R.reverse()
+      batch_td_throughput.reverse()
+      batch_td_delay.reverse()
+      batch_R_throughput.reverse()
+      batch_R_delay.reverse()
 
       sess.run( self.apply_gradients,
                 feed_dict = {
                   self.local_network.s: batch_si,
                   self.local_network.a: batch_ai,
-                  self.local_network.td: batch_td,
-                  self.local_network.r: batch_R,
+                  self.local_network.td_throughput: batch_td_throughput,
+                  self.local_network.td_delay: batch_td_delay,
+                  self.local_network.r_throughput: batch_R_throughput,
+                  self.local_network.r_delay: batch_R_delay,
                   self.local_network.initial_lstm_state: self.start_lstm_states[0],
                   self.local_network.step_size : [len(batch_ai)],
                   self.learning_rate_input: cur_learning_rate } )
     else:
+      raise NotImplementedError("FF currently not implemented.")
       # print("learning_rate_input", cur_learning_rate)
-      sess.run( self.apply_gradients,
-                feed_dict = {
-                  self.local_network.s: batch_si,
-                  self.local_network.a: batch_ai,
-                  self.local_network.td: batch_td,
-                  self.local_network.r: batch_R,
-                  self.learning_rate_input: cur_learning_rate} )
+      # sess.run( self.apply_gradients,
+      #           feed_dict = {
+      #             self.local_network.s: batch_si,
+      #             self.local_network.a: batch_ai,
+      #             self.local_network.td: batch_td,
+      #             self.local_network.r: batch_R,
+      #             self.learning_rate_input: cur_learning_rate} )
       
     # if (self.thread_index == 0) and (self.local_t - self.prev_local_t >= PERFORMANCE_LOG_INTERVAL):
     if self.local_t - self.prev_local_t >= PERFORMANCE_LOG_INTERVAL:
@@ -265,10 +284,12 @@ class A3CTrainingThread(object):
         global_t,  elapsed_time, steps_per_sec, steps_per_sec * 3600 / 1000000.))
 
     if final:
-      normalized_final_score = self.episode_reward/(self.local_t-self.episode_start_t)
-      print("score={}".format(normalized_final_score))
-      entropy, action_loss, value_loss, total_loss, window, std = self.local_network.run_loss(sess, batch_si[-1], batch_ai[-1], batch_td[-1], batch_R[-1])
-      things = {"score": normalized_final_score, 
+      normalized_final_score_throughput = self.episode_reward_throughput/(self.local_t-self.episode_start_t)
+      normalized_final_score_delay = self.episode_reward_delay/self.episode_reward_throughput
+      print("score_throughput={}, score_delay={}".format(normalized_final_score_throughput, normalized_final_score_delay))
+      entropy, action_loss, value_loss, total_loss, window, std = self.local_network.run_loss(sess, batch_si[-1], batch_ai[-1], batch_td_throughput[-1], batch_td_delay[-1], batch_R_throughput[-1], batch_R_delay[-1])
+      things = {"score_throughput": normalized_final_score_throughput, 
+        "score_delay": normalized_final_score_delay, 
         "action_loss": action_loss.item(),
         "value_loss": value_loss,
         "entropy": entropy.item(),
@@ -278,7 +299,8 @@ class A3CTrainingThread(object):
       print("things", things)
       self._record_score(sess, summary_writer, summary_op, summary_inputs, things, global_t) # TODO:NOW: is that "not terminal_end" correct?
       self.episode_start_t = self.local_t
-      self.episode_reward = 0
+      self.episode_reward_throughput = 0
+      self.episode_reward_delay = 0
       if USE_LSTM:
         self.local_network.reset_state()
 
@@ -286,6 +308,7 @@ class A3CTrainingThread(object):
     self.states = self.states[LOCAL_T_MAX:]
     self.values = self.values[LOCAL_T_MAX:]
     self.rewards = self.rewards[LOCAL_T_MAX:]
+    self.durations = self.durations[LOCAL_T_MAX:]
     self.start_lstm_states = self.start_lstm_states[1:]
     # return advanced local step size
     diff_local_t = self.local_t - start_local_t

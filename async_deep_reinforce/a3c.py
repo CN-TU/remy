@@ -92,14 +92,16 @@ sess.run(init)
 # print("\n\n\nRMSPropApplier", grad_applier, "\n\n\n")
 
 # summary for tensorboard
-score = tf.placeholder(PRECISION, name="score")
+score_throughput = tf.placeholder(PRECISION, name="score_throughput")
+score_delay = tf.placeholder(PRECISION, name="score_delay")
 entropy = tf.placeholder(PRECISION, name="entropy")
 action_loss = tf.placeholder(PRECISION, name="action_loss")
 value_loss = tf.placeholder(PRECISION, name="value_loss")
 total_loss = tf.placeholder(PRECISION, name="total_loss")
 window = tf.placeholder(PRECISION, name="window")
 std = tf.placeholder(PRECISION, name="std")
-tf.summary.scalar("score", score)
+tf.summary.scalar("score_throughput", score_throughput)
+tf.summary.scalar("score_delay", score_delay)
 tf.summary.scalar("entropy", entropy)
 tf.summary.scalar("action_loss", action_loss)
 tf.summary.scalar("value_loss", value_loss)
@@ -107,7 +109,8 @@ tf.summary.scalar("total_loss", total_loss)
 tf.summary.scalar("window", window)
 tf.summary.scalar("std", std)
 summary_inputs = {
-  "score": score,
+  "score_throughput": score_throughput,
+  "score_delay": score_delay,
   "entropy": entropy,
   "action_loss": action_loss,
   "value_loss": value_loss,
@@ -143,6 +146,8 @@ training_threads = {}
 # First thread has index 1, 0 is invalid
 global_thread_index = 1
 idle_threads = set()
+
+start_time = time.time() - wall_t
 
 def create_training_thread():
   global global_t, global_thread_index, wall_t, sess
@@ -183,10 +188,10 @@ def call_process_action(thread_id, state):
   # print("call_process_action", chosen_action)
   return chosen_action
 
-def call_process_reward(thread_id, reward):
-  print("call_process_reward", thread_id, reward)
+def call_process_reward(thread_id, reward_throughput, reward_delay, duration):
+  print("call_process_reward", thread_id, reward_throughput, reward_delay, duration)
   global sess, global_t, summary_writer, summary_op, summary_inputs
-  diff_global_t = training_threads[thread_id].reward_step(sess, global_t, summary_writer, summary_op, summary_inputs, reward)
+  diff_global_t = training_threads[thread_id].reward_step(sess, global_t, summary_writer, summary_op, summary_inputs, reward_throughput, reward_delay, duration)
   if diff_global_t is not None:
     global_t += diff_global_t
 

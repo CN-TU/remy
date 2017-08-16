@@ -8,9 +8,6 @@
 
 using namespace std;
 
-#define ALPHA 0.1
-#define BETA 0.1
-
 Unicorn::Unicorn()
   : _memory(),
     _packets_sent( 0 ),
@@ -48,69 +45,19 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
     const unsigned int lost_since_last_time = (unsigned int) packet.seq_num-_largest_ack-1;
     _memory.lost(lost_since_last_time);
 
-    // Find full tuples
-    auto full_tuple_iterator = _outstanding_rewards.begin();
-    auto full_tuple_iterator_itself = _outstanding_rewards.begin();
-
-    uint32_t times_changed = 0;    
-    for (auto it=_outstanding_rewards.begin(); it!=_outstanding_rewards.lower_bound(packet.sent_during_action); it++) {
-      if (it->first < packet.sent_during_action && it->second["sent"] > 0 && it->second["received"] > 0) {
-        full_tuple_iterator = _outstanding_rewards.upper_bound(it->first);
-        full_tuple_iterator_itself = _outstanding_rewards.lower_bound(it->first);
-        times_changed+=1;
-        // break;
-      }
-    }
-    assert(times_changed <= 1);
-    // printf("%lu: full_tuple_iterator: %u\n", _thread_id, full_tuple_iterator);
-
-    // Check if tuple is full and if it is, put the corresponding reward for it
-    size_t finished_rewards = 0;
-    for (auto it=_outstanding_rewards.begin(); it!=full_tuple_iterator; it++) {
-      it->second["end_time"] = full_tuple_iterator_itself->second["end_time"];
-      const double throughput_final = ALPHA*log(it->second["received"]/(it->second["end_time"]-it->second["start_time"]));
-      const double delay_final = BETA*log(it->second["delay_acc"]/it->second["received"]);
-      printf("%lu: end time: %f, start time: %f\n", _thread_id, it->second["end_time"], it->second["start_time"]);
-      printf("%lu: Calculated reward when receiving packet delay:%f, throughput:%f, received:%.0f\n", _thread_id, -delay_final, throughput_final, it->second["received"]);
-      _rainbow.put_reward(_thread_id, throughput_final-delay_final);
+    for (auto it=_outstanding_rewards.begin(); it!=_outstanding_rewards.lower_bound(packet.sent_during_action);) {
+      const double throughput_final = it->second["received"];
+      const double delay_final = it->second["delay_acc"];
+      const double duration = it->second["end_time"] - it->second["start_time"];
+      assert(duration > 0.0);
+      printf("%lu: Calculated reward when receiving packet delay:%f, throughput:%f\n", _thread_id, delay_final, throughput_final);
+      _rainbow.put_reward(_thread_id, throughput_final, delay_final, duration);
       _put_rewards += 1;
-      finished_rewards += 1;
-    }
-    _outstanding_rewards.erase(_outstanding_rewards.begin(), full_tuple_iterator);
-
-    for (auto it=_outstanding_rewards.begin(); it!=_outstanding_rewards.upper_bound(packet.sent_during_action); it++) {
-      it->second["received"] += 1;
-      it->second["delay_acc"] += delay;
+      it = _outstanding_rewards.erase(it);
     }
 
-    // // Check if tuple is full and if it is, put the corresponding reward for it
-    // size_t finished_rewards = 0;
-    // for (auto &tuple : _outstanding_rewards) {
-    //   if (tuple["end_time"] < packet.tick_sent) {
-    //     const double throughput_final = ALPHA*log(tuple["received"]/(tuple["end_time"]-tuple["start_time"]));
-    //     const double delay_final = BETA*log(tuple["delay_acc"]/tuple["received"]);
-    //     printf("%lu: end time: %f, start time: %f\n", _thread_id, tuple["end_time"], tuple["start_time"]);
-    //     printf("%lu: Calculated reward when receiving packet delay:%f, throughput:%f\n", _thread_id, -delay_final, throughput_final);
-    //     _rainbow.put_reward(_thread_id, throughput_final-delay_final);
-    //     _put_rewards += 1;
-    //     finished_rewards += 1;
-    //   } else {
-    //     break;
-    //   }
-    // }
-    // if (finished_rewards != 1) {
-    //   printf("%lu: finished_rewards=%lu\n", _thread_id, finished_rewards);
-    // }
-
-    // Remove the all the tuples for the beginning for which the reward has been accounted for
-    // auto i = _outstanding_rewards.begin();
-    // while (i != _outstanding_rewards.end()) {
-    //   if ((*i)["end_time"] < packet.tick_sent) {
-    //     _outstanding_rewards.erase(i++);  // alternatively, i = items.erase(i);
-    //   } else {
-    //     break;
-    //   }
-    // }
+    _outstanding_rewards[packet.sent_during_action]["received"] += 1;
+    _outstanding_rewards[packet.sent_during_action]["delay_acc"] += delay;
 
     _packets_received += 1;
     vector<Packet> packet_for_memory_update;
@@ -122,7 +69,6 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
     get_action(packet.tick_received);
   }
 
-  // FIXME: Why could _largest_ack already be larger than the current last packet?
   // _largest_ack = max( packets.at( packets.size() - 1 ).seq_num, _largest_ack );
   if (!(_largest_ack > previous_largest_ack)) {
     printf("%lu: largest ack: %d, previous largest ack: %d\n", _thread_id, _largest_ack, previous_largest_ack);

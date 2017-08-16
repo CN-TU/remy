@@ -133,12 +133,12 @@ double Rainbow::get_action(const long unsigned int thread_id, const std::vector<
 	return action;
 }
 
-void Rainbow::put_reward(const long unsigned int thread_id, const double reward) {
+void Rainbow::put_reward(const long unsigned int thread_id, const double reward_throughput, const double reward_delay, const double duration) {
 	std::lock_guard<std::mutex> guard(global_lock);
 	// PyGILState_STATE gstate; 
 	// gstate = PyGILState_Ensure();
 
-	PyObject* pRewardArgs = Py_BuildValue("(if)", (long) thread_id, reward);
+	PyObject* pRewardArgs = Py_BuildValue("(ifff)", (long) thread_id, reward_throughput, reward_delay, duration);
 	PyObject* pReturnValue = PyObject_CallObject(pRewardFunc, pRewardArgs);
 	if (pReturnValue == NULL) {
 		PyErr_Print();
@@ -158,7 +158,7 @@ long unsigned int Rainbow::create_thread() {
 	// printf("Do I hold the GIL? %d\n", PyGILState_Check());
 	PyObject* pThreadId = PyObject_CallObject(pCreateFunc, NULL);
 	if (pThreadId == NULL) {
-		puts("Oh oh, NULL value for create_thread");
+		puts("Oh no, NULL value for create_thread");
 		PyErr_Print();
 	}
 	long unsigned int thread_id = (int) PyLong_AsLong(pThreadId);
