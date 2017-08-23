@@ -10,7 +10,7 @@ LOG_FILE = 'tmp/a3c_log'
 INITIAL_ALPHA_LOW = 1e-4    # log_uniform low limit for learning rate
 INITIAL_ALPHA_HIGH = 1e-2   # log_uniform high limit for learning rate
 
-PRECISION = tf.float64
+PRECISION = tf.float32
 LOG_NORMAL = True
 
 INITIAL_ALPHA_LOG_RATE = 0.4226 # log_uniform interpolate rate for learning rate (around 7 * 10^-4)
