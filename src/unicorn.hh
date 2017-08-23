@@ -4,7 +4,6 @@
 #include <vector>
 #include <string>
 #include <limits>
-// #include <list>
 #include <map>
 #include <unordered_map>
 #include <string>
@@ -51,6 +50,7 @@ private:
   // std::list<std::unordered_map<std::string, double>> _outstanding_rewards;
   std::map<uint32_t, std::unordered_map<std::string, double>> _outstanding_rewards;
   // std::unordered_map<uint32t_t, uint32_t> _packet_to_action;
+  double _start_tick;
 
   // static double soft_ceil(const double x) {
   //   return MAX_WINDOW-log(1+exp(MAX_WINDOW-x));

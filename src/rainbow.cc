@@ -9,9 +9,6 @@
 using namespace std;
 
 Rainbow& Rainbow::getInstance() {
-	// Apparently in C++11 all that code is thread_safe...
-	// PyGILState_STATE gstate; gstate = PyGILState_Ensure();
-
 	static Rainbow instance;
 	return instance;
 }
@@ -24,23 +21,11 @@ Rainbow::Rainbow() :
 	pCreateFunc(NULL),
 	pDeleteFunc(NULL),
 	pFinishFunc(NULL),
-	pSaveFunc(NULL)
-
-	{
+	pSaveFunc(NULL) {
 	
 	puts("Initializing Python interpreter");
 	Py_Initialize();
-	PyEval_InitThreads();
-	// PyObject* pModuleName = PyUnicode_FromString("../async_deep_reinforce/a3c");
-	// PyObject* pActionFuncName = PyUnicode_FromString("call_process_action");
-	// PyObject* pRewardFuncName = PyUnicode_FromString("call_process_reward");
-	// PyObject* pCreateFuncName = PyUnicode_FromString("create_training_thread");
-	// PyObject* pDeleteFuncName = PyUnicode_FromString("delete_training_thread");
-	// PyObject* pFinishFuncName = PyUnicode_FromString("call_process_finished");
-
-	// PyGILState_STATE gstate; 
-	// gstate = PyGILState_Ensure();
-
+		
 	char cwd[1024];
 	if (getcwd(cwd, sizeof(cwd)) != NULL)
 		fprintf(stdout, "Current working dir: %s\n", cwd);
@@ -52,7 +37,6 @@ Rainbow::Rainbow() :
 	printf("%s\n", search_path);
 
 	const char pModuleName[] = "a3c";
-	// const char pTestModuleName[] = "python_embedding_test";
 	const char pActionFuncName[] = "call_process_action";
 	const char pRewardFuncName[] = "call_process_reward";
 	const char pCreateFuncName[] = "create_training_thread";
@@ -60,11 +44,6 @@ Rainbow::Rainbow() :
 	const char pFinishFuncName[] = "call_process_finished";
 	const char pSaveFuncName[] = "save_session";
 
-	// PyObject* pLoadModule = PyImport_ImportModule(pLoadModuleName);
-	// printf("pLoadModule %zd\n", (size_t) pLoadModule);
-	// if (pLoadModule == NULL) {
-	// 	PyErr_Print();
-	// }
 	PyObject* path = PySys_GetObject("path");
 	if (path == NULL) {
 		PyErr_Print();
@@ -77,15 +56,10 @@ Rainbow::Rainbow() :
 	PyList_Append(path, pSearchPath);
 	Py_DECREF(pSearchPath);
 
-	// PyObject* pTestModule = PyImport_ImportModule(pTestModuleName);
-	// if (pTestModule == NULL) {
-	// 	PyErr_Print();
-	// }
-	// Py_DECREF(pTestModule);
 	size_t dummy_size = 1;
-	wchar_t* pEmptyString = Py_DecodeLocale("", &dummy_size);
-	// const char argv[][1] = {""};
-	PySys_SetArgv(1, &pEmptyString);
+	// FIXME: pArgString never gets freed. 
+	wchar_t* pArgString = Py_DecodeLocale("", &dummy_size);
+	PySys_SetArgv(1, &pArgString);
 	pModule = PyImport_ImportModule(pModuleName);
 	if (pModule == NULL) {
 		PyErr_Print();
@@ -98,14 +72,10 @@ Rainbow::Rainbow() :
 	pDeleteFunc = PyObject_GetAttrString(pModule, pDeleteFuncName);
 	pFinishFunc = PyObject_GetAttrString(pModule, pFinishFuncName);
 	pSaveFunc = PyObject_GetAttrString(pModule, pSaveFuncName);
-
-	// PyGILState_Release(gstate);
 }
 
-double Rainbow::get_action(const long unsigned int thread_id, const std::vector<double> state) {
-	std::lock_guard<std::mutex> guard(global_lock);
-	// PyGILState_STATE gstate; 
-	// gstate = PyGILState_Ensure();
+double Rainbow::get_action(const long unsigned int thread_id, const vector<double> state) {
+	lock_guard<mutex> guard(global_lock);
 
 	PyObject* pState = PyTuple_New(state.size());
 	for (size_t i=0; i<state.size(); i++) {
@@ -114,29 +84,21 @@ double Rainbow::get_action(const long unsigned int thread_id, const std::vector<
 
 	PyObject* pArgs = Py_BuildValue("(iO)", (long) thread_id, pState);
 
-	PyObject* pActionArrayValue = PyObject_CallObject(pActionFunc, pArgs);
-	if (pActionArrayValue == NULL) {
+	PyObject* pActionReturnValue = PyObject_CallObject(pActionFunc, pArgs);
+	if (pActionReturnValue == NULL) {
 		PyErr_Print();
 	}
-	// action_struct action = {
-	// 	PyFloat_AsDouble(PyTuple_GetItem(pActionArrayValue, 0)),
-	// 	1.0,
-	// 	0.0,
-	// };
-	double action = PyFloat_AsDouble(PyTuple_GetItem(pActionArrayValue, 0));
-	// printf("%f, %f, %f\n", action.window_increment, action.window_multiple, action.intersend);
-	Py_DECREF(pActionArrayValue);
+
+	double action = PyFloat_AsDouble(pActionReturnValue);
+	Py_DECREF(pActionReturnValue);
 	Py_DECREF(pArgs);	
 	Py_DECREF(pState);
 
-	// PyGILState_Release(gstate);
 	return action;
 }
 
 void Rainbow::put_reward(const long unsigned int thread_id, const double reward_throughput, const double reward_delay, const double duration) {
-	std::lock_guard<std::mutex> guard(global_lock);
-	// PyGILState_STATE gstate; 
-	// gstate = PyGILState_Ensure();
+	lock_guard<mutex> guard(global_lock);
 
 	PyObject* pRewardArgs = Py_BuildValue("(ifff)", (long) thread_id, reward_throughput, reward_delay, duration);
 	PyObject* pReturnValue = PyObject_CallObject(pRewardFunc, pRewardArgs);
@@ -145,17 +107,11 @@ void Rainbow::put_reward(const long unsigned int thread_id, const double reward_
 	}
 	Py_DECREF(pRewardArgs);
 	Py_DECREF(pReturnValue);
-
-	// PyGILState_Release(gstate);
 }
 
 long unsigned int Rainbow::create_thread() {
-	std::lock_guard<std::mutex> guard(global_lock);
-	// PyGILState_STATE gstate; 
-	// gstate = PyGILState_Ensure();
+	lock_guard<mutex> guard(global_lock);
 
-	// puts("Creating training thread");
-	// printf("Do I hold the GIL? %d\n", PyGILState_Check());
 	PyObject* pThreadId = PyObject_CallObject(pCreateFunc, NULL);
 	if (pThreadId == NULL) {
 		puts("Oh no, NULL value for create_thread");
@@ -165,14 +121,11 @@ long unsigned int Rainbow::create_thread() {
 	Py_DECREF(pThreadId);
 
 	puts("Created training thread");
-	// PyGILState_Release(gstate);
 	return thread_id;
 }
 
 void Rainbow::delete_thread(const long unsigned int thread_id) {
-	std::lock_guard<std::mutex> guard(global_lock);
-	// PyGILState_STATE gstate; 
-	// gstate = PyGILState_Ensure();
+	lock_guard<mutex> guard(global_lock);
 
 	PyObject* pThreadIdTuple = Py_BuildValue("(i)", (long) thread_id);
 	PyObject* pReturnValue = PyObject_CallObject(pDeleteFunc, pThreadIdTuple);
@@ -181,20 +134,12 @@ void Rainbow::delete_thread(const long unsigned int thread_id) {
 	}	
 	Py_DECREF(pReturnValue);
 	Py_DECREF(pThreadIdTuple);
-
-	// PyGILState_Release(gstate);
 }
 
-void Rainbow::finish(const long unsigned int thread_id, size_t actions_to_remove) {
-	std::lock_guard<std::mutex> guard(global_lock);
-	// PyGILState_STATE gstate; 
-	// gstate = PyGILState_Ensure();
+void Rainbow::finish(const long unsigned int thread_id, size_t actions_to_remove, const double time_difference) {
+	lock_guard<mutex> guard(global_lock);
 
-	// PyObject* pState = PyTuple_New(state.size());
-	// for (size_t i=0; i<state.size(); i++) {
-	// 	PyTuple_SetItem(pState, i, PyFloat_FromDouble(state[i]));
-	// }
-	PyObject* pArgs = Py_BuildValue("(ii)", (long) thread_id, (long) actions_to_remove);
+	PyObject* pArgs = Py_BuildValue("(iif)", (long) thread_id, (long) actions_to_remove, time_difference);
 	if (pArgs == NULL) {
 		PyErr_Print();
 	}
@@ -204,15 +149,11 @@ void Rainbow::finish(const long unsigned int thread_id, size_t actions_to_remove
 	}
 	Py_DECREF(pArgs);	
 	Py_DECREF(pReturnValue);
-
-	// PyGILState_Release(gstate);
 }
 
 void Rainbow::save_session() {
-	std::lock_guard<std::mutex> guard(global_lock);
-	printf("Saving session\n");
-	// PyGILState_STATE gstate; 
-	// gstate = PyGILState_Ensure();
+	lock_guard<mutex> guard(global_lock);
+	puts("Saving session");
 
 	PyErr_Print();
 
@@ -222,12 +163,5 @@ void Rainbow::save_session() {
 	}
 	Py_DECREF(pReturnValue);
 
-	// PyGILState_Release(gstate);
-	printf("Saved session\n");
-}
-
-void Rainbow::print_errors() {
-	std::lock_guard<std::mutex> guard(global_lock);
-
-	PyErr_Print();
+	puts("Saved session");
 }

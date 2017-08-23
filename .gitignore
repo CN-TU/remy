@@ -42,3 +42,4 @@ Makefile.in
 /graph/ratatouille
 /src/scoring-example
 /src/tmp
+/checkpoints

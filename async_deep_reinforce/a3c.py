@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import datetime
-current_datetime = datetime.datetime.now().isoformat()[:-7]
 
 import tensorflow as tf
 import numpy as np
@@ -14,11 +13,11 @@ import os
 import time
 import sys
 
-from game_ac_network import GameACLSTMNetwork#, GameACFFNetwork
+from game_ac_network import GameACLSTMNetwork
 from a3c_training_thread import A3CTrainingThread
 from rmsprop_applier import RMSPropApplier
 
-from constants import ACTION_SIZE
+# from constants import ACTION_SIZE
 from constants import INITIAL_ALPHA_LOW
 from constants import INITIAL_ALPHA_HIGH
 from constants import INITIAL_ALPHA_LOG_RATE
@@ -31,6 +30,11 @@ from constants import GRAD_NORM_CLIP
 from constants import USE_GPU
 from constants import USE_LSTM
 from constants import PRECISION
+from constants import ALPHA, BETA
+from constants import LOG_LEVEL
+
+import logging
+logging.basicConfig(level=LOG_LEVEL)
 
 def log_uniform(lo, hi, rate):
   log_lo = math.log(lo)
@@ -43,7 +47,7 @@ def initialize_uninitialized(sess):
     is_not_initialized   = sess.run([tf.is_variable_initialized(var) for var in global_vars])
     not_initialized_vars = [v for (v, f) in zip(global_vars, is_not_initialized) if not f]
 
-    print("initializing uninitialized variables:", [str(i.name) for i in not_initialized_vars]) # only for testing
+    logging.info(" ".join(map(str,("initializing uninitialized variables:", [str(i.name) for i in not_initialized_vars]))))  # only for testing
     if len(not_initialized_vars) > 0:
         sess.run(tf.variables_initializer(not_initialized_vars))
 
@@ -87,9 +91,28 @@ sess = tf.Session(config=tf.ConfigProto(log_device_placement=False,
 init = tf.global_variables_initializer()
 sess.run(init)
 
-# print("reported as uninit after init", sess.run(tf.report_uninitialized_variables(tf.global_variables())))
-
-# print("\n\n\nRMSPropApplier", grad_applier, "\n\n\n")
+# init or load checkpoint with saver
+saver = tf.train.Saver()
+checkpoint = tf.train.get_checkpoint_state(CHECKPOINT_DIR)
+if checkpoint and checkpoint.model_checkpoint_path:
+  saver.restore(sess, checkpoint.model_checkpoint_path)
+  print("checkpoint loaded:", checkpoint.model_checkpoint_path)
+  tokens = checkpoint.model_checkpoint_path.split("-")
+  # set global step
+  global_t = int(tokens[1])
+  print(">>> global step set: ", global_t)
+  # set wall time
+  wall_t_fname = CHECKPOINT_DIR + '/' + 'wall_t.' + str(global_t)
+  with open(wall_t_fname, 'r') as f:
+    wall_t = float(f.read())
+  current_datetime_fname = CHECKPOINT_DIR + '/' + 'current_datetime.' + str(global_t)
+  with open(current_datetime_fname, 'r') as f:
+    current_datetime = f.read()
+else:
+  print("Could not find old checkpoint")
+  # set wall time
+  wall_t = 0.0
+  current_datetime = datetime.datetime.now().isoformat()[:-7]
 
 # summary for tensorboard
 score_throughput = tf.placeholder(PRECISION, name="score_throughput")
@@ -122,25 +145,6 @@ summary_inputs = {
 summary_op = tf.summary.merge_all()
 summary_writer = tf.summary.FileWriter(LOG_FILE+'/'+current_datetime, sess.graph)
 
-# init or load checkpoint with saver
-saver = tf.train.Saver()
-checkpoint = tf.train.get_checkpoint_state(CHECKPOINT_DIR)
-if checkpoint and checkpoint.model_checkpoint_path:
-  saver.restore(sess, checkpoint.model_checkpoint_path)
-  print("checkpoint loaded:", checkpoint.model_checkpoint_path)
-  tokens = checkpoint.model_checkpoint_path.split("-")
-  # set global step
-  global_t = int(tokens[1])
-  print(">>> global step set: ", global_t)
-  # set wall time
-  wall_t_fname = CHECKPOINT_DIR + '/' + 'wall_t.' + str(global_t)
-  with open(wall_t_fname, 'r') as f:
-    wall_t = float(f.read())
-else:
-  print("Could not find old checkpoint")
-  # set wall time
-  wall_t = 0.0
-
 training_threads = {}
 
 # First thread has index 1, 0 is invalid
@@ -152,7 +156,7 @@ start_time = time.time() - wall_t
 def create_training_thread():
   global global_t, global_thread_index, wall_t, sess
   if len(idle_threads) == 0:
-    print("Creating new thread", global_thread_index)
+    logging.info(" ".join(map(str,("Creating new thread", global_thread_index))))
     created_thread = A3CTrainingThread(global_thread_index, global_network, initial_learning_rate,
                                         learning_rate_input,
                                         grad_applier, MAX_TIME_STEP,
@@ -165,9 +169,14 @@ def create_training_thread():
     initialize_uninitialized(sess)
   else:
     return_index = idle_threads.pop()
-    print("Recycling thread", return_index)
+    logging.info(" ".join(map(str,("Recycling thread", return_index))))
     created_thread = training_threads[return_index]
     sess.run(created_thread.sync)
+    assert(len(created_thread.states)==0)
+    assert(len(created_thread.actions)==0)
+    assert(len(created_thread.rewards)==0)
+    assert(len(created_thread.durations)==0)
+    assert(len(created_thread.values)==0)
     
   # set start time
   start_time = time.time() - wall_t
@@ -176,33 +185,32 @@ def create_training_thread():
   return return_index
 
 def delete_training_thread(thread_id):
-  print("Deleting thread with id", thread_id)
+  logging.info(" ".join(map(str,("Deleting thread with id", thread_id))))
   global sess, global_t, summary_writer, summary_op, summary_inputs
   idle_threads.add(thread_id)
   # del training_threads[thread_id]
 
 def call_process_action(thread_id, state):
-  print("call_process_action", thread_id, state)
+  logging.info(" ".join(map(str,("call_process_action", thread_id, state))))
   global sess, global_t, summary_writer, summary_op, summary_inputs
-  chosen_action = tuple(training_threads[thread_id].action_step(sess, state))
-  # print("call_process_action", chosen_action)
+  chosen_action = training_threads[thread_id].action_step(sess, state)
   return chosen_action
 
 def call_process_reward(thread_id, reward_throughput, reward_delay, duration):
-  print("call_process_reward", thread_id, reward_throughput, reward_delay, duration)
+  logging.info(" ".join(map(str,("call_process_reward", thread_id, reward_throughput, reward_delay, duration))))
   global sess, global_t, summary_writer, summary_op, summary_inputs
   diff_global_t = training_threads[thread_id].reward_step(sess, global_t, summary_writer, summary_op, summary_inputs, reward_throughput, reward_delay, duration)
   if diff_global_t is not None:
     global_t += diff_global_t
 
-def call_process_finished(thread_id, actions_to_remove):
-  print("call_process_finished", thread_id)
+def call_process_finished(thread_id, actions_to_remove, time_difference):
+  logging.info(" ".join(map(str,("call_process_finished", thread_id))))
   global sess, global_t, summary_writer, summary_op, summary_inputs
-  diff_global_t = training_threads[thread_id].final_step(sess, global_t, summary_writer, summary_op, summary_inputs, True, actions_to_remove)
+  diff_global_t = training_threads[thread_id].final_step(sess, global_t, summary_writer, summary_op, summary_inputs, actions_to_remove, time_difference)
   global_t += diff_global_t
 
 def save_session():
-  print("save_session")
+  logging.info("save_session")
   global global_t, sess, CHECKPOINT_DIR
   if not os.path.exists(CHECKPOINT_DIR):
     os.mkdir(CHECKPOINT_DIR)
@@ -213,58 +221,8 @@ def save_session():
   with open(wall_t_fname, 'w') as f:
     f.write(str(wall_t))
 
+  current_datetime_fname = CHECKPOINT_DIR + '/' + 'current_datetime.' + str(global_t)
+  with open(current_datetime_fname, 'w') as f:
+    f.write(str(current_datetime))
+
   saver.save(sess, CHECKPOINT_DIR + '/' + 'checkpoint', global_step = global_t)
-
-# def train_function(parallel_index):
-#   global global_t
-  
-#   training_thread = training_threads[parallel_index]
-#   # set start_time
-#   start_time = time.time() - wall_t
-#   training_thread.set_start_time(start_time)
-
-#   while True:
-#     if stop_requested:
-#       break
-#     if global_t > MAX_TIME_STEP:
-#       break
-
-#     diff_global_t = training_thread.process(sess, global_t, summary_writer,
-#                                             summary_op, summary_inputs)
-#     global_t += diff_global_t
-    
-    
-# def signal_handler(signal, frame):
-#   global stop_requested
-#   print('You pressed Ctrl+C!')
-#   stop_requested = True
-  
-# train_threads = []
-# for i in range(PARALLEL_SIZE):
-#   train_threads.append(threading.Thread(target=train_function, args=(i,)))
-  
-# signal.signal(signal.SIGINT, signal_handler)
-
-# # set start time
-# start_time = time.time() - wall_t
-
-# for t in train_threads:
-#   t.start()
-
-# print('Press Ctrl+C to stop')
-# signal.pause()
-
-# print('Now saving data. Please wait')
-  
-# for t in train_threads:
-#   t.join()
-
-# if not os.path.exists(CHECKPOINT_DIR):
-#   os.mkdir(CHECKPOINT_DIR)
-
-# # write wall time
-# wall_t = time.time() - start_time
-# wall_t_fname = CHECKPOINT_DIR + '/' + 'wall_t.' + str(global_t)
-# with open(wall_t_fname, 'w') as f:
-#   f.write(str(wall_t))
-
