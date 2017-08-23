@@ -30,8 +30,8 @@ void Unicorn::send( const unsigned int id, NextHop & next, const double & tickno
     next.accept( p, tickno );
 
     _last_send_time = tickno;
-    printf("%lu: Sent packet\n", _thread_id);
+    // printf("%lu: Sent packet\n", _thread_id);
   } else {
-    printf("%lu: Refrained from sending\n", _thread_id);
+    // printf("%lu: Refrained from sending\n", _thread_id);
   }
 }

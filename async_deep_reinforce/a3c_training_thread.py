@@ -77,7 +77,7 @@ class A3CTrainingThread(object):
     self.episode_reward_delay = 0
 
     # variable controlling log output
-    self.prev_local_t = 0
+    # self.prev_local_t = 0
 
     # self.acc_state = None
 
@@ -116,7 +116,7 @@ class A3CTrainingThread(object):
         self.start_lstm_states.append(self.local_network.lstm_state_out)
 
     pi_, action, value_ = self.local_network.run_policy_action_and_value(sess, state)
-    logging.info(" ".join(map(str,(self.thread_index,"pi_values:",pi_))))
+    logging.debug(" ".join(map(str,(self.thread_index,"pi_values:",pi_))))
 
     self.states.append(state)
     self.actions.append(action)
@@ -125,8 +125,8 @@ class A3CTrainingThread(object):
 
     self.values.append(value_)
     if self.local_t % LOG_INTERVAL == 0:
-      logging.info("{}: pi={}".format(self.thread_index, pi_))
-      logging.info("{}: V={}".format(self.thread_index, value_))
+      logging.debug("{}: pi={}".format(self.thread_index, pi_))
+      logging.debug("{}: V={}".format(self.thread_index, value_))
     return action
 
   def reward_step(self, sess, global_t, summary_writer, summary_op, summary_inputs, reward_throughput, reward_delay, duration):
@@ -138,6 +138,8 @@ class A3CTrainingThread(object):
 
     if len(self.rewards)>=LOCAL_T_MAX:
       return self.process(sess, global_t, summary_writer, summary_op, summary_inputs)
+    else:
+      return  0
     # implicitly returns None otherwise
 
   def final_step(self, sess, global_t, summary_writer, summary_op, summary_inputs, actions_to_remove, time_difference):
@@ -155,7 +157,7 @@ class A3CTrainingThread(object):
     final = time_difference is not None
     start_local_t = self.local_t
     
-    logging.info(" ".join(map(str,(self.thread_index, "In process: len(rewards)", len(self.rewards), "len(durations)", len(self.durations), "len(states)", len(self.states), "len(actions)", len(self.actions), "len(values)", len(self.values)))))
+    logging.debug(" ".join(map(str,(self.thread_index, "In process: len(rewards)", len(self.rewards), "len(durations)", len(self.durations), "len(states)", len(self.states), "len(actions)", len(self.actions), "len(values)", len(self.values)))))
 
     actions = self.actions[:LOCAL_T_MAX]
     states = self.states[:LOCAL_T_MAX]
@@ -163,7 +165,7 @@ class A3CTrainingThread(object):
     durations = self.durations[:LOCAL_T_MAX]
     values = self.values[:LOCAL_T_MAX]
 
-    logging.info(" ".join(map(str,(self.thread_index, "In process: rewards", rewards, "durations", durations, "states", states, "actions", actions, "values", values))))
+    logging.debug(" ".join(map(str,(self.thread_index, "In process: rewards", rewards, "durations", durations, "states", states, "actions", actions, "values", values))))
 
     # t_max times loop
     # for i in range(len(rewards)):
@@ -179,7 +181,7 @@ class A3CTrainingThread(object):
     else:
       R_packets, R_accumulated_delay, R_duration = self.local_network.run_value(sess, self.states[LOCAL_T_MAX])
       log_str = "intermediate"
-    logging.info(log_str+": "+" ".join(map(str,("R_packets", R_packets, "R_accumulated_delay", R_accumulated_delay, "R_duration", R_duration))))
+    logging.debug(log_str+": "+" ".join(map(str,("R_packets", R_packets, "R_accumulated_delay", R_accumulated_delay, "R_duration", R_duration))))
     # R_throughput = R_delay = 0.0
     # try:
     #   R_packets = R_throughput*R_duration
@@ -189,7 +191,7 @@ class A3CTrainingThread(object):
     #   raise e
 
     # R_packets, R_accumulated_delay, R_duration = np.exp(R_packets), np.exp(R_accumulated_delay), np.exp(R_duration)
-    # logging.info(" ".join(map(str,("exp(R_packets)", R_packets, "exp(R_accumulated_delay)", R_accumulated_delay, "exp(R_duration)", R_duration))))
+    # logging.debug(" ".join(map(str,("exp(R_packets)", R_packets, "exp(R_accumulated_delay)", R_accumulated_delay, "exp(R_duration)", R_duration))))
     assert(np.isfinite(R_duration))
     assert(np.isfinite(R_packets))
     assert(np.isfinite(R_accumulated_delay))
@@ -199,7 +201,7 @@ class A3CTrainingThread(object):
     rewards.reverse()
     durations.reverse()
     values.reverse()
-    # logging.info(" ".join(map(str,("values", values))))
+    # logging.debug(" ".join(map(str,("values", values))))
 
     batch_si = []
     batch_ai = []
@@ -234,14 +236,14 @@ class A3CTrainingThread(object):
       batch_R_accumulated_delay.append(R_accumulated_delay)
       # batch_R_accumulated_delay.append(np.log(R_accumulated_delay))
 
-      logging.info(" ".join(map(str,("batch_td_throughput[-1]", batch_td_throughput[-1], "batch_td_delay[-1]", batch_td_delay[-1], "batch_R_packets[-1]", batch_R_packets[-1], "batch_R_accumulated_delay[-1]", batch_R_accumulated_delay[-1], "batch_R_duration[-1]", batch_R_duration[-1]))))
+      logging.debug(" ".join(map(str,("batch_td_throughput[-1]", batch_td_throughput[-1], "batch_td_delay[-1]", batch_td_delay[-1], "batch_R_packets[-1]", batch_R_packets[-1], "batch_R_accumulated_delay[-1]", batch_R_accumulated_delay[-1], "batch_R_duration[-1]", batch_R_duration[-1]))))
 
       self.episode_reward_throughput += ri[0]
       self.episode_reward_delay += ri[1]
 
     cur_learning_rate = self._anneal_learning_rate(global_t)
 
-    # logging.info(" ".join(map(str,("All the batch stuff", "batch_si", batch_si, "batch_ai", batch_ai, "batch_td_throughput", batch_td_throughput, "batch_td_delay", batch_td_delay,"batch_R_packets", batch_R_packets, "batch_R_accumulated_delay", batch_R_accumulated_delay, "batch_R_duration", batch_R_duration))))
+    # logging.debug(" ".join(map(str,("All the batch stuff", "batch_si", batch_si, "batch_ai", batch_ai, "batch_td_throughput", batch_td_throughput, "batch_td_delay", batch_td_delay,"batch_R_packets", batch_R_packets, "batch_R_accumulated_delay", batch_R_accumulated_delay, "batch_R_duration", batch_R_duration))))
 
     if USE_LSTM:
       batch_si.reverse()
@@ -267,16 +269,16 @@ class A3CTrainingThread(object):
     else:
       raise NotImplementedError("FF currently not implemented.")
       
-    if self.local_t - self.prev_local_t >= PERFORMANCE_LOG_INTERVAL:
-      self.prev_local_t += PERFORMANCE_LOG_INTERVAL
-      elapsed_time = time.time() - self.start_time
-      steps_per_sec = global_t / elapsed_time
-      print("### Performance : {} STEPS in {:.0f} sec. {:.0f} STEPS/sec. {:.2f}M STEPS/hour".format(global_t,  elapsed_time, steps_per_sec, steps_per_sec * 3600 / 1000000.))
+    # if self.local_t - self.prev_local_t >= PERFORMANCE_LOG_INTERVAL:
+    #   self.prev_local_t += PERFORMANCE_LOG_INTERVAL
+    #   elapsed_time = time.time() - self.start_time
+    #   steps_per_sec = global_t / elapsed_time
+    #   print("### {}: Performance: {} STEPS in {:.0f} sec. {:.0f} STEPS/sec. {:.2f}M STEPS/hour".format(self.thread_id, global_t, elapsed_time, steps_per_sec, steps_per_sec * 3600 / 1000000.))
 
     if final:
       normalized_final_score_throughput = self.episode_reward_throughput/time_difference
       normalized_final_score_delay = self.episode_reward_delay/self.episode_reward_throughput
-      logging.info("score_throughput={}, score_delay={}".format(normalized_final_score_throughput, normalized_final_score_delay))
+      logging.debug("{}: score_throughput={}, score_delay={}".format(self.thread_id, normalized_final_score_throughput, normalized_final_score_delay))
       entropy, action_loss, value_loss, total_loss, window, std = self.local_network.run_loss(sess, batch_si[-1], batch_ai[-1], batch_td_throughput[-1], batch_td_delay[-1], batch_R_duration[-1], batch_R_packets[-1], batch_R_accumulated_delay[-1])
       things = {"score_throughput": normalized_final_score_throughput, 
         "score_delay": normalized_final_score_delay, 
@@ -286,11 +288,16 @@ class A3CTrainingThread(object):
         "total_loss": total_loss,
         "window": window.item(),
         "std": std.item()}
-      logging.info(" ".join(map(str,("things", things))))
+      logging.debug(" ".join(map(str,("things", things))))
       self._record_score(sess, summary_writer, summary_op, summary_inputs, things, global_t) # TODO:NOW: is that "not terminal_end" correct?
       self.episode_start_t = self.local_t
       self.episode_reward_throughput = 0
       self.episode_reward_delay = 0
+
+      elapsed_time = time.time() - self.start_time
+      steps_per_sec = local_t / elapsed_time
+      print("### {}: Performance: {} STEPS in {:.0f} sec. {:.0f} STEPS/sec. {:.2f}M STEPS/hour".format(self.thread_id, local_t, elapsed_time, steps_per_sec, steps_per_sec * 3600 / 1000000.))
+
       if USE_LSTM:
         self.local_network.reset_state()
 

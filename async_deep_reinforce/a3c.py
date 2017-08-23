@@ -47,7 +47,7 @@ def initialize_uninitialized(sess):
     is_not_initialized   = sess.run([tf.is_variable_initialized(var) for var in global_vars])
     not_initialized_vars = [v for (v, f) in zip(global_vars, is_not_initialized) if not f]
 
-    logging.info(" ".join(map(str,("initializing uninitialized variables:", [str(i.name) for i in not_initialized_vars]))))  # only for testing
+    logging.debug(" ".join(map(str,("initializing uninitialized variables:", [str(i.name) for i in not_initialized_vars]))))  # only for testing
     if len(not_initialized_vars) > 0:
         sess.run(tf.variables_initializer(not_initialized_vars))
 
@@ -191,26 +191,25 @@ def delete_training_thread(thread_id):
   # del training_threads[thread_id]
 
 def call_process_action(thread_id, state):
-  logging.info(" ".join(map(str,("call_process_action", thread_id, state))))
+  logging.debug(" ".join(map(str,("call_process_action", thread_id, state))))
   global sess, global_t, summary_writer, summary_op, summary_inputs
   chosen_action = training_threads[thread_id].action_step(sess, state)
   return chosen_action
 
 def call_process_reward(thread_id, reward_throughput, reward_delay, duration):
-  logging.info(" ".join(map(str,("call_process_reward", thread_id, reward_throughput, reward_delay, duration))))
+  logging.debug(" ".join(map(str,("call_process_reward", thread_id, reward_throughput, reward_delay, duration))))
   global sess, global_t, summary_writer, summary_op, summary_inputs
   diff_global_t = training_threads[thread_id].reward_step(sess, global_t, summary_writer, summary_op, summary_inputs, reward_throughput, reward_delay, duration)
-  if diff_global_t is not None:
-    global_t += diff_global_t
+  global_t += diff_global_t
 
 def call_process_finished(thread_id, actions_to_remove, time_difference):
-  logging.info(" ".join(map(str,("call_process_finished", thread_id))))
+  logging.debug(" ".join(map(str,("call_process_finished", thread_id))))
   global sess, global_t, summary_writer, summary_op, summary_inputs
   diff_global_t = training_threads[thread_id].final_step(sess, global_t, summary_writer, summary_op, summary_inputs, actions_to_remove, time_difference)
   global_t += diff_global_t
 
 def save_session():
-  logging.info("save_session")
+  logging.debug("save_session")
   global global_t, sess, CHECKPOINT_DIR
   if not os.path.exists(CHECKPOINT_DIR):
     os.mkdir(CHECKPOINT_DIR)

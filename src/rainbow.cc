@@ -120,7 +120,7 @@ long unsigned int Rainbow::create_thread() {
 	long unsigned int thread_id = (int) PyLong_AsLong(pThreadId);
 	Py_DECREF(pThreadId);
 
-	puts("Created training thread");
+	printf("%lu: Created training thread\n", thread_id);
 	return thread_id;
 }
 

@@ -14,7 +14,6 @@ from constants import HIDDEN_SIZE
 # from constants import ACTION_SIZE
 from constants import N_LSTM_LAYERS
 from constants import PRECISION
-from constants import LOG_NORMAL
 from constants import LAYER_NORMALIZATION
 from constants import ALPHA
 from constants import BETA
@@ -191,10 +190,9 @@ class GameACLSTMNetwork(GameACNetwork):
 			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, 1])
 
 			# weight for value output layer
-			# FIXME: Are the factors in the end needed?
-			self.W_hidden_to_value_throughput_fc, self.b_hidden_to_value_throughput_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=0.01)
-			self.W_hidden_to_value_delay_fc, self.b_hidden_to_value_delay_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=0.01)
-			self.W_hidden_to_value_duration_fc, self.b_hidden_to_value_duration_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=0.01)
+			self.W_hidden_to_value_throughput_fc, self.b_hidden_to_value_throughput_fc = self._fc_variable([HIDDEN_SIZE, 1])
+			self.W_hidden_to_value_delay_fc, self.b_hidden_to_value_delay_fc = self._fc_variable([HIDDEN_SIZE, 1])
+			self.W_hidden_to_value_duration_fc, self.b_hidden_to_value_duration_fc = self._fc_variable([HIDDEN_SIZE, 1])
 
 			# state (input)
 			self.s = tf.placeholder(PRECISION, [None, STATE_SIZE])
