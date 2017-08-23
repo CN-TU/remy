@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import tensorflow as tf
 ds = tf.contrib.distributions
+import math
 import numpy as np
+sqrt_two = math.sqrt(2)
 # tiny = np.finfo(np.float32).tiny
 tiny = 1e-20
 quite_tiny = 1e-10
@@ -18,7 +20,6 @@ from constants import LOG_NORMAL
 from constants import LAYER_NORMALIZATION
 from constants import ALPHA
 from constants import BETA
-import math
 import numpy as np
 import numpy.random
 import itertools
@@ -55,11 +56,14 @@ class GameACNetwork(object):
 			self.td_throughput = tf.placeholder(PRECISION, [None], name="td_throughput")
 			self.td_delay = tf.placeholder(PRECISION, [None], name="td_delay")
 			
-			variance = tf.log((self.pi[1]*self.pi[1])/(self.pi[0]*self.pi[0])+1.0)
-			assert_op = tf.Assert(tf.reduce_all(tf.is_finite(variance)), [variance])
-			with tf.control_dependencies([assert_op]):
+			# sqrt(log((sqrt(e^(2 μ)) + sqrt(e^(2 μ) + 4 x))/(2 sqrt(e^(2 μ)))))
+			sigma = tf.sqrt(tf.log((tf.sqrt(tf.exp(2.0*self.pi[0])) + tf.sqrt(tf.exp(2.0*self.pi[0]) + 4.0*self.pi[1]*self.pi[1]))/(2.0*tf.sqrt(tf.exp(2.0*self.pi[0])))))
+			# variance = tf.log((self.pi[1]*self.pi[1])/(self.pi[0]*self.pi[0])+1.0)
+			# assert_op = tf.Assert(tf.reduce_all(tf.is_finite(variance)), [variance])
+			with tf.control_dependencies([tf.Assert(tf.reduce_all(tf.is_finite(sigma)), [sigma])]):
 				self.distribution = ds.TransformedDistribution(
-						distribution=ds.Normal(loc=tf.log(self.pi[0])-variance/2.0, scale=tf.sqrt(variance), allow_nan_stats=False, validate_args=True),
+						# distribution=ds.Normal(loc=tf.log(self.pi[0])-variance/2.0, scale=tf.sqrt(variance), allow_nan_stats=False, validate_args=True),
+						distribution=ds.Normal(loc=self.pi[0], scale=sigma, allow_nan_stats=False, validate_args=True),
 						bijector=ds.bijectors.Exp(),
 						name="LogNormalTransformedDistribution")
 
@@ -71,7 +75,8 @@ class GameACNetwork(object):
 
 			# self.distribution_mean = tf.exp(self.distribution.distribution.mean()+self.distribution.distribution.variance()/2.0)
 			# self.distribution_std = tf.sqrt((tf.exp(self.distribution.distribution.variance()) - 1.0)*tf.exp(2.0*self.distribution.distribution.mean() + self.distribution.distribution.variance()))
-			self.distribution_mean = self.pi[0]
+			# self.distribution_mean = self.pi[0]
+			self.distribution_mean = tf.exp(self.pi[0] + sigma*sigma/2.0)
 			self.distribution_std = self.pi[1]
 			self.chosen_action = self.distribution.sample() + 1.0
 
@@ -231,7 +236,7 @@ class GameACLSTMNetwork(GameACNetwork):
 			raw_pi_std = tf.matmul(lstm_outputs, self.W_hidden_to_action_std_fc) + self.b_hidden_to_action_std_fc
 			# policy (output)
 			self.pi = (
-				tf.nn.softplus(raw_pi_mean) + 1.0,
+				raw_pi_mean,
 				tf.nn.softplus(raw_pi_std) + 1.0
 			)
 
