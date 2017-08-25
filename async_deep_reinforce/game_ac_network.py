@@ -194,9 +194,8 @@ class GameACLSTMNetwork(GameACNetwork):
 
 			# lstm
 			# self.lstm = tf.contrib.rnn.BasicLSTMCell(HIDDEN_SIZE, state_is_tuple=True)
-			cells = [GameACLSTMNetwork.create_cell(HIDDEN_SIZE, LAYER_NORMALIZATION or i==0) for i in range(N_LSTM_LAYERS)]
-			self.lstm = tf.contrib.rnn.MultiRNNCell(
-				cells, state_is_tuple=True)
+			self.lstm = (tf.contrib.rnn.MultiRNNCell([GameACLSTMNetwork.create_cell(HIDDEN_SIZE, LAYER_NORMALIZATION or i==0) for i in range(N_LSTM_LAYERS)], state_is_tuple=True),
+				tf.contrib.rnn.MultiRNNCell([GameACLSTMNetwork.create_cell(HIDDEN_SIZE, LAYER_NORMALIZATION or i==0) for i in range(N_LSTM_LAYERS)], state_is_tuple=True))
 
 			# weight for policy output layer
 			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, 1])
@@ -209,10 +208,6 @@ class GameACLSTMNetwork(GameACNetwork):
 
 			# state (input)
 			self.s = tf.placeholder(PRECISION, [None, STATE_SIZE])
-		
-			h_fc = tf.matmul(self.s, self.W_state_to_hidden_fc) + self.b_state_to_hidden_fc
-
-			h_fc_reshaped = tf.reshape(h_fc, [1,-1,HIDDEN_SIZE])
 
 			# place holder for LSTM unrolling time step size.
 			self.step_size = tf.placeholder(PRECISION, [1])
@@ -224,21 +219,26 @@ class GameACLSTMNetwork(GameACNetwork):
 			# Unrolling step size is applied via self.step_size placeholder.
 			# When forward propagating, step_size is 1.
 			# (time_major = False, so output shape is [batch_size, max_time, cell.output_size])
-			lstm_outputs, self.lstm_state = tf.nn.dynamic_rnn(
-															self.lstm,
-															h_fc_reshaped,
-															initial_state = self.initial_lstm_state,
-															sequence_length = self.step_size,
-															time_major = False,
-															scope = scope,
-															dtype = PRECISION)
+		
+			lstm_outputs = [None, None]
+			self.lstm_state = [None, None]
+			for i in range(2):			
+				lstm_outputs[i], self.lstm_state[i] = tf.nn.dynamic_rnn(
+																self.lstm[i],
+																h_fc_reshaped[i],
+																initial_state = self.initial_lstm_state[i],
+																sequence_length = self.step_size,
+																time_major = False,
+																scope = scope,
+																dtype = PRECISION)
+
+				lstm_outputs[i] = tf.reshape(lstm_outputs[i], [-1,HIDDEN_SIZE])
 
 			# lstm_outputs: (1,5,256) for back prop, (1,1,256) for forward prop.
 			# print("lstm_outputs", lstm_outputs)
 			
-			lstm_outputs = tf.reshape(lstm_outputs, [-1,HIDDEN_SIZE])
 
-			raw_pi_mean = tf.matmul(lstm_outputs, self.W_hidden_to_action_mean_fc) + self.b_hidden_to_action_mean_fc
+			raw_pi_mean = tf.matmul(lstm_outputs[0], self.W_hidden_to_action_mean_fc) + self.b_hidden_to_action_mean_fc
 			# raw_pi_std = tf.matmul(lstm_outputs, self.W_hidden_to_action_std_fc) + self.b_hidden_to_action_std_fc
 			# policy (output)
 			self.pi = (
@@ -248,22 +248,25 @@ class GameACLSTMNetwork(GameACNetwork):
 			)
 
 			# value (output)
-			v_packets_ = tf.matmul(h_fc, self.W_hidden_to_value_throughput_fc) + self.b_hidden_to_value_throughput_fc
-			v_packets_ = tf.nn.softplus(tf.matmul(h_fc, self.W_hidden_to_value_throughput_fc) + self.b_hidden_to_value_throughput_fc)
+			v_packets_ = tf.matmul(lstm_outputs[1], self.W_hidden_to_value_throughput_fc) + self.b_hidden_to_value_throughput_fc
+			v_packets_ = tf.nn.softplus(tf.matmul(lstm_outputs[1], self.W_hidden_to_value_throughput_fc) + self.b_hidden_to_value_throughput_fc)
 			# self.v_packets = tf.clip_by_value(tf.reshape( v_packets_, [-1] ), tiny, float("inf"))
 			self.v_packets = tf.reshape( v_packets_, [-1] )
-			v_accumulated_delay_ = tf.matmul(h_fc, self.W_hidden_to_value_delay_fc) + self.b_hidden_to_value_delay_fc
-			v_accumulated_delay_ = tf.nn.softplus(tf.matmul(h_fc, self.W_hidden_to_value_delay_fc) + self.b_hidden_to_value_delay_fc)
+			v_accumulated_delay_ = tf.matmul(lstm_outputs[1], self.W_hidden_to_value_delay_fc) + self.b_hidden_to_value_delay_fc
+			v_accumulated_delay_ = tf.nn.softplus(tf.matmul(lstm_outputs[1], self.W_hidden_to_value_delay_fc) + self.b_hidden_to_value_delay_fc)
 			# self.v_accumulated_delay = tf.clip_by_value(tf.reshape( v_accumulated_delay_, [-1] ), tiny, float("inf"))
 			self.v_accumulated_delay = tf.reshape( v_accumulated_delay_, [-1] )
-			v_duration_ = tf.matmul(h_fc, self.W_hidden_to_value_duration_fc) + self.b_hidden_to_value_duration_fc
-			v_duration_ = tf.nn.softplus(tf.matmul(h_fc, self.W_hidden_to_value_duration_fc) + self.b_hidden_to_value_duration_fc)
+			v_duration_ = tf.matmul(lstm_outputs[1], self.W_hidden_to_value_duration_fc) + self.b_hidden_to_value_duration_fc
+			v_duration_ = tf.nn.softplus(tf.matmul(lstm_outputs[1], self.W_hidden_to_value_duration_fc) + self.b_hidden_to_value_duration_fc)
 			# self.v_duration = tf.clip_by_value(tf.reshape( v_duration_, [-1] ), tiny, float("inf"))
 			self.v_duration = tf.reshape( v_duration_, [-1] )
 
 			scope.reuse_variables()
 
 			all_weight_names = ["multi_rnn_cell/cell_"+str(index)+item for index, item in list(itertools.product(range(0, 1 if not LAYER_NORMALIZATION else N_LSTM_LAYERS), GameACLSTMNetwork.get_weight_names(True))) + list(itertools.product(range(1, N_LSTM_LAYERS if not LAYER_NORMALIZATION else 0), GameACLSTMNetwork.get_weight_names(False)))]
+
+					
+			all_weight_names = ["multi_rnn_cell_"+str(rnn_index)+"/cell_"+str(index)+item for rnn_index, index, item in itertools.product(range(0, 2), range(N_LSTM_LAYERS), GameACLSTMNetwork.get_weight_names(LAYER_NORMALIZATION)]
 
 			self.LSTM_variables = [tf.get_variable(weight_name, dtype=PRECISION) for weight_name in all_weight_names]
 
@@ -346,7 +349,8 @@ class GameACLSTMNetwork(GameACNetwork):
 		return entropy, action, value, total, window + OFFSET, std
 
 	def get_vars(self):
-		return [self.W_state_to_hidden_fc, self.b_state_to_hidden_fc,
+		return [self.W_state_to_hidden_actor_fc, self.b_state_to_hidden_actor_fc,
+						self.W_state_to_hidden_critic_fc, self.b_state_to_hidden_critic_fc,
 						self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc,
 						# self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc,
 						self.W_hidden_to_value_throughput_fc, self.b_hidden_to_value_throughput_fc,
