@@ -41,7 +41,8 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
 
   for ( auto const &packet : packets ) {
     // printf("%lu: packet.seq_num: %d, _largest_ack: %d\n", _thread_id, packet.seq_num, _largest_ack);
-  
+    const int packets_sent_in_previous_episode = (int) _outstanding_rewards[packet.sent_during_action]["sent"];    
+
     const double delay = packet.tick_received - packet.tick_sent;
     const unsigned int lost_since_last_time = (unsigned int) packet.seq_num-_largest_ack-1;
     _memory.lost(lost_since_last_time);
@@ -67,7 +68,7 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
 
     _largest_ack = packet.seq_num;
 
-    get_action(packet.tick_received);
+    get_action(packet.tick_received, packets_sent_in_previous_episode);
   }
 
   // _largest_ack = max( packets.at( packets.size() - 1 ).seq_num, _largest_ack );
@@ -125,7 +126,7 @@ void Unicorn::reset(const double & tickno)
 double Unicorn::next_event_time( const double & tickno ) const
 {
   // return tickno;
-  if ( int(_packets_sent) < _largest_ack + 1 + int(_the_window) ) {
+  if ( int(_packets_sent) < _largest_ack + 1 + _the_window ) {
     // if ( _last_send_time + _intersend_time <= tickno ) {
       return tickno;
     // } else {
@@ -138,15 +139,15 @@ double Unicorn::next_event_time( const double & tickno ) const
   }
 }
 
-void Unicorn::get_action(const double& tickno) {
+void Unicorn::get_action(const double& tickno, const int& packets_sent_in_previous_episode) {
   
   const double action = _rainbow.get_action(
     _thread_id, 
     {
       _memory.field(0),
-      _memory.field(1), 
-      _memory.field(2), 
-      _memory.field(3), 
+      _memory.field(1),
+      _memory.field(2),
+      _memory.field(3),
       _memory.field(6), // loss rate
       // (double) tickno - _memory._last_tick_sent, // time since last send
       // (double) tickno - _memory._last_tick_received, // time since last receive
@@ -155,7 +156,8 @@ void Unicorn::get_action(const double& tickno) {
       _memory._rec,
       _memory._last_tick_received - _memory._last_tick_sent,
       // _largest_ack + 1.0 + _the_window - _packets_sent,
-      _the_window
+      (double) _the_window,
+      (double) packets_sent_in_previous_episode
       // (tickno - _memory._last_tick_received)/LAST_SENT_TIME_NORMALIZER,
     }
   );
@@ -173,7 +175,7 @@ void Unicorn::get_action(const double& tickno) {
       it->second["end_time"] = tickno;
     }
   }
-  _outstanding_rewards[_put_actions] = {{"received", 0.0}, {"start_time", tickno}, {"end_time", -1.0}, {"delay_acc", 0.0}};
+  _outstanding_rewards[_put_actions] = {{"sent", 0.0}, {"received", 0.0}, {"start_time", tickno}, {"end_time", -1.0}, {"delay_acc", 0.0}};
   // _outstanding_rewards.push_back({int(floor(_the_window)), 0, 0, tickno, -1.0, 0.0, _packets_sent + int(floor(_the_window))});
 }
 

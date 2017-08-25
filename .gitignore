@@ -43,3 +43,5 @@ Makefile.in
 /src/scoring-example
 /src/tmp
 /checkpoints
+
+test.py

@@ -116,6 +116,7 @@ class A3CTrainingThread(object):
         self.start_lstm_states.append(self.local_network.lstm_state_out)
 
     pi_, action, value_ = self.local_network.run_policy_action_and_value(sess, state)
+
     logging.debug(" ".join(map(str,(self.thread_index,"pi_values:",pi_))))
 
     self.states.append(state)
@@ -136,7 +137,7 @@ class A3CTrainingThread(object):
     assert(duration >= 0)
     self.durations.append(duration)
 
-    if len(self.rewards)>=LOCAL_T_MAX:
+    if len(self.rewards)>LOCAL_T_MAX:
       return self.process(sess, global_t, summary_writer, summary_op, summary_inputs)
     else:
       return  0
@@ -172,6 +173,9 @@ class A3CTrainingThread(object):
     #   self.local_t += 1
 
     self.local_t += len(rewards)
+
+    # return advanced local step size
+    diff_local_t = self.local_t - start_local_t
 
     if final:
       # R_throughput = R_delay = 0.0
@@ -268,17 +272,11 @@ class A3CTrainingThread(object):
                   self.learning_rate_input: cur_learning_rate } )
     else:
       raise NotImplementedError("FF currently not implemented.")
-      
-    # if self.local_t - self.prev_local_t >= PERFORMANCE_LOG_INTERVAL:
-    #   self.prev_local_t += PERFORMANCE_LOG_INTERVAL
-    #   elapsed_time = time.time() - self.start_time
-    #   steps_per_sec = global_t / elapsed_time
-    #   print("### {}: Performance: {} STEPS in {:.0f} sec. {:.0f} STEPS/sec. {:.2f}M STEPS/hour".format(self.thread_id, global_t, elapsed_time, steps_per_sec, steps_per_sec * 3600 / 1000000.))
 
     if final:
       normalized_final_score_throughput = self.episode_reward_throughput/time_difference
       normalized_final_score_delay = self.episode_reward_delay/self.episode_reward_throughput
-      logging.debug("{}: score_throughput={}, score_delay={}".format(self.thread_id, normalized_final_score_throughput, normalized_final_score_delay))
+      logging.debug("{}: score_throughput={}, score_delay={}".format(self.thread_index, normalized_final_score_throughput, normalized_final_score_delay))
       entropy, action_loss, value_loss, total_loss, window, std = self.local_network.run_loss(sess, batch_si[-1], batch_ai[-1], batch_td_throughput[-1], batch_td_delay[-1], batch_R_duration[-1], batch_R_packets[-1], batch_R_accumulated_delay[-1])
       things = {"score_throughput": normalized_final_score_throughput, 
         "score_delay": normalized_final_score_delay, 
@@ -295,8 +293,10 @@ class A3CTrainingThread(object):
       self.episode_reward_delay = 0
 
       elapsed_time = time.time() - self.start_time
-      steps_per_sec = local_t / elapsed_time
-      print("### {}: Performance: {} STEPS in {:.0f} sec. {:.0f} STEPS/sec. {:.2f}M STEPS/hour".format(self.thread_id, local_t, elapsed_time, steps_per_sec, steps_per_sec * 3600 / 1000000.))
+      steps_per_sec = self.local_t / elapsed_time
+      logging.info("### {}: Performance: {} STEPS in {:.0f} sec. {:.0f} STEPS/sec. {:.2f}M STEPS/hour".format(self.thread_index, self.local_t, elapsed_time, steps_per_sec, steps_per_sec * 3600 / 1000000.))
+
+      self.local_t = 0
 
       if USE_LSTM:
         self.local_network.reset_state()
@@ -307,8 +307,6 @@ class A3CTrainingThread(object):
     self.rewards = self.rewards[LOCAL_T_MAX:]
     self.durations = self.durations[LOCAL_T_MAX:]
     self.start_lstm_states = self.start_lstm_states[1:]
-    # return advanced local step size
-    diff_local_t = self.local_t - start_local_t
 
     return diff_local_t
     

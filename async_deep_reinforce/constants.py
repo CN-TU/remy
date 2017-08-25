@@ -2,7 +2,7 @@
 import tensorflow as tf
 import logging
 
-LOCAL_T_MAX = 40 # repeat step size
+LOCAL_T_MAX = 20 # repeat step size
 RMSP_ALPHA = 0.99 # decay parameter for RMSProp
 RMSP_EPSILON = 0.1 # epsilon parameter for RMSProp
 CHECKPOINT_DIR = 'checkpoints'
@@ -22,14 +22,14 @@ GRAD_NORM_CLIP = 40.0 # gradient norm clipping
 USE_GPU = False # To use GPU, set True
 # USE_LSTM = True # True for A3C LSTM, False for A3C FF
 USE_LSTM = True
-N_LSTM_LAYERS = 3
+N_LSTM_LAYERS = 2
 
-STATE_SIZE = 9
+STATE_SIZE = 10
 HIDDEN_SIZE = 64
 # ACTION_SIZE = 1 # action size
 LAYER_NORMALIZATION = True
 
 ALPHA = 1.0
 BETA = 1.0
-# LOG_LEVEL = logging.WARNING
 LOG_LEVEL = logging.INFO
+OFFSET = 1.0

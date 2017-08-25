@@ -74,7 +74,7 @@ Rainbow::Rainbow() :
 	pSaveFunc = PyObject_GetAttrString(pModule, pSaveFuncName);
 }
 
-double Rainbow::get_action(const long unsigned int thread_id, const vector<double> state) {
+int Rainbow::get_action(const long unsigned int thread_id, const vector<double> state) {
 	lock_guard<mutex> guard(global_lock);
 
 	PyObject* pState = PyTuple_New(state.size());
@@ -89,7 +89,7 @@ double Rainbow::get_action(const long unsigned int thread_id, const vector<doubl
 		PyErr_Print();
 	}
 
-	double action = PyFloat_AsDouble(pActionReturnValue);
+	int action = (int) PyLong_AsLong(pActionReturnValue);
 	Py_DECREF(pActionReturnValue);
 	Py_DECREF(pArgs);	
 	Py_DECREF(pState);

@@ -194,7 +194,7 @@ def call_process_action(thread_id, state):
   logging.debug(" ".join(map(str,("call_process_action", thread_id, state))))
   global sess, global_t, summary_writer, summary_op, summary_inputs
   chosen_action = training_threads[thread_id].action_step(sess, state)
-  return chosen_action
+  return int(chosen_action)
 
 def call_process_reward(thread_id, reward_throughput, reward_delay, duration):
   logging.debug(" ".join(map(str,("call_process_reward", thread_id, reward_throughput, reward_delay, duration))))

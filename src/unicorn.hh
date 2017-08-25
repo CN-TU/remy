@@ -31,7 +31,7 @@ private:
 
   double _last_send_time;
 
-  double _the_window;
+  int _the_window;
   double _intersend_time;
 
   unsigned int _flow_id;
@@ -42,7 +42,7 @@ private:
   // long unsigned int _previous_attempts;
   // long unsigned int _previous_attempts_acknowledged;
   // void put_lost_rewards();
-  void get_action(const double& tickno);
+  void get_action(const double& tickno, const int& packets_sent_in_previous_episode=0);
   void finish();
   long unsigned int _put_actions;
   long unsigned int _put_rewards;
