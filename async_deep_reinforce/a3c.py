@@ -15,7 +15,7 @@ import sys
 
 from game_ac_network import GameACLSTMNetwork
 from a3c_training_thread import A3CTrainingThread
-from rmsprop_applier import RMSPropApplier
+# from rmsprop_applier import RMSPropApplier
 
 # from constants import ACTION_SIZE
 from constants import INITIAL_ALPHA_LOW
@@ -70,12 +70,21 @@ else:
 
 learning_rate_input = tf.placeholder(PRECISION)
 
-grad_applier = RMSPropApplier(learning_rate = learning_rate_input,
-                              decay = RMSP_ALPHA,
-                              momentum = 0.0,
-                              epsilon = RMSP_EPSILON,
-                              clip_norm = GRAD_NORM_CLIP,
-                              device = device)
+# grad_applier = RMSPropApplier(learning_rate = learning_rate_input,
+#                               decay = RMSP_ALPHA,
+#                               momentum = 0.0,
+#                               epsilon = RMSP_EPSILON,
+#                               clip_norm = GRAD_NORM_CLIP,
+#                               device = device)
+
+grad_applier = tf.train.RMSPropOptimizer(
+  learning_rate = learning_rate_input,
+  decay = RMSP_ALPHA,
+  momentum = 0.0,
+  epsilon = RMSP_EPSILON,
+)
+
+# grad_applier = tf.train.GradientDescentOptimizer(learning_rate = learning_rate_input)
 
 # for i in range(PARALLEL_SIZE):
 #   training_thread = A3CTrainingThread(i, global_network, initial_learning_rate,

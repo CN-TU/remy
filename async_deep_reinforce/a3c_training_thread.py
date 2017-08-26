@@ -12,10 +12,10 @@ import math
 from game_ac_network import GameACLSTMNetwork, tiny#, GameACFFNetwork
 
 from constants import GAMMA
+# gamma_current, gamma_future = 1./(1+GAMMA), GAMMA/(1.+GAMMA)
 from constants import LOCAL_T_MAX
 from constants import ENTROPY_BETA
 from constants import USE_LSTM
-# from constants import ACTION_SIZE
 from constants import ALPHA, BETA
 from constants import LOG_LEVEL
 
@@ -62,10 +62,21 @@ class A3CTrainingThread(object):
         aggregation_method=None,
         colocate_gradients_with_ops=False)
 
-    self.apply_gradients = grad_applier.apply_gradients(
-      global_network.get_vars(),
-      self.gradients )
+      # self.grads_and_vars = grad_applier.compute_gradients(
+      #   self.local_network.total_loss,
+      #   self.local_network.get_vars(),
+      #   gate_gradients=False,
+      #   aggregation_method=None,
+      #   colocate_gradients_with_ops=False,
+      # )
+
+    # self.apply_gradients = grad_applier.apply_gradients(
+    #   global_network.get_vars(),
+    #   self.gradients )
       
+    self.apply_gradients = grad_applier.apply_gradients(
+      zip(self.gradients, global_network.get_vars()) )
+    
     self.sync = self.local_network.sync_from(global_network)
         
     self.local_t = 0
@@ -103,7 +114,7 @@ class A3CTrainingThread(object):
     })
     summary_writer.add_summary(summary_str, global_t)
     summary_writer.flush()
-    
+
   def set_start_time(self, start_time):
     self.start_time = start_time
 
@@ -113,6 +124,8 @@ class A3CTrainingThread(object):
       # Sync for the next iteration
       sess.run( self.sync )
       if USE_LSTM:
+        # FIXME: Is the copying necessary?
+        # self.start_lstm_states.append(np.copy(self.local_network.lstm_state_out))
         self.start_lstm_states.append(self.local_network.lstm_state_out)
 
     pi_, action, value_ = self.local_network.run_policy_action_and_value(sess, state)
@@ -194,7 +207,7 @@ class A3CTrainingThread(object):
     #   print("An exception occurred while multiplying the values:", e)
     #   raise e
 
-    # R_packets, R_accumulated_delay, R_duration = np.exp(R_packets), np.exp(R_accumulated_delay), np.exp(R_duration)
+    R_packets, R_accumulated_delay, R_duration = (R_packets)/(1-GAMMA), (R_accumulated_delay)/(1-GAMMA), (R_duration)/(1-GAMMA)
     # logging.debug(" ".join(map(str,("exp(R_packets)", R_packets, "exp(R_accumulated_delay)", R_accumulated_delay, "exp(R_duration)", R_duration))))
     assert(np.isfinite(R_duration))
     assert(np.isfinite(R_packets))
@@ -218,14 +231,15 @@ class A3CTrainingThread(object):
     # compute and accmulate gradients
     for(ai, ri, di, si, Vi) in zip(actions, rewards, durations, states, values):
 
-      R_duration = di + GAMMA * R_duration
+      R_duration = (di + GAMMA*R_duration)
 
-      R_packets = ri[0] + GAMMA * R_packets
+      R_packets = (ri[0] + GAMMA*R_packets)
       # R_throughput = R_packets/R_duration
       # FIXME: Put assertions here
-      td_throughput = np.log(R_packets/R_duration) - np.log(Vi[0]/Vi[2])
+      # TODO: In theory it should be np.log(R_bytes/(R_duration/R_packets))
+      td_throughput = (np.log(R_packets/R_duration) - np.log(Vi[0]/Vi[2]))
 
-      R_accumulated_delay = ri[1] + GAMMA * R_accumulated_delay
+      R_accumulated_delay = (ri[1] + GAMMA*R_accumulated_delay)
       # R_delay = R_accumulated_delay/R_packets
       td_delay = -(np.log(R_accumulated_delay/R_packets) - np.log(Vi[1]/Vi[0]))
 
@@ -233,11 +247,11 @@ class A3CTrainingThread(object):
       batch_ai.append(ai)
       batch_td_throughput.append(ALPHA*td_throughput)
       batch_td_delay.append(BETA*td_delay)
-      batch_R_duration.append(R_duration)
+      batch_R_duration.append(R_duration*(1-GAMMA))
       # batch_R_duration.append(np.log(R_duration))
-      batch_R_packets.append(R_packets)
+      batch_R_packets.append(R_packets*(1-GAMMA))
       # batch_R_packets.append(np.log(R_packets))
-      batch_R_accumulated_delay.append(R_accumulated_delay)
+      batch_R_accumulated_delay.append(R_accumulated_delay*(1-GAMMA))
       # batch_R_accumulated_delay.append(np.log(R_accumulated_delay))
 
       logging.debug(" ".join(map(str,("batch_td_throughput[-1]", batch_td_throughput[-1], "batch_td_delay[-1]", batch_td_delay[-1], "batch_R_packets[-1]", batch_R_packets[-1], "batch_R_accumulated_delay[-1]", batch_R_accumulated_delay[-1], "batch_R_duration[-1]", batch_R_duration[-1]))))

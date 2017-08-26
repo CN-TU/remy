@@ -50,7 +50,9 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
     for (auto it=_outstanding_rewards.begin(); it!=_outstanding_rewards.lower_bound(packet.sent_during_action);) {
       const double throughput_final = it->second["received"];
       const double delay_final = it->second["delay_acc"];
-      double duration = it->second["end_time"] - it->second["start_time"];
+      // const double duration = it->second["end_time"] - it->second["start_time"];
+      // const double duration = it->second["intersend_duration_acc"];    
+      const double duration = it->second["interreceive_duration_acc"];
       // printf("%lu: Calculated reward when receiving packet delay:%f, throughput:%f\n", _thread_id, delay_final, throughput_final);
       _rainbow.put_reward(_thread_id, throughput_final, delay_final, duration);
       _put_rewards += 1;
@@ -59,6 +61,9 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
 
     _outstanding_rewards[packet.sent_during_action]["received"] += 1;
     _outstanding_rewards[packet.sent_during_action]["delay_acc"] += delay;
+    if (_memory._last_tick_received != 0) {
+      _outstanding_rewards[packet.sent_during_action]["interreceive_duration_acc"] += packet.tick_received - _memory._last_tick_received;
+    }
     // _outstanding_rewards[packet.sent_during_action]["end_time"] = packet.tick_received;
 
     _packets_received += 1;
@@ -157,7 +162,8 @@ void Unicorn::get_action(const double& tickno, const int& packets_sent_in_previo
       _memory._last_tick_received - _memory._last_tick_sent,
       // _largest_ack + 1.0 + _the_window - _packets_sent,
       (double) _the_window,
-      (double) packets_sent_in_previous_episode
+      (double) packets_sent_in_previous_episode,
+      (double) tickno - _last_send_time
       // (tickno - _memory._last_tick_received)/LAST_SENT_TIME_NORMALIZER,
     }
   );
@@ -175,7 +181,7 @@ void Unicorn::get_action(const double& tickno, const int& packets_sent_in_previo
       it->second["end_time"] = tickno;
     }
   }
-  _outstanding_rewards[_put_actions] = {{"sent", 0.0}, {"received", 0.0}, {"start_time", tickno}, {"end_time", -1.0}, {"delay_acc", 0.0}};
+  _outstanding_rewards[_put_actions] = {{"interreceive_duration_acc", 0.0}, {"intersend_duration_acc", 0.0}, {"sent", 0.0}, {"received", 0.0}, {"start_time", tickno}, {"end_time", -1.0}, {"delay_acc", 0.0}};
   // _outstanding_rewards.push_back({int(floor(_the_window)), 0, 0, tickno, -1.0, 0.0, _packets_sent + int(floor(_the_window))});
 }
 
