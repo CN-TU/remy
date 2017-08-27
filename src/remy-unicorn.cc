@@ -13,6 +13,7 @@
 
 #include <signal.h>
 #include <stdlib.h>
+#include <limits>
 
 using namespace std;
 
@@ -144,79 +145,23 @@ int main( int argc, char *argv[] )
     printf( "Not saving output. Use the of=FILENAME argument to save the results.\n" );
   }
 
-  // RemyBuffers::ConfigVector training_configs;
-  // bool written = false;
+  const size_t iterations_per_thread = std::numeric_limits<size_t>::max();
+  vector<thread> thread_array(input_config.num_threads);
 
-  // while ( 1 ) {
-
-  const size_t iterations_per_thread = 10000;
-  const size_t num_threads = 8;
-  // const size_t num_threads = 1;
-  vector<thread> thread_array(num_threads);
-
-  for (size_t i=0; i<num_threads; i++) {
+  for (size_t i=0; i<input_config.num_threads; i++) {
     thread_array[i] = thread(unicorn_thread, i, options, iterations_per_thread);
   }
 
   printf("Created threads\n");
   signal(SIGINT, signal_handler);
   signal(SIGTERM, signal_handler);
-  // signal(SIGSEGV, debug_signal_handler);
   printf("Registered handlers\n");
 
-  for (size_t i=0; i<num_threads; i++) {
+  // Never gonna happen
+  for (size_t i=0; i<input_config.num_threads; i++) {
     thread_array[i].join();
     printf("All threads finished!\n");
   }
-
-  // printf( "whiskers: %s\n", whiskers.str().c_str() );
-
-  // for ( auto &run : outcome.throughputs_delays ) {
-  //   if ( !(written) ) {
-  //     for ( auto &run : outcome.throughputs_delays) {
-  //       // record the config to the protobuf
-  //       RemyBuffers::NetConfig* net_config = training_configs.add_config();
-  //       *net_config = run.first.DNA();
-  //       written = true;
-
-  //     }
-  //   }
-  //   printf( "===\nconfig: %s\n", run.first.str().c_str() );
-  //   for ( auto &x : run.second ) {
-  //     printf( "sender: [tp=%f, del=%f]\n", x.first / run.first.link_ppt, x.second / run.first.delay );
-  //   }
-  // }
-
-  // if ( !output_filename.empty() ) {
-  //   char of[ 128 ];
-  //   snprintf( of, 128, "%s.%d", output_filename.c_str(), run );
-  //   fprintf( stderr, "Writing to \"%s\"... ", of );
-  //   int fd = open( of, O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR );
-  //   if ( fd < 0 ) {
-  //     perror( "open" );
-  //     exit( 1 );
-  //   }
-
-  //   auto remycc = whiskers.DNA();
-  //   remycc.mutable_config()->CopyFrom( options.config_range.DNA() );
-  //   remycc.mutable_optimizer()->CopyFrom( Whisker::get_optimizer().DNA() );
-  //   remycc.mutable_configvector()->CopyFrom( training_configs );
-  //   if ( not remycc.SerializeToFileDescriptor( fd ) ) {
-  //     fprintf( stderr, "Could not serialize RemyCC.\n" );
-  //     exit( 1 );
-  //   }
-
-  //   if ( close( fd ) < 0 ) {
-  //     perror( "close" );
-  //     exit( 1 );
-  //   }
-
-  //   fprintf( stderr, "done.\n" );
-  // }
-
-  // fflush( NULL );
-    // run++;
-  // }
 
   return 0;
 }

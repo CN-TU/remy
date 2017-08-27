@@ -61,6 +61,7 @@ public:
   Range buffer_size;
   Range simulation_ticks;
   Range stochastic_loss_rate;
+  unsigned int num_threads;
 
   ConfigRangeUnicorn( void );
   ConfigRangeUnicorn( RemyBuffers::ConfigRangeUnicorn configrange );

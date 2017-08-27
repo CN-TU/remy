@@ -124,18 +124,18 @@ else:
   current_datetime = datetime.datetime.now().isoformat()[:-7]
 
 # summary for tensorboard
-score_throughput = tf.placeholder(PRECISION, name="score_throughput")
-score_delay = tf.placeholder(PRECISION, name="score_delay")
-entropy = tf.placeholder(PRECISION, name="entropy")
-action_loss = tf.placeholder(PRECISION, name="action_loss")
-value_loss = tf.placeholder(PRECISION, name="value_loss")
-total_loss = tf.placeholder(PRECISION, name="total_loss")
-window = tf.placeholder(PRECISION, name="window")
-std = tf.placeholder(PRECISION, name="std")
+score_throughput = tf.placeholder(PRECISION)
+score_delay = tf.placeholder(PRECISION)
+entropy = tf.placeholder(PRECISION)
+actor_loss = tf.placeholder(PRECISION)
+value_loss = tf.placeholder(PRECISION)
+total_loss = tf.placeholder(PRECISION)
+window = tf.placeholder(PRECISION)
+std = tf.placeholder(PRECISION)
 tf.summary.scalar("score_throughput", score_throughput)
 tf.summary.scalar("score_delay", score_delay)
 tf.summary.scalar("entropy", entropy)
-tf.summary.scalar("action_loss", action_loss)
+tf.summary.scalar("actor_loss", actor_loss)
 tf.summary.scalar("value_loss", value_loss)
 tf.summary.scalar("total_loss", total_loss)
 tf.summary.scalar("window", window)
@@ -144,7 +144,7 @@ summary_inputs = {
   "score_throughput": score_throughput,
   "score_delay": score_delay,
   "entropy": entropy,
-  "action_loss": action_loss,
+  "actor_loss": actor_loss,
   "value_loss": value_loss,
   "total_loss": total_loss,
   "window": window,

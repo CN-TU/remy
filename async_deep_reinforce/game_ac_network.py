@@ -87,7 +87,7 @@ class GameACNetwork(object):
 			# self.distribution_std = tf.sqrt((tf.exp(self.distribution.distribution.variance()) - 1.0)*tf.exp(2.0*self.distribution.distribution.mean() + self.distribution.distribution.variance()))
 			self.distribution_mean = self.pi[0]
 			self.distribution_std = self.pi[1]
-			self.chosen_action = self.distribution.sample() + OFFSET
+			self.chosen_action = tf.round(self.distribution.sample() + OFFSET)
 
 			# policy entropy
 			self.entropy = entropy_beta * (tf.reduce_sum(self.distribution.distribution.mean() + 0.5 * tf.log(2.0*math.pi*math.e*self.distribution.distribution.variance()), axis=1 ))
@@ -205,7 +205,7 @@ class GameACLSTMNetwork(GameACNetwork):
 			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, 1])
 
 			# weight for value output layer
-			self.W_hidden_to_value_throughput_fc, self.b_hidden_to_value_throughput_fc = self._fc_variable([HIDDEN_SIZE, 1])
+			self.W_hidden_to_value_packets_fc, self.b_hidden_to_value_packets_fc = self._fc_variable([HIDDEN_SIZE, 1])
 			self.W_hidden_to_value_delay_fc, self.b_hidden_to_value_delay_fc = self._fc_variable([HIDDEN_SIZE, 1])
 			self.W_hidden_to_value_duration_fc, self.b_hidden_to_value_duration_fc = self._fc_variable([HIDDEN_SIZE, 1])
 
@@ -251,7 +251,7 @@ class GameACLSTMNetwork(GameACNetwork):
 			)
 
 			# value (output)
-			v_packets_ = tf.nn.softplus(tf.matmul(lstm_outputs, self.W_hidden_to_value_throughput_fc) + self.b_hidden_to_value_throughput_fc)
+			v_packets_ = tf.nn.softplus(tf.matmul(lstm_outputs, self.W_hidden_to_value_packets_fc) + self.b_hidden_to_value_packets_fc)
 			self.v_packets = tf.reshape( v_packets_, [-1] )
 
 			v_accumulated_delay_ = tf.nn.softplus(tf.matmul(lstm_outputs, self.W_hidden_to_value_delay_fc) + self.b_hidden_to_value_delay_fc)
@@ -348,6 +348,6 @@ class GameACLSTMNetwork(GameACNetwork):
 		return [self.W_state_to_hidden_fc, self.b_state_to_hidden_fc,
 						self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc,
 						self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc,
-						self.W_hidden_to_value_throughput_fc, self.b_hidden_to_value_throughput_fc,
+						self.W_hidden_to_value_packets_fc, self.b_hidden_to_value_packets_fc,
 						self.W_hidden_to_value_delay_fc, self.b_hidden_to_value_delay_fc,
 						self.W_hidden_to_value_duration_fc, self.b_hidden_to_value_duration_fc] + self.LSTM_variables

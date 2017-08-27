@@ -112,6 +112,7 @@ message ConfigRangeUnicorn {
   optional Range mean_on_duration = 76;
   optional Range simulation_ticks = 77;
   optional Range stochastic_loss_rate = 78;
+  optional uint32 num_threads = 79;
 }
 
 message NetConfig {

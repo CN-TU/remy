@@ -42,6 +42,7 @@ class A3CTrainingThread(object):
     self.values = []
 
     self.start_lstm_states = []
+    self.variable_snapshots = []
 
     self.thread_index = thread_index
     self.learning_rate_input = learning_rate_input
@@ -106,7 +107,7 @@ class A3CTrainingThread(object):
       summary_inputs["score_throughput"]: things["score_throughput"],
       summary_inputs["score_delay"]: things["score_delay"],
       summary_inputs["entropy"]: things["entropy"],
-      summary_inputs["action_loss"]: things["action_loss"],
+      summary_inputs["actor_loss"]: things["actor_loss"],
       summary_inputs["value_loss"]: things["value_loss"],
       summary_inputs["total_loss"]: things["total_loss"],
       summary_inputs["window"]: things["window"],
@@ -124,9 +125,8 @@ class A3CTrainingThread(object):
       # Sync for the next iteration
       sess.run( self.sync )
       if USE_LSTM:
-        # FIXME: Is the copying necessary?
-        # self.start_lstm_states.append(np.copy(self.local_network.lstm_state_out))
         self.start_lstm_states.append(self.local_network.lstm_state_out)
+        self.variable_snapshots.append(tuple(map(sess.run, self.local_network.get_vars())))
 
     pi_, action, value_ = self.local_network.run_policy_action_and_value(sess, state)
 
@@ -150,7 +150,7 @@ class A3CTrainingThread(object):
     assert(duration >= 0)
     self.durations.append(duration)
 
-    if len(self.rewards)>LOCAL_T_MAX:
+    if len(self.rewards)>=LOCAL_T_MAX:
       return self.process(sess, global_t, summary_writer, summary_op, summary_inputs)
     else:
       return  0
@@ -191,21 +191,11 @@ class A3CTrainingThread(object):
     diff_local_t = self.local_t - start_local_t
 
     if final:
-      # R_throughput = R_delay = 0.0
-      # FIXME: This is a hack! It should evaluate how good the very last state is after the last action
-      R_packets, R_accumulated_delay, R_duration = self.local_network.run_value(sess, self.states[-1])
       log_str = "final"
     else:
-      R_packets, R_accumulated_delay, R_duration = self.local_network.run_value(sess, self.states[LOCAL_T_MAX])
       log_str = "intermediate"
+    R_packets, R_accumulated_delay, R_duration = self.local_network.run_value(sess, states[-1])
     logging.debug(log_str+": "+" ".join(map(str,("R_packets", R_packets, "R_accumulated_delay", R_accumulated_delay, "R_duration", R_duration))))
-    # R_throughput = R_delay = 0.0
-    # try:
-    #   R_packets = R_throughput*R_duration
-    #   R_accumulated_delay = R_delay*R_packets
-    # except Exception as e:
-    #   print("An exception occurred while multiplying the values:", e)
-    #   raise e
 
     R_packets, R_accumulated_delay, R_duration = (R_packets)/(1-GAMMA), (R_accumulated_delay)/(1-GAMMA), (R_duration)/(1-GAMMA)
     # logging.debug(" ".join(map(str,("exp(R_packets)", R_packets, "exp(R_accumulated_delay)", R_accumulated_delay, "exp(R_duration)", R_duration))))
@@ -236,7 +226,7 @@ class A3CTrainingThread(object):
       R_packets = (ri[0] + GAMMA*R_packets)
       # R_throughput = R_packets/R_duration
       # FIXME: Put assertions here
-      # TODO: In theory it should be np.log(R_bytes/(R_duration/R_packets))
+      # TODO: In theory it should be np.log(R_bytes/R_duration) but remy doesn't have bytes
       td_throughput = (np.log(R_packets/R_duration) - np.log(Vi[0]/Vi[2]))
 
       R_accumulated_delay = (ri[1] + GAMMA*R_accumulated_delay)
@@ -272,6 +262,11 @@ class A3CTrainingThread(object):
       batch_R_packets.reverse()
       batch_R_accumulated_delay.reverse()
 
+      variables_backup = tuple(map(sess.run, self.local_network.get_vars()))
+
+      for var, value in zip(self.local_network.get_vars(), self.variable_snapshots[0]):
+        sess.run(var.assign(val))
+
       sess.run( self.apply_gradients,
                 feed_dict = {
                   self.local_network.s: batch_si,
@@ -284,6 +279,9 @@ class A3CTrainingThread(object):
                   self.local_network.initial_lstm_state: self.start_lstm_states[0],
                   self.local_network.step_size : [len(batch_ai)],
                   self.learning_rate_input: cur_learning_rate } )
+                
+      for var, value in zip(self.local_network.get_vars(), variables_backup):
+        sess.run(var.assign(val))
     else:
       raise NotImplementedError("FF currently not implemented.")
 
@@ -291,10 +289,10 @@ class A3CTrainingThread(object):
       normalized_final_score_throughput = self.episode_reward_throughput/time_difference
       normalized_final_score_delay = self.episode_reward_delay/self.episode_reward_throughput
       logging.debug("{}: score_throughput={}, score_delay={}".format(self.thread_index, normalized_final_score_throughput, normalized_final_score_delay))
-      entropy, action_loss, value_loss, total_loss, window, std = self.local_network.run_loss(sess, batch_si[-1], batch_ai[-1], batch_td_throughput[-1], batch_td_delay[-1], batch_R_duration[-1], batch_R_packets[-1], batch_R_accumulated_delay[-1])
+      entropy, actor_loss, value_loss, total_loss, window, std = self.local_network.run_loss(sess, batch_si[-1], batch_ai[-1], batch_td_throughput[-1], batch_td_delay[-1], batch_R_duration[-1], batch_R_packets[-1], batch_R_accumulated_delay[-1])
       things = {"score_throughput": normalized_final_score_throughput, 
         "score_delay": normalized_final_score_delay, 
-        "action_loss": action_loss.item(),
+        "actor_loss": actor_loss.item(),
         "value_loss": value_loss,
         "entropy": entropy.item(),
         "total_loss": total_loss,
@@ -321,6 +319,7 @@ class A3CTrainingThread(object):
     self.rewards = self.rewards[LOCAL_T_MAX:]
     self.durations = self.durations[LOCAL_T_MAX:]
     self.start_lstm_states = self.start_lstm_states[1:]
+    self.variable_snapshots = self.variable_snapshots[1:]
 
     return diff_local_t
     
