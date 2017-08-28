@@ -61,8 +61,11 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
 
     _outstanding_rewards[packet.sent_during_action]["received"] += 1;
     _outstanding_rewards[packet.sent_during_action]["delay_acc"] += delay;
+    // FIXME: It doesn't really matter but conceptually it's wrong. It should be the time since the start of the simulation, for example
     if (_memory._last_tick_received != 0) {
       _outstanding_rewards[packet.sent_during_action]["interreceive_duration_acc"] += packet.tick_received - _memory._last_tick_received;
+    } else {
+      _outstanding_rewards[packet.sent_during_action]["interreceive_duration_acc"] += packet.tick_received - _start_tick;
     }
     // _outstanding_rewards[packet.sent_during_action]["end_time"] = packet.tick_received;
 

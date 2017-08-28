@@ -87,6 +87,6 @@ RemyBuffers::ConfigRangeUnicorn ConfigRangeUnicorn::DNA( void ) const
   ret.mutable_buffer_size()->CopyFrom( pair_to_range( buffer_size ) );
   ret.mutable_simulation_ticks()->CopyFrom( pair_to_range(simulation_ticks ));
   ret.mutable_stochastic_loss_rate()->CopyFrom( pair_to_range( stochastic_loss_rate ) );
-  ret.set_num_threads( num_threads ); 
+  ret.set_num_threads( num_threads );
   return ret;
 }

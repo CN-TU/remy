@@ -135,6 +135,7 @@ int main( int argc, char *argv[] )
   } else {
     printf( "Optimizing for infinitely sized buffers. \n");
   }
+  printf( "Number of threads is %u\n", options.config_range.num_threads );
 
   // printf( "Initial rules (use if=FILENAME to read from disk): %s\n", whiskers.str().c_str() );
   printf( "#######################\n" );
@@ -146,9 +147,9 @@ int main( int argc, char *argv[] )
   }
 
   const size_t iterations_per_thread = std::numeric_limits<size_t>::max();
-  vector<thread> thread_array(input_config.num_threads);
+  vector<thread> thread_array(options.config_range.num_threads);
 
-  for (size_t i=0; i<input_config.num_threads; i++) {
+  for (size_t i=0; i<options.config_range.num_threads; i++) {
     thread_array[i] = thread(unicorn_thread, i, options, iterations_per_thread);
   }
 
@@ -158,7 +159,7 @@ int main( int argc, char *argv[] )
   printf("Registered handlers\n");
 
   // Never gonna happen
-  for (size_t i=0; i<input_config.num_threads; i++) {
+  for (size_t i=0; i<options.config_range.num_threads; i++) {
     thread_array[i].join();
     printf("All threads finished!\n");
   }

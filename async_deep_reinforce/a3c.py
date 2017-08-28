@@ -28,7 +28,6 @@ from constants import RMSP_EPSILON
 from constants import RMSP_ALPHA
 from constants import GRAD_NORM_CLIP
 from constants import USE_GPU
-from constants import USE_LSTM
 from constants import PRECISION
 from constants import ALPHA, BETA
 from constants import LOG_LEVEL
@@ -63,10 +62,7 @@ global_t = 0
 
 stop_requested = False
 
-if USE_LSTM:
-  global_network = GameACLSTMNetwork(-1, device)
-else:
-  global_network = GameACFFNetwork(-1, device)
+global_network = GameACLSTMNetwork(-1, device)
 
 learning_rate_input = tf.placeholder(PRECISION)
 
@@ -212,7 +208,7 @@ def call_process_reward(thread_id, reward_throughput, reward_delay, duration):
   global_t += diff_global_t
 
 def call_process_finished(thread_id, actions_to_remove, time_difference):
-  logging.debug(" ".join(map(str,("call_process_finished", thread_id))))
+  logging.debug(" ".join(map(str,("call_process_finished", thread_id, time_difference))))
   global sess, global_t, summary_writer, summary_op, summary_inputs
   diff_global_t = training_threads[thread_id].final_step(sess, global_t, summary_writer, summary_op, summary_inputs, actions_to_remove, time_difference)
   global_t += diff_global_t

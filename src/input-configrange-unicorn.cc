@@ -192,6 +192,7 @@ int main(int argc, char *argv[]) {
   update_config_with_range(input_config.mutable_mean_off_duration(), argc, argv, "off", mandatory);
   update_config_with_range(input_config.mutable_stochastic_loss_rate(), argc, argv, "sloss", mandatory);
   update_config_with_range(input_config.mutable_simulation_ticks(), argc, argv, "ticks", mandatory);
+  update_config_with_uint32(input_config, &RemyBuffers::ConfigRangeUnicorn::set_num_threads, argc, argv, "num_threads", mandatory);
   if ( !(infinite_buffers) ) {
     update_config_with_range(input_config.mutable_buffer_size(), argc, argv, "buf_size", mandatory);
   } else {
