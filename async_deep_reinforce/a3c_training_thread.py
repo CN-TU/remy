@@ -134,9 +134,25 @@ class A3CTrainingThread(object):
 
     # If, for some strange reason, absolutely nothing happened in this episode, don't do anyting...
     if len(self.rewards)>0:
-      return self.process(sess, global_t, summary_writer, summary_op, summary_inputs, time_difference)
+      time_diff = self.process(sess, global_t, summary_writer, summary_op, summary_inputs, time_difference)
     else:
-      return 0
+      time_diff = 0
+
+    self.states = []
+    self.actions = []
+    self.rewards = []
+    self.durations = []
+    self.values = []
+    self.estimated_values = []
+    self.start_lstm_states = []
+    self.variable_snapshots = []
+    self.local_t = 0
+    self.episode_reward_throughput = 0
+    self.episode_reward_delay = 0
+    self.local_network.reset_state()
+    sess.run( self.sync )
+
+    return time_diff
 
   def process(self, sess, global_t, summary_writer, summary_op, summary_inputs, time_difference=None):
     final = time_difference is not None
@@ -217,7 +233,7 @@ class A3CTrainingThread(object):
 
     # logging.debug(" ".join(map(str,("All the batch stuff", "batch_si", batch_si, "batch_ai", batch_ai, "batch_td_throughput", batch_td_throughput, "batch_td_delay", batch_td_delay,"batch_R_packets", batch_R_packets, "batch_R_accumulated_delay", batch_R_accumulated_delay, "batch_R_duration", batch_R_duration))))
 
-    self.backup_vars(sess)
+    self.backup_vars()
 
     batch_si.reverse()
     batch_ai.reverse()
@@ -247,7 +263,7 @@ class A3CTrainingThread(object):
 
     if final:
       normalized_final_score_throughput = self.episode_reward_throughput/time_difference
-      logging.info("{}: self.episode_reward_throughput={}, time_difference={}".format(self.thread_index, self.episode_reward_throughput, time_difference))
+      # logging.info("{}: self.episode_reward_throughput={}, time_difference={}".format(self.thread_index, self.episode_reward_throughput, time_difference))
       normalized_final_score_delay = self.episode_reward_delay/self.episode_reward_throughput
       logging.debug("{}: score_throughput={}, score_delay={}".format(self.thread_index, normalized_final_score_throughput, normalized_final_score_delay))
 
@@ -283,16 +299,17 @@ class A3CTrainingThread(object):
       elapsed_time = time.time() - self.start_time
       steps_per_sec = self.local_t / elapsed_time
       logging.info("### {}: Performance: {} STEPS in {:.0f} sec. {:.0f} STEPS/sec. {:.2f}M STEPS/hour".format(self.thread_index, self.local_t, elapsed_time, steps_per_sec, steps_per_sec * 3600 / 1000000.))
-    self.restore_backup(sess)
+    else:
+      self.restore_backup()
 
-    self.actions = self.actions[LOCAL_T_MAX:]
-    self.states = self.states[LOCAL_T_MAX:]
-    self.values = self.values[LOCAL_T_MAX:]
-    self.rewards = self.rewards[LOCAL_T_MAX:]
-    self.durations = self.durations[LOCAL_T_MAX:]
-    self.estimated_values = self.estimated_values[LOCAL_T_MAX:]
-    self.start_lstm_states = self.start_lstm_states[1:]
-    self.variable_snapshots = self.variable_snapshots[1:]
+      self.actions = self.actions[LOCAL_T_MAX:]
+      self.states = self.states[LOCAL_T_MAX:]
+      self.values = self.values[LOCAL_T_MAX:]
+      self.rewards = self.rewards[LOCAL_T_MAX:]
+      self.durations = self.durations[LOCAL_T_MAX:]
+      self.estimated_values = self.estimated_values[LOCAL_T_MAX:]
+      self.start_lstm_states = self.start_lstm_states[1:]
+      self.variable_snapshots = self.variable_snapshots[1:]
 
     return diff_local_t
     

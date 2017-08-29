@@ -183,11 +183,6 @@ def create_training_thread():
     return_index = idle_threads.pop()
     logging.info(" ".join(map(str,("Recycling thread", return_index))))
     created_thread = training_threads[return_index]
-    # assert(len(created_thread.states)==0)
-    # assert(len(created_thread.actions)==0)
-    # assert(len(created_thread.rewards)==0)
-    # assert(len(created_thread.durations)==0)
-    # assert(len(created_thread.values)==0)
     
   # set start time
   start_time = time.time() - wall_t

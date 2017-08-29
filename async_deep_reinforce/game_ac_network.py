@@ -110,12 +110,12 @@ class GameACNetwork(object):
 		raise NotImplementedError()
 
 	def backup_vars(self, name=None):
-		def backup_vars_inner_function(sess):
+		def backup_vars_inner_function():
 			self.backup_lstm_state = self.lstm_state
 		return backup_vars_inner_function
 		
 	def restore_backup(self, name=None):
-		def restore_backup_inner_function(sess):
+		def restore_backup_inner_function():
 			self.lstm_state = self.backup_lstm_state
 		return restore_backup_inner_function
 
