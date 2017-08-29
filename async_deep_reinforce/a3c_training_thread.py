@@ -14,7 +14,6 @@ from game_ac_network import GameACLSTMNetwork, tiny#, GameACFFNetwork
 from constants import GAMMA
 # gamma_current, gamma_future = 1./(1+GAMMA), GAMMA/(1.+GAMMA)
 from constants import LOCAL_T_MAX
-from constants import ENTROPY_BETA
 from constants import ALPHA, BETA
 from constants import LOG_LEVEL
 
@@ -34,22 +33,13 @@ class A3CTrainingThread(object):
                max_global_time_step,
                device):
 
-    self.states = []
-    self.actions = []
-    self.rewards = []
-    self.durations = []
-    self.values = []
-
-    self.start_lstm_states = []
-    self.variable_snapshots = []
-
     self.thread_index = thread_index
     self.learning_rate_input = learning_rate_input
     self.max_global_time_step = max_global_time_step
 
     self.local_network = GameACLSTMNetwork(thread_index, device)
 
-    self.local_network.prepare_loss(ENTROPY_BETA)
+    self.local_network.prepare_loss()
 
     with tf.device(device):
       var_refs = [v._ref() for v in self.local_network.get_vars()]
@@ -66,18 +56,8 @@ class A3CTrainingThread(object):
 
     self.backup_vars = self.local_network.backup_vars()
     self.restore_backup = self.local_network.restore_backup()
-        
-    self.local_t = 0
 
     self.initial_learning_rate = initial_learning_rate
-
-    self.episode_reward_throughput = 0
-    self.episode_reward_delay = 0
-
-    # variable controlling log output
-    # self.prev_local_t = 0
-
-    # self.acc_state = None
 
   def get_network_vars(self):
     return self.local_network.get_vars()
@@ -93,11 +73,14 @@ class A3CTrainingThread(object):
       summary_inputs["score_throughput"]: things["score_throughput"],
       summary_inputs["score_delay"]: things["score_delay"],
       summary_inputs["entropy"]: things["entropy"],
+      summary_inputs["skewness"]: things["skewness"],
       summary_inputs["actor_loss"]: things["actor_loss"],
       summary_inputs["value_loss"]: things["value_loss"],
       summary_inputs["total_loss"]: things["total_loss"],
       summary_inputs["window"]: things["window"],
-      summary_inputs["std"]: things["std"]
+      summary_inputs["std"]: things["std"],
+      summary_inputs["inner_mean"]: things["inner_mean"],
+      summary_inputs["inner_std"]: things["inner_std"],
     })
     summary_writer.add_summary(summary_str, global_t)
     summary_writer.flush()
@@ -106,6 +89,9 @@ class A3CTrainingThread(object):
     self.start_time = start_time
 
   def action_step(self, sess, state):
+    # Run this still with the old weights, before syncing them
+    self.estimated_values.append(self.local_network.run_value(sess, state))
+
     if len(self.actions) % LOCAL_T_MAX == 0:
       # Sync for the next iteration
       sess.run( self.sync )
@@ -134,7 +120,8 @@ class A3CTrainingThread(object):
     assert(duration >= 0)
     self.durations.append(duration)
 
-    if len(self.rewards)>LOCAL_T_MAX:
+    if len(self.rewards)>=LOCAL_T_MAX:
+      assert(len(self.rewards) == LOCAL_T_MAX)
       return self.process(sess, global_t, summary_writer, summary_op, summary_inputs)
     else:
       return  0
@@ -143,10 +130,11 @@ class A3CTrainingThread(object):
     self.actions = self.actions[:-actions_to_remove]
     self.states = self.states[:-actions_to_remove]
     self.values = self.values[:-actions_to_remove]
+    self.estimated_values = self.estimated_values[:-actions_to_remove+1]
 
     # If, for some strange reason, absolutely nothing happened in this episode, don't do anyting...
     if len(self.rewards)>0:
-      return self.process(sess, global_t, summary_writer, summary_op, summary_inputs, time_difference=time_difference)
+      return self.process(sess, global_t, summary_writer, summary_op, summary_inputs, time_difference)
     else:
       return 0
 
@@ -166,8 +154,9 @@ class A3CTrainingThread(object):
     logging.debug(" ".join(map(str,(self.thread_index, "In process: rewards", rewards, "durations", durations, "states", states, "actions", actions, "values", values))))
 
     # get estimated value of step n+1
-    R_packets, R_accumulated_delay, R_duration = self.values[len(rewards)] if len(self.values) > len(rewards) else self.values[-1]
-    logging.debug("final:"+str(final)+" ".join(map(str,("R_packets", R_packets, "R_accumulated_delay", R_accumulated_delay, "R_duration", R_duration))))
+    assert((not len(self.estimated_values) <= len(rewards)) or final)
+    R_packets, R_accumulated_delay, R_duration = self.estimated_values[len(rewards)] if len(self.estimated_values) > len(rewards) else self.estimated_values[-1]
+    logging.debug("final:"+str(final)+", "+" ".join(map(str,("R_packets", R_packets, "R_accumulated_delay", R_accumulated_delay, "R_duration", R_duration))))
 
     R_packets, R_accumulated_delay, R_duration = (R_packets)/(1-GAMMA), (R_accumulated_delay)/(1-GAMMA), (R_duration)/(1-GAMMA)
     # logging.debug(" ".join(map(str,("exp(R_packets)", R_packets, "exp(R_accumulated_delay)", R_accumulated_delay, "exp(R_duration)", R_duration))))
@@ -257,64 +246,51 @@ class A3CTrainingThread(object):
               feed_dict = feed_dict )
 
     if final:
-      if time_difference > 0 and self.episode_reward_throughput > 0 and self.episode_reward_delay > 0:
-        normalized_final_score_throughput = self.episode_reward_throughput/time_difference
-        normalized_final_score_delay = self.episode_reward_delay/self.episode_reward_throughput
-        logging.debug("{}: score_throughput={}, score_delay={}".format(self.thread_index, normalized_final_score_throughput, normalized_final_score_delay))
+      normalized_final_score_throughput = self.episode_reward_throughput/time_difference
+      logging.info("{}: self.episode_reward_throughput={}, time_difference={}".format(self.thread_index, self.episode_reward_throughput, time_difference))
+      normalized_final_score_delay = self.episode_reward_delay/self.episode_reward_throughput
+      logging.debug("{}: score_throughput={}, score_delay={}".format(self.thread_index, normalized_final_score_throughput, normalized_final_score_delay))
 
-        feed_dict = {
-          self.local_network.s: [batch_si[0]],
-          self.local_network.a: [batch_ai[0]],
-          self.local_network.td_throughput: [batch_td_throughput[0]],
-          self.local_network.td_delay: [batch_td_delay[0]],
-          self.local_network.r_duration: [batch_R_duration[0]],
-          self.local_network.r_packets: [batch_R_packets[0]],
-          self.local_network.r_accumulated_delay: [batch_R_accumulated_delay[0]],
-          self.local_network.initial_lstm_state: self.start_lstm_states[0],
-          self.local_network.step_size : [1],
-          self.learning_rate_input: cur_learning_rate
-        }
-        feed_dict.update(var_dict)
+      feed_dict = {
+        self.local_network.s: [batch_si[0]],
+        self.local_network.a: [batch_ai[0]],
+        self.local_network.td_throughput: [batch_td_throughput[0]],
+        self.local_network.td_delay: [batch_td_delay[0]],
+        self.local_network.r_duration: [batch_R_duration[0]],
+        self.local_network.r_packets: [batch_R_packets[0]],
+        self.local_network.r_accumulated_delay: [batch_R_accumulated_delay[0]],
+        self.local_network.initial_lstm_state: self.start_lstm_states[0],
+        self.local_network.step_size : [1],
+      }
+      feed_dict.update(var_dict)
 
-        entropy, actor_loss, value_loss, total_loss, window, std = self.local_network.run_loss(sess, feed_dict)
+      entropy, skewness, actor_loss, value_loss, total_loss, window, std, inner_mean, inner_std = self.local_network.run_loss(sess, feed_dict)
 
-        things = {"score_throughput": normalized_final_score_throughput, 
-          "score_delay": normalized_final_score_delay, 
-          "actor_loss": actor_loss.item(),
-          "value_loss": value_loss,
-          "entropy": entropy.item(),
-          "total_loss": total_loss,
-          "window": window.item(),
-          "std": std.item()}
-        logging.debug(" ".join(map(str,("things", things))))
-        self._record_score(sess, summary_writer, summary_op, summary_inputs, things, global_t) # TODO:NOW: is that "not terminal_end" correct?
+      things = {"score_throughput": normalized_final_score_throughput,
+        "score_delay": normalized_final_score_delay, 
+        "actor_loss": actor_loss.item(),
+        "value_loss": value_loss,
+        "entropy": entropy.item(),
+        "skewness": skewness.item(),
+        "total_loss": total_loss,
+        "window": window.item(),
+        "std": std.item(),
+        "inner_mean": inner_mean.item(),
+        "inner_std": inner_std.item()}
+      logging.debug(" ".join(map(str,("things", things))))
+      self._record_score(sess, summary_writer, summary_op, summary_inputs, things, global_t) # TODO:NOW: is that "not terminal_end" correct?
 
-        elapsed_time = time.time() - self.start_time
-        steps_per_sec = self.local_t / elapsed_time
-        logging.info("### {}: Performance: {} STEPS in {:.0f} sec. {:.0f} STEPS/sec. {:.2f}M STEPS/hour".format(self.thread_index, self.local_t, elapsed_time, steps_per_sec, steps_per_sec * 3600 / 1000000.))
-
-      self.episode_reward_throughput = 0
-      self.episode_reward_delay = 0
-
-      self.local_t = 0
-
-      self.actions = [] 
-      self.states = [] 
-      self.values = [] 
-      self.rewards = [] 
-      self.durations = [] 
-      self.start_lstm_states = []
-      self.variable_snapshots = []
-
-      self.local_network.reset_state()
-    else:
-      self.restore_backup(sess)
+      elapsed_time = time.time() - self.start_time
+      steps_per_sec = self.local_t / elapsed_time
+      logging.info("### {}: Performance: {} STEPS in {:.0f} sec. {:.0f} STEPS/sec. {:.2f}M STEPS/hour".format(self.thread_index, self.local_t, elapsed_time, steps_per_sec, steps_per_sec * 3600 / 1000000.))
+    self.restore_backup(sess)
 
     self.actions = self.actions[LOCAL_T_MAX:]
     self.states = self.states[LOCAL_T_MAX:]
     self.values = self.values[LOCAL_T_MAX:]
     self.rewards = self.rewards[LOCAL_T_MAX:]
     self.durations = self.durations[LOCAL_T_MAX:]
+    self.estimated_values = self.estimated_values[LOCAL_T_MAX:]
     self.start_lstm_states = self.start_lstm_states[1:]
     self.variable_snapshots = self.variable_snapshots[1:]
 

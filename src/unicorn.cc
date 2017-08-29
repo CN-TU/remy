@@ -40,7 +40,6 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
   const int previous_largest_ack = _largest_ack;
 
   for ( auto const &packet : packets ) {
-    // printf("%lu: packet.seq_num: %d, _largest_ack: %d\n", _thread_id, packet.seq_num, _largest_ack);
     const int packets_sent_in_previous_episode = (int) _outstanding_rewards[packet.sent_during_action]["sent"];    
 
     const double delay = packet.tick_received - packet.tick_sent;
@@ -53,7 +52,6 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
       // const double duration = it->second["end_time"] - it->second["start_time"];
       // const double duration = it->second["intersend_duration_acc"];    
       const double duration = it->second["interreceive_duration_acc"];
-      // printf("%lu: Calculated reward when receiving packet delay:%f, throughput:%f\n", _thread_id, delay_final, throughput_final);
       _rainbow.put_reward(_thread_id, throughput_final, delay_final, duration);
       _put_rewards += 1;
       it = _outstanding_rewards.erase(it);
@@ -64,9 +62,9 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
     // FIXME: It doesn't really matter but conceptually it's wrong. It should be the time since the start of the simulation, for example
     if (_memory._last_tick_received != 0) {
       _outstanding_rewards[packet.sent_during_action]["interreceive_duration_acc"] += packet.tick_received - _memory._last_tick_received;
-    } else {
-      _outstanding_rewards[packet.sent_during_action]["interreceive_duration_acc"] += packet.tick_received - _start_tick;
-    }
+    } //else {
+    //   _outstanding_rewards[packet.sent_during_action]["interreceive_duration_acc"] += packet.tick_received - _start_tick;
+    // }
     // _outstanding_rewards[packet.sent_during_action]["end_time"] = packet.tick_received;
 
     _packets_received += 1;
@@ -99,9 +97,9 @@ void Unicorn::reset(const double & tickno)
     // _put_rewards += 1;
     finish();
   }
-  if (_put_actions != _put_rewards) {
+  // if (_put_actions != _put_rewards) {
     // printf("%lu: _put_actions: %lu, _put_rewards: %lu\n", _thread_id, _put_actions, _put_rewards);
-  }
+  // }
   assert(_put_actions == _put_rewards);
   // assert(_sent_packets.size() == 0);
 
@@ -135,14 +133,9 @@ double Unicorn::next_event_time( const double & tickno ) const
 {
   // return tickno;
   if ( int(_packets_sent) < _largest_ack + 1 + _the_window ) {
-    // if ( _last_send_time + _intersend_time <= tickno ) {
-      return tickno;
-    // } else {
-      // return _last_send_time + _intersend_time;
-    // }
+    return tickno;
   } else {
     /* window is currently closed */
-    // printf("%lu: Window is closed...\n", _thread_id);
     return std::numeric_limits<double>::max();
   }
 }

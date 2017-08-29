@@ -123,28 +123,37 @@ else:
 score_throughput = tf.placeholder(PRECISION)
 score_delay = tf.placeholder(PRECISION)
 entropy = tf.placeholder(PRECISION)
+skewness = tf.placeholder(PRECISION)
 actor_loss = tf.placeholder(PRECISION)
 value_loss = tf.placeholder(PRECISION)
 total_loss = tf.placeholder(PRECISION)
 window = tf.placeholder(PRECISION)
 std = tf.placeholder(PRECISION)
+inner_mean = tf.placeholder(PRECISION)
+inner_std = tf.placeholder(PRECISION)
 tf.summary.scalar("score_throughput", score_throughput)
 tf.summary.scalar("score_delay", score_delay)
 tf.summary.scalar("entropy", entropy)
+tf.summary.scalar("skewness", skewness)
 tf.summary.scalar("actor_loss", actor_loss)
 tf.summary.scalar("value_loss", value_loss)
 tf.summary.scalar("total_loss", total_loss)
 tf.summary.scalar("window", window)
 tf.summary.scalar("std", std)
+tf.summary.scalar("inner_mean", inner_mean)
+tf.summary.scalar("inner_std", inner_std)
 summary_inputs = {
   "score_throughput": score_throughput,
   "score_delay": score_delay,
   "entropy": entropy,
+  "skewness": skewness,
   "actor_loss": actor_loss,
   "value_loss": value_loss,
   "total_loss": total_loss,
   "window": window,
-  "std": std
+  "std": std,
+  "inner_mean": inner_mean,
+  "inner_std": inner_std
 }
 
 summary_op = tf.summary.merge_all()
@@ -169,23 +178,34 @@ def create_training_thread():
     training_threads[global_thread_index] = created_thread
     return_index = global_thread_index
     global_thread_index += 1
-    # init_new_vars = tf.variables_initializer(created_thread.get_network_vars())
-    # sess.run(init_new_vars)
     initialize_uninitialized(sess)
   else:
     return_index = idle_threads.pop()
     logging.info(" ".join(map(str,("Recycling thread", return_index))))
     created_thread = training_threads[return_index]
-    sess.run(created_thread.sync)
-    assert(len(created_thread.states)==0)
-    assert(len(created_thread.actions)==0)
-    assert(len(created_thread.rewards)==0)
-    assert(len(created_thread.durations)==0)
-    assert(len(created_thread.values)==0)
+    # assert(len(created_thread.states)==0)
+    # assert(len(created_thread.actions)==0)
+    # assert(len(created_thread.rewards)==0)
+    # assert(len(created_thread.durations)==0)
+    # assert(len(created_thread.values)==0)
     
   # set start time
   start_time = time.time() - wall_t
   created_thread.set_start_time(start_time)
+
+  created_thread.states = []
+  created_thread.actions = []
+  created_thread.rewards = []
+  created_thread.durations = []
+  created_thread.values = []
+  created_thread.estimated_values = []
+  created_thread.start_lstm_states = []
+  created_thread.variable_snapshots = []
+  created_thread.local_t = 0
+  created_thread.episode_reward_throughput = 0
+  created_thread.episode_reward_delay = 0
+  created_thread.local_network.reset_state()
+  sess.run( created_thread.sync )
 
   return return_index
 
