@@ -10,7 +10,6 @@ from constants import PRECISION
 from constants import LAYER_NORMALIZATION
 from constants import ALPHA
 from constants import BETA
-from constants import OFFSET
 from constants import ENTROPY_BETA
 from constants import SKEWNESS_GAMMA
 from constants import MINIMUM_STD
@@ -70,14 +69,14 @@ class GameACNetwork(object):
 			self.distribution_std = self.pi[1]
 			self.inner_distribution_mean = self.distribution.distribution.mean()
 			self.inner_distribution_std = self.distribution.distribution.stddev()
-			self.chosen_action = tf.round(self.distribution.sample() + OFFSET)
+			self.chosen_action = tf.ceil(self.distribution.sample())
 
 			# policy entropy
 			self.entropy = ENTROPY_BETA * tf.reduce_sum(self.distribution.distribution.mean() + 0.5 * tf.log(2.0*math.pi*math.e*self.distribution.distribution.variance()), axis=1)
 			# self.entropy = ENTROPY_BETA * tf.reduce_sum(0.5 * tf.log(2.0*math.pi*math.e*self.pi[1]*self.pi[1]), axis=1)
 			self.skewness = SKEWNESS_GAMMA * tf.reduce_sum((tf.exp(self.distribution.distribution.variance()) + 2.0)*tf.sqrt(tf.exp(self.distribution.distribution.variance()) - 1.0), axis=1)
-			self.actor_loss = tf.reduce_sum(
-				self.distribution.log_prob(self.a - OFFSET), axis=1) * (self.td_throughput + self.td_delay)
+			# self.actor_loss = tf.reduce_sum(self.distribution.log_prob(self.a - OFFSET), axis=1) * (self.td_throughput + self.td_delay)
+			self.actor_loss = tf.reduce_sum(tf.log(self.distribution.cdf(self.a) - self.distribution.cdf(tf.clip_by_value(self.a - 1.0, tiny, float("inf")))), axis=1) * (self.td_throughput + self.td_delay)
 
 			self.policy_loss = - tf.reduce_sum(self.actor_loss + self.entropy - self.skewness)
 			# self.policy_loss = - tf.reduce_sum(self.actor_loss)

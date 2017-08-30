@@ -6,6 +6,21 @@ Makefile.in
 *.log
 *.trs
 *.tmp
+*.dtx
+*.ins
+*.aux
+*.aux.bbl
+*.aux.blg
+*.bbl
+*.bcf
+*.blg
+*.dvi
+*.out
+*.pdf
+*.run.xml
+*.synctex.gz
+/tex/svg-inkscape/
+
 
 /.vscode
 
