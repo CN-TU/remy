@@ -167,7 +167,7 @@ class A3CTrainingThread(object):
     durations = self.durations[:LOCAL_T_MAX]
     values = self.values[:LOCAL_T_MAX]
 
-    logging.debug(" ".join(map(str,(self.thread_index, "In process: rewards", rewards, "durations", durations, "states", states, "actions", actions, "values", values))))
+    # logging.debug(" ".join(map(str,(self.thread_index, "In process: rewards", rewards, "durations", durations, "states", states, "actions", actions, "values", values))))
 
     # get estimated value of step n+1
     assert((not len(self.estimated_values) <= len(rewards)) or final)
@@ -219,7 +219,7 @@ class A3CTrainingThread(object):
       batch_R_accumulated_delay.append(R_accumulated_delay*(1-GAMMA))
       # batch_R_accumulated_delay.append(np.log(R_accumulated_delay))
 
-      logging.debug(" ".join(map(str,("batch_td_throughput[-1]", batch_td_throughput[-1], "batch_td_delay[-1]", batch_td_delay[-1], "batch_R_packets[-1]", batch_R_packets[-1], "batch_R_accumulated_delay[-1]", batch_R_accumulated_delay[-1], "batch_R_duration[-1]", batch_R_duration[-1]))))
+      # logging.debug(" ".join(map(str,("batch_td_throughput[-1]", batch_td_throughput[-1], "batch_td_delay[-1]", batch_td_delay[-1], "batch_R_packets[-1]", batch_R_packets[-1], "batch_R_accumulated_delay[-1]", batch_R_accumulated_delay[-1], "batch_R_duration[-1]", batch_R_duration[-1]))))
 
       self.episode_reward_throughput += ri[0]
       self.episode_reward_delay += ri[1]

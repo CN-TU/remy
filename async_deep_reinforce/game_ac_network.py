@@ -70,7 +70,7 @@ class GameACNetwork(object):
 			self.distribution_std = self.pi[1]
 			self.inner_distribution_mean = self.distribution.distribution.mean()
 			self.inner_distribution_std = self.distribution.distribution.stddev()
-			self.chosen_action = self.distribution.sample() + OFFSET
+			self.chosen_action = tf.round(self.distribution.sample() + OFFSET)
 
 			# policy entropy
 			self.entropy = ENTROPY_BETA * tf.reduce_sum(self.distribution.distribution.mean() + 0.5 * tf.log(2.0*math.pi*math.e*self.distribution.distribution.variance()), axis=1)
@@ -79,8 +79,8 @@ class GameACNetwork(object):
 			self.actor_loss = tf.reduce_sum(
 				self.distribution.log_prob(self.a - OFFSET), axis=1) * (self.td_throughput + self.td_delay)
 
-			# self.policy_loss = - tf.reduce_sum(self.actor_loss + self.entropy - self.skewness)
-			self.policy_loss = - tf.reduce_sum(self.actor_loss)
+			self.policy_loss = - tf.reduce_sum(self.actor_loss + self.entropy - self.skewness)
+			# self.policy_loss = - tf.reduce_sum(self.actor_loss)
 
 			# R (input for value)
 			self.r_packets = tf.placeholder(PRECISION, [None], name="r_packets")
@@ -230,7 +230,7 @@ class GameACLSTMNetwork(GameACNetwork):
 
 			# weight for policy output layer
 			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, 1])
-			# self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, 1])
+			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, 1])
 
 			# weight for value output layer
 			self.W_hidden_to_value_packets_fc, self.b_hidden_to_value_packets_fc = self._fc_variable([HIDDEN_SIZE, 1])
@@ -270,12 +270,12 @@ class GameACLSTMNetwork(GameACNetwork):
 			
 
 			raw_pi_mean = tf.matmul(lstm_outputs, self.W_hidden_to_action_mean_fc) + self.b_hidden_to_action_mean_fc
-			# raw_pi_std = tf.matmul(lstm_outputs, self.W_hidden_to_action_std_fc) + self.b_hidden_to_action_std_fc
+			raw_pi_std = tf.matmul(lstm_outputs, self.W_hidden_to_action_std_fc) + self.b_hidden_to_action_std_fc
 			# policy (output)
 			self.pi = (
 				tf.nn.softplus(raw_pi_mean) + 1.0,
-				# tf.nn.softplus(raw_pi_std) + MINIMUM_STD
-				tf.constant(1.0, shape=(1,), dtype=PRECISION)
+				tf.nn.softplus(raw_pi_std) + MINIMUM_STD
+				# tf.constant(1.0, shape=(1,), dtype=PRECISION)
 			)
 
 			# value (output)
@@ -349,7 +349,7 @@ class GameACLSTMNetwork(GameACNetwork):
 	def get_vars(self):
 		return [self.W_state_to_hidden_fc, self.b_state_to_hidden_fc,
 						self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc,
-						# self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc,
+						self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc,
 						self.W_hidden_to_value_packets_fc, self.b_hidden_to_value_packets_fc,
 						self.W_hidden_to_value_delay_fc, self.b_hidden_to_value_delay_fc,
 						self.W_hidden_to_value_duration_fc, self.b_hidden_to_value_duration_fc] + self.LSTM_variables
