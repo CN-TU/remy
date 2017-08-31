@@ -13,6 +13,7 @@ from constants import BETA
 from constants import ENTROPY_BETA
 from constants import SKEWNESS_GAMMA
 from constants import MINIMUM_STD
+# from constants import ACTOR_FACTOR
 
 # tiny = np.finfo(np.float32).tiny
 tiny = 1e-20
@@ -59,26 +60,31 @@ class GameACNetwork(object):
 			self.td_throughput = tf.placeholder(PRECISION, [None], name="td_throughput")
 			self.td_delay = tf.placeholder(PRECISION, [None], name="td_delay")
 			
-			normal_variance = tf.log((self.pi[1]*self.pi[1])/(self.pi[0]*self.pi[0])+1.0)
-			self.distribution = ds.TransformedDistribution(
-					distribution=ds.Normal(loc=tf.log(self.pi[0])-normal_variance/2.0, scale=tf.sqrt(normal_variance), allow_nan_stats=False, validate_args=True),
-					bijector=ds.bijectors.Exp(),
-					name="LogNormalTransformedDistribution")
+			# normal_variance = tf.log((self.pi[1]*self.pi[1])/(self.pi[0]*self.pi[0])+1.0)
+			# self.distribution = ds.TransformedDistribution(
+			# 		distribution=ds.Normal(loc=tf.log(self.pi[0])-normal_variance/2.0, scale=tf.sqrt(normal_variance), allow_nan_stats=False, validate_args=True),
+			# 		bijector=ds.bijectors.Exp(),
+			# 		name="LogNormalTransformedDistribution")
+
+			self.distribution = ds.Normal(loc=self.pi[0], scale=self.pi[1], allow_nan_stats=False, validate_args=True)
 
 			self.distribution_mean = self.pi[0]
 			self.distribution_std = self.pi[1]
-			self.inner_distribution_mean = self.distribution.distribution.mean()
-			self.inner_distribution_std = self.distribution.distribution.stddev()
-			self.chosen_action = tf.ceil(self.distribution.sample())
+			# self.inner_distribution_mean = self.distribution.distribution.mean()
+			# self.inner_distribution_std = self.distribution.distribution.stddev()
+			# self.chosen_action = tf.ceil(self.distribution.sample())
+			self.chosen_action = tf.ceil(tf.maximum(self.distribution.sample(), 0.0))
 
 			# policy entropy
-			self.entropy = ENTROPY_BETA * tf.reduce_sum(self.distribution.distribution.mean() + 0.5 * tf.log(2.0*math.pi*math.e*self.distribution.distribution.variance()), axis=1)
+			# self.entropy = ENTROPY_BETA * tf.reduce_sum(self.distribution.distribution.mean() + 0.5 * tf.log(2.0*math.pi*math.e*self.distribution.distribution.variance()), axis=1)
+			self.entropy = ENTROPY_BETA * tf.reduce_sum(0.5 * tf.log(2.0*math.pi*math.e*self.distribution.variance()), axis=1)
 			# self.entropy = ENTROPY_BETA * tf.reduce_sum(0.5 * tf.log(2.0*math.pi*math.e*self.pi[1]*self.pi[1]), axis=1)
-			self.skewness = SKEWNESS_GAMMA * tf.reduce_sum((tf.exp(self.distribution.distribution.variance()) + 2.0)*tf.sqrt(tf.exp(self.distribution.distribution.variance()) - 1.0), axis=1)
+			# self.skewness = SKEWNESS_GAMMA * tf.reduce_sum((tf.exp(self.distribution.distribution.variance()) + 2.0)*tf.sqrt(tf.exp(self.distribution.distribution.variance()) - 1.0), axis=1)
 			# self.actor_loss = tf.reduce_sum(self.distribution.log_prob(self.a - OFFSET), axis=1) * (self.td_throughput + self.td_delay)
 			self.actor_loss = tf.reduce_sum(tf.log(self.distribution.cdf(self.a) - self.distribution.cdf(tf.clip_by_value(self.a - 1.0, tiny, float("inf")))), axis=1) * (self.td_throughput + self.td_delay)
 
-			self.policy_loss = - tf.reduce_sum(self.actor_loss + self.entropy - self.skewness)
+			# self.policy_loss = - tf.reduce_sum(self.actor_loss + self.entropy - self.skewness)
+			self.policy_loss = - tf.reduce_sum(self.actor_loss + self.entropy)
 			# self.policy_loss = - tf.reduce_sum(self.actor_loss)
 
 			# R (input for value)
@@ -103,7 +109,7 @@ class GameACNetwork(object):
 		raise NotImplementedError()
 
 	def run_value(self, sess, s_t):
-		raise NotImplementedError()    
+		raise NotImplementedError()
 
 	def get_vars(self):
 		raise NotImplementedError()
@@ -272,9 +278,10 @@ class GameACLSTMNetwork(GameACNetwork):
 			raw_pi_std = tf.matmul(lstm_outputs, self.W_hidden_to_action_std_fc) + self.b_hidden_to_action_std_fc
 			# policy (output)
 			self.pi = (
-				tf.nn.softplus(raw_pi_mean) + 1.0,
-				tf.nn.softplus(raw_pi_std) + MINIMUM_STD
-				# tf.constant(1.0, shape=(1,), dtype=PRECISION)
+				tf.nn.softplus(raw_pi_mean) + 2.0,
+				# tf.nn.softplus(raw_pi_std) + MINIMUM_STD
+				tf.nn.sigmoid(raw_pi_std)
+				# tf.constant(0.5, shape=(1,), dtype=PRECISION)
 			)
 
 			# value (output)
@@ -341,9 +348,9 @@ class GameACLSTMNetwork(GameACNetwork):
 
 	def run_loss(self, sess, feed_dict):
 		# We don't have to roll back the LSTM state here as it is restored in the "process" function of a3c_training_thread.py anyway and because run_loss is only called there. 
-		entropy, skewness, actor_loss, value_loss, total_loss, window, std, inner_mean, inner_std = sess.run( [self.skewness, self.entropy, self.actor_loss, self.value_loss, self.total_loss, self.distribution_mean, self.distribution_std, self.inner_distribution_mean, self.inner_distribution_std], feed_dict = feed_dict )
+		entropy, actor_loss, value_loss, total_loss, window, std = sess.run( [self.entropy, self.actor_loss, self.value_loss, self.total_loss, self.distribution_mean, self.distribution_std], feed_dict = feed_dict )
 		
-		return skewness, entropy, actor_loss, value_loss, total_loss, window + OFFSET, std, inner_mean, inner_std
+		return entropy, actor_loss, value_loss, total_loss, window, std
 
 	def get_vars(self):
 		return [self.W_state_to_hidden_fc, self.b_state_to_hidden_fc,
