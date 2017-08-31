@@ -73,13 +73,14 @@ class A3CTrainingThread(object):
       summary_inputs["score_throughput"]: things["score_throughput"],
       summary_inputs["score_delay"]: things["score_delay"],
       summary_inputs["entropy"]: things["entropy"],
+      summary_inputs["skewness"]: things["skewness"],
       summary_inputs["actor_loss"]: things["actor_loss"],
       summary_inputs["value_loss"]: things["value_loss"],
       summary_inputs["total_loss"]: things["total_loss"],
       summary_inputs["window"]: things["window"],
       summary_inputs["std"]: things["std"],
-      # summary_inputs["inner_mean"]: things["inner_mean"],
-      # summary_inputs["inner_std"]: things["inner_std"],
+      summary_inputs["inner_mean"]: things["inner_mean"],
+      summary_inputs["inner_std"]: things["inner_std"],
     })
     summary_writer.add_summary(summary_str, global_t)
     summary_writer.flush()
@@ -279,16 +280,19 @@ class A3CTrainingThread(object):
       }
       feed_dict.update(var_dict)
 
-      entropy, actor_loss, value_loss, total_loss, window, std = self.local_network.run_loss(sess, feed_dict)
+      entropy, skewness, actor_loss, value_loss, total_loss, window, std, inner_mean, inner_std = self.local_network.run_loss(sess, feed_dict)
 
       things = {"score_throughput": normalized_final_score_throughput,
         "score_delay": normalized_final_score_delay, 
         "actor_loss": actor_loss.item(),
         "value_loss": value_loss,
         "entropy": entropy.item(),
+        "skewness": skewness.item(),
         "total_loss": total_loss,
         "window": window.item(),
-        "std": std.item()}
+        "std": std.item(),
+        "inner_mean": inner_mean.item(),
+        "inner_std": inner_std.item()}
       logging.debug(" ".join(map(str,("things", things))))
       self._record_score(sess, summary_writer, summary_op, summary_inputs, things, global_t) # TODO:NOW: is that "not terminal_end" correct?
 

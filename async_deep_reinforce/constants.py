@@ -2,7 +2,7 @@
 import tensorflow as tf
 import logging
 
-LOCAL_T_MAX = 20 # repeat step size
+LOCAL_T_MAX = 40 # repeat step size
 RMSP_ALPHA = 0.99 # decay parameter for RMSProp
 RMSP_EPSILON = 0.1 # epsilon parameter for RMSProp
 CHECKPOINT_DIR = 'checkpoints'
@@ -14,8 +14,8 @@ PRECISION = tf.float32
 
 INITIAL_ALPHA_LOG_RATE = 0.4226 # log_uniform interpolate rate for learning rate (around 7 * 10^-4)
 GAMMA = 0.99 # discount factor for rewards
-ENTROPY_BETA = 1e-3
-SKEWNESS_GAMMA = 1e-3
+ENTROPY_BETA = 0.5e-3
+SKEWNESS_GAMMA = 0.5e-3
 MAX_TIME_STEP = 10 * 1e7
 # GRAD_NORM_CLIP = 40.0 # gradient norm clipping
 USE_GPU = False # To use GPU, set True
@@ -31,4 +31,4 @@ BETA = 1.0
 LOG_LEVEL = logging.INFO
 MINIMUM_STD = 1e-2
 # Is this needed?
-ACTOR_FACTOR = 5e-1
+ACTOR_FACTOR = 1e-1

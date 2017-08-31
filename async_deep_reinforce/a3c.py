@@ -122,28 +122,37 @@ else:
 score_throughput = tf.placeholder(PRECISION)
 score_delay = tf.placeholder(PRECISION)
 entropy = tf.placeholder(PRECISION)
+skewness = tf.placeholder(PRECISION)
 actor_loss = tf.placeholder(PRECISION)
 value_loss = tf.placeholder(PRECISION)
 total_loss = tf.placeholder(PRECISION)
 window = tf.placeholder(PRECISION)
 std = tf.placeholder(PRECISION)
+inner_mean = tf.placeholder(PRECISION)
+inner_std = tf.placeholder(PRECISION)
 tf.summary.scalar("score_throughput", score_throughput)
 tf.summary.scalar("score_delay", score_delay)
 tf.summary.scalar("entropy", entropy)
+tf.summary.scalar("skewness", skewness)
 tf.summary.scalar("actor_loss", actor_loss)
 tf.summary.scalar("value_loss", value_loss)
 tf.summary.scalar("total_loss", total_loss)
 tf.summary.scalar("window", window)
 tf.summary.scalar("std", std)
+tf.summary.scalar("inner_mean", inner_mean)
+tf.summary.scalar("inner_std", inner_std)
 summary_inputs = {
   "score_throughput": score_throughput,
   "score_delay": score_delay,
   "entropy": entropy,
+  "skewness": skewness,
   "actor_loss": actor_loss,
   "value_loss": value_loss,
   "total_loss": total_loss,
   "window": window,
   "std": std,
+  "inner_mean": inner_mean,
+  "inner_std": inner_std
 }
 
 summary_op = tf.summary.merge_all()
