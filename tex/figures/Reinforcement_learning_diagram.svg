@@ -14,8 +14,8 @@
    viewBox="0 0 79.374998 76.729172"
    version="1.1"
    id="svg4059"
-   inkscape:version="0.92.1 r15371"
-   sodipodi:docname="reinforcement.svg">
+   inkscape:version="0.92.2 (5c3e80d, 2017-08-06)"
+   sodipodi:docname="Reinforcement_learning_diagram.svg">
   <defs
      id="defs4053">
     <marker
@@ -210,17 +210,17 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.4"
-     inkscape:cx="122.90474"
-     inkscape:cy="136.27641"
+     inkscape:zoom="2.8"
+     inkscape:cx="147.10582"
+     inkscape:cy="164.59079"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="false"
      units="px"
      inkscape:window-width="1920"
-     inkscape:window-height="1016"
-     inkscape:window-x="0"
-     inkscape:window-y="27"
+     inkscape:window-height="1163"
+     inkscape:window-x="1920"
+     inkscape:window-y="0"
      inkscape:window-maximized="1" />
   <metadata
      id="metadata4056">
@@ -230,7 +230,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -428,28 +428,6 @@
          d="m 160,315 v -5 h 20 20 v -25 -25 h -5 -5 v 10 10 h -10 -10 v 5 5 h 10 10 v 5 5 h -15 -15 v -10 -10 h -20 -20 v -5 -5 h 30 30 v -25 -25 h -20 -20 v -20 -20 h -15 -15 v 15 15 h 5 5 v -10 -10 h 5 5 v 15 15 H 100 70 v 25 25 h 10 10 v 5 5 H 75 60 v -35 -35 h 20 20 v -20 -20 h 25 25 v 20 20 h 15 15 v -10 -10 h 5 5 v 10 10 h 20 20 v 5 5 h -20 -20 v 15 15 h 10 10 v 10 10 h 15 15 v -10 -10 h 5 5 v 15 15 h -20 -20 v 15 15 h 45 45 v -45 -45 h -5 -5 v 40 40 h -5 -5 v -45 -45 h 10 10 V 135 60 H 275 250 V 70 80 H 235 220 V 55 30 h 5 5 v 20 20 h 5 5 V 60 50 h 20 20 V 40 30 h 5 5 v 10 10 h 5 5 V 35 20 h -25 -25 v 5 5 h 10 10 v 5 5 H 255 240 V 30 20 h -10 -10 v -5 -5 h 45 45 v 155 155 h -75 -75 z"
          inkscape:connector-curvature="0" />
     </g>
-    <text
-       xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
-       x="29.856512"
-       y="241.15166"
-       id="text8001"><tspan
-         sodipodi:role="line"
-         id="tspan7999"
-         x="29.856512"
-         y="241.15166"
-         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.58611107px;font-family:sans-serif;-inkscape-font-specification:'sans-serif Italic';stroke-width:0.26458332">Environment</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
-       x="37.928112"
-       y="294.59744"
-       id="text8001-8"><tspan
-         sodipodi:role="line"
-         id="tspan7999-4"
-         x="37.928112"
-         y="294.59744"
-         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.58611107px;font-family:sans-serif;-inkscape-font-specification:'sans-serif Italic';stroke-width:0.26458332">Agent</tspan></text>
     <path
        style="fill:none;stroke:#000000;stroke-width:0.26499999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
        d="m 52.699746,281.75512 c 31.505379,0.17818 32.072343,-53.89935 0,-53.58754"
@@ -459,15 +437,15 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
-       x="-262.15799"
+       x="-260.04129"
        y="74.130653"
        id="text8001-3"
        transform="rotate(-90)"><tspan
          sodipodi:role="line"
          id="tspan7999-1"
-         x="-262.15799"
+         x="-260.04129"
          y="74.130653"
-         style="font-size:4.58611107px;stroke-width:0.26458332">Action</tspan></text>
+         style="font-size:3.52777778px;stroke-width:0.26458332;-inkscape-font-specification:'Linux Libertine O';font-family:'Linux Libertine O';font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal">Action</tspan></text>
     <g
        style="clip-rule:evenodd;fill-rule:evenodd;image-rendering:optimizeQuality;shape-rendering:geometricPrecision;text-rendering:geometricPrecision"
        id="g9313"
@@ -510,14 +488,14 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
-       x="2.5774715"
+       x="6.2816381"
        y="266.02237"
        id="text8001-8-9"><tspan
          sodipodi:role="line"
          id="tspan7999-4-2"
-         x="2.5774715"
+         x="6.2816381"
          y="266.02237"
-         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.58611107px;font-family:sans-serif;-inkscape-font-specification:'sans-serif Italic';stroke-width:0.26458332">Interpreter</tspan></text>
+         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52777778px;font-family:'Linux Libertine O';-inkscape-font-specification:'Linux Libertine O Italic';stroke-width:0.26458332">Interpreter</tspan></text>
     <path
        style="fill:none;stroke:#000000;stroke-width:0.26499999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#marker9358)"
        d="m 35.419221,228.05045 c -11.326126,-0.1163 -23.484588,4.88464 -23.396732,17.3911"
@@ -539,26 +517,48 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
-       x="89.957092"
-       y="242.92215"
+       x="94.046204"
+       y="241.82645"
        id="text8001-8-6"
        transform="rotate(15)"><tspan
          sodipodi:role="line"
          id="tspan7999-4-4"
-         x="89.957092"
-         y="242.92215"
-         style="font-size:4.58611107px;stroke-width:0.26458332">Reward</tspan></text>
+         x="94.046204"
+         y="241.82645"
+         style="font-size:3.52777778px;stroke-width:0.26458332;-inkscape-font-specification:'Linux Libertine O';font-family:'Linux Libertine O';font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal">Reward</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
-       x="89.265076"
-       y="262.82962"
+       x="89.776215"
+       y="262.69266"
        id="text8001-8-6-3"
        transform="rotate(15)"><tspan
          sodipodi:role="line"
          id="tspan7999-4-4-8"
-         x="89.265076"
-         y="262.82962"
-         style="font-size:4.58611107px;stroke-width:0.26458332">State</tspan></text>
+         x="89.776215"
+         y="262.69266"
+         style="font-size:3.52777778px;stroke-width:0.26458332;-inkscape-font-specification:'Linux Libertine O';font-family:'Linux Libertine O';font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal">State</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="36.206837"
+       y="239.56401"
+       id="text8001-36"><tspan
+         sodipodi:role="line"
+         id="tspan7999-7"
+         x="36.206837"
+         y="239.56401"
+         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52777778px;font-family:'Linux Libertine O';-inkscape-font-specification:'Linux Libertine O Italic';stroke-width:0.26458332">Environment</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="41.103085"
+       y="292.48099"
+       id="text8001-8-5"><tspan
+         sodipodi:role="line"
+         id="tspan7999-4-3"
+         x="41.103085"
+         y="292.48099"
+         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52777778px;font-family:'Linux Libertine O';-inkscape-font-specification:'Linux Libertine O Italic';stroke-width:0.26458332">Agent</tspan></text>
   </g>
 </svg>

@@ -400,9 +400,9 @@
      showgrid="false"
      units="px"
      inkscape:window-width="1920"
-     inkscape:window-height="1136"
-     inkscape:window-x="0"
-     inkscape:window-y="27"
+     inkscape:window-height="1163"
+     inkscape:window-x="1920"
+     inkscape:window-y="0"
      inkscape:window-maximized="1" />
   <metadata
      id="metadata4056">
@@ -613,25 +613,25 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
-       x="29.856512"
-       y="241.15166"
+       x="36.206516"
+       y="239.56418"
        id="text8001"><tspan
          sodipodi:role="line"
          id="tspan7999"
-         x="29.856512"
-         y="241.15166"
-         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.58611107px;font-family:sans-serif;-inkscape-font-specification:'sans-serif Italic';stroke-width:0.26458332">Environment</tspan></text>
+         x="36.206516"
+         y="239.56418"
+         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52777778px;font-family:'Linux Libertine O';-inkscape-font-specification:'Linux Libertine O Italic';stroke-width:0.26458332">Environment</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
-       x="37.928112"
-       y="294.59744"
+       x="41.103115"
+       y="292.48074"
        id="text8001-8"><tspan
          sodipodi:role="line"
          id="tspan7999-4"
-         x="37.928112"
-         y="294.59744"
-         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.58611107px;font-family:sans-serif;-inkscape-font-specification:'sans-serif Italic';stroke-width:0.26458332">Agent</tspan></text>
+         x="41.103115"
+         y="292.48074"
+         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52777778px;font-family:'Linux Libertine O';-inkscape-font-specification:'Linux Libertine O Italic';stroke-width:0.26458332">Agent</tspan></text>
     <path
        style="fill:none;stroke:#000000;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:3.71428561;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
        d="M 63.868717,281.64426 C 84.825968,281.88497 79.230218,231.93175 53.29422,231.67117"
@@ -680,14 +680,14 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
-       x="1.5191381"
+       x="6.8108048"
        y="266.55154"
        id="text8001-8-9"><tspan
          sodipodi:role="line"
          id="tspan7999-4-2"
-         x="1.5191381"
+         x="6.8108048"
          y="266.55154"
-         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.58611107px;font-family:sans-serif;-inkscape-font-specification:'sans-serif Italic';stroke-width:0.26458332">Interpreter</tspan></text>
+         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52777778px;font-family:'Linux Libertine O';-inkscape-font-specification:'Linux Libertine O Italic';stroke-width:0.26458332">Interpreter</tspan></text>
     <path
        style="fill:none;stroke:#000000;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:3.71428561;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#marker12943)"
        d="m 26.445483,253.9555 c 11.879877,-0.13369 17.83976,2.89932 17.60595,15.42874"
@@ -697,27 +697,27 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
-       x="188.98167"
-       y="169.38864"
+       x="191.0085"
+       y="167.6879"
        id="text8001-8-6"
        transform="rotate(40)"><tspan
          sodipodi:role="line"
          id="tspan7999-4-4"
-         x="188.98167"
-         y="169.38864"
-         style="font-size:4.58611107px;stroke-width:0.26458332">Reward</tspan></text>
+         x="191.0085"
+         y="167.6879"
+         style="font-size:3.52777778px;stroke-width:0.26458332;-inkscape-font-specification:'Linux Libertine O';font-family:'Linux Libertine O';font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal">Reward</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
-       x="80.485214"
-       y="275.0433"
+       x="87.13002"
+       y="273.26279"
        id="text8001-8-6-3"
        transform="rotate(15)"><tspan
          sodipodi:role="line"
          id="tspan7999-4-4-8"
-         x="80.485214"
-         y="275.0433"
-         style="font-size:4.58611107px;stroke-width:0.26458332">States</tspan></text>
+         x="87.13002"
+         y="273.26279"
+         style="font-size:3.52777778px;stroke-width:0.26458332;-inkscape-font-specification:'Linux Libertine O';font-family:'Linux Libertine O';font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal">States</tspan></text>
     <path
        style="fill:none;stroke:#000000;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:3.71428561;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Arrow2Lend-0)"
        d="m 63.873842,281.6406 c 17.008975,0.20675 16.51542,-34.60078 1.845275,-47.83198 -3.392901,-3.06011 -7.54411,-4.96608 -12.412481,-5.01784"
@@ -738,13 +738,13 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:10.58333302px;line-height:0.40000001;font-family:sans-serif;-inkscape-font-specification:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
-       x="52.380844"
-       y="286.77539"
+       x="52.910011"
+       y="286.24622"
        id="text8001-3-8"><tspan
          sodipodi:role="line"
-         x="52.380844"
-         y="286.77539"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.58611107px;line-height:0.40000001;font-family:sans-serif;-inkscape-font-specification:sans-serif;stroke-width:0.26458332"
+         x="52.910011"
+         y="286.24622"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52777778px;line-height:0.40000001;font-family:'Linux Libertine O';-inkscape-font-specification:'Linux Libertine O';stroke-width:0.26458332"
          id="tspan111-9">Action</tspan></text>
     <path
        style="fill:none;stroke:#000000;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:3.71428561;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#marker12885)"
@@ -803,7 +803,7 @@
        xml:space="preserve"
        id="flowRoot1308"
        style="font-style:normal;font-weight:normal;font-size:40px;line-height:0.5ex;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
-       transform="matrix(0,0.26458333,-0.26458333,0,96.950671,233.37654)"><flowRegion
+       transform="matrix(0,-0.26458333,0.26458333,0,45.745009,289.59515)"><flowRegion
          id="flowRegion1310"
          style="line-height:0.5ex"><rect
            id="rect1312"
@@ -813,11 +813,11 @@
            y="83.136658"
            style="line-height:0.5ex" /></flowRegion><flowPara
          id="flowPara1314"
-         style="font-size:14.66666698px;line-height:0.5ex">Partial Actions</flowPara></flowRoot>    <flowRoot
+         style="font-size:13.3333335px;line-height:0.5ex;-inkscape-font-specification:'Linux Libertine O';font-family:'Linux Libertine O';font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal">Partial Actions</flowPara></flowRoot>    <flowRoot
        xml:space="preserve"
        id="flowRoot1308-3"
        style="font-style:normal;font-weight:normal;font-size:40px;line-height:0.5ex;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
-       transform="matrix(0.22653784,0.13669289,-0.13669289,0.22653784,12.409261,208.29485)"><flowRegion
+       transform="matrix(0.22653784,0.13669289,-0.13669289,0.22653784,12.938428,209.35319)"><flowRegion
          id="flowRegion1310-6"
          style="line-height:0.5ex"><rect
            id="rect1312-7"
@@ -827,11 +827,11 @@
            y="83.136658"
            style="line-height:0.5ex" /></flowRegion><flowPara
          id="flowPara1314-5"
-         style="font-size:14.66666698px;line-height:0.5ex">Partial Rewards</flowPara></flowRoot>    <flowRoot
+         style="font-size:13.33333344px;line-height:0.5ex;-inkscape-font-specification:'Linux Libertine O';font-family:'Linux Libertine O';font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal">Partial Rewards</flowPara></flowRoot>    <flowRoot
        xml:space="preserve"
        id="flowRoot1308-3-3"
        style="font-style:normal;font-weight:normal;font-size:40px;line-height:0.5ex;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
-       transform="matrix(0.21047047,-0.16033254,0.16033254,0.21047047,-29.786655,224.43515)"><flowRegion
+       transform="matrix(0.21047047,-0.16033254,0.16033254,0.21047047,-27.669987,224.96432)"><flowRegion
          id="flowRegion1310-6-5"
          style="line-height:0.5ex"><rect
            id="rect1312-7-6"
@@ -841,5 +841,5 @@
            y="83.136658"
            style="line-height:0.5ex" /></flowRegion><flowPara
          id="flowPara1314-5-2"
-         style="font-size:14.66666698px;line-height:0.5ex">Partial Rewards</flowPara></flowRoot>  </g>
+         style="font-size:13.33333315px;line-height:0.5ex;-inkscape-font-specification:'Linux Libertine O';font-family:'Linux Libertine O';font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal">Partial Rewards</flowPara></flowRoot>  </g>
 </svg>

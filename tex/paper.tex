@@ -214,7 +214,8 @@ $a_t$ is the sampled value $W$ at time $t$ at it is used as the window until the
 
 With $H$ being the entropy and $S$ being the skewness, the actor network minimizes the loss
 \begin{align*}
-l_{\text{a}_t} =& -\log \left( \pi_W\left( a_t-1 < W \leq a_t \given s_t; \theta_a \right)\right)\left(\frac{}{} - \Sigma v_t\right)\\ 
+l_{\text{a}_t} =& -\log \left( \pi_W\left( a_t-1 < W \leq a_t \given s_t; \theta_a \right)\right)\\
+&\left( \left(\frac{R_{\text{byte}_t}}{{R_{\text{duration}_t}}} - \frac{v_{\text{byte}_t}}{{v_{\text{duration}_t}}}\right) - \left( \frac{R_{\text{delay}_t}}{{R_{\text{packet}_t}}}- \frac{v_{\text{delay}_t}}{{v_{\text{packet}_t}}} \right)\right)\\ 
 &+ \beta H\left(\text{Lognormal}\left( \mu_\text{normal}, {\sigma_{\text{normal}}}^{2}\right) \right)\\
 &- \delta S\left(\text{Lognormal}\left( \mu_\text{normal}, {\sigma_{\text{normal}}}^{2}\right) \right).
 \end{align*}
