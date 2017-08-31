@@ -60,16 +60,22 @@ class GameACNetwork(object):
 			self.td_throughput = tf.placeholder(PRECISION, [None], name="td_throughput")
 			self.td_delay = tf.placeholder(PRECISION, [None], name="td_delay")
 			
-			normal_variance = tf.log((self.pi[1]*self.pi[1])/(self.pi[0]*self.pi[0])+1.0)
+			self.inner_distribution_mean = tf.log(self.pi[0])
+			self.inner_distribution_std = tf.sqrt(tf.log(0.5 * tf.exp(-2. * self.inner_distribution_mean)*(tf.exp(2. * self.inner_distribution_mean)+tf.sqrt(tf.exp(4. * self.inner_distribution_mean) + 4. * tf.exp(2. * self.inner_distribution_mean) * self.pi[1]*self.pi[1]))))
 			self.distribution = ds.TransformedDistribution(
-					distribution=ds.Normal(loc=tf.log(self.pi[0])-normal_variance/2.0, scale=tf.sqrt(normal_variance), allow_nan_stats=False, validate_args=True),
+					distribution=ds.Normal(loc=self.inner_distribution_mean, scale=self.inner_distribution_std, allow_nan_stats=False, validate_args=True),
 					bijector=ds.bijectors.Exp(),
 					name="LogNormalTransformedDistribution")
+			# normal_variance = tf.log((self.pi[1]*self.pi[1])/(self.pi[0]*self.pi[0])+1.0)
+			# self.distribution = ds.TransformedDistribution(
+			# 		distribution=ds.Normal(loc=tf.log(self.pi[0])-normal_variance/2.0, scale=tf.sqrt(normal_variance), allow_nan_stats=False, validate_args=True),
+			# 		bijector=ds.bijectors.Exp(),
+			# 		name="LogNormalTransformedDistribution")
 
-			self.distribution_mean = self.pi[0]
+			self.distribution_median = self.pi[0]
 			self.distribution_std = self.pi[1]
-			self.inner_distribution_mean = self.distribution.distribution.mean()
-			self.inner_distribution_std = self.distribution.distribution.stddev()
+			# self.inner_distribution_mean = self.distribution.distribution.mean()
+			# self.inner_distribution_std = self.distribution.distribution.stddev()
 			self.chosen_action = tf.ceil(self.distribution.sample())
 
 			# policy entropy
@@ -230,7 +236,7 @@ class GameACLSTMNetwork(GameACNetwork):
 			self.lstm = tf.contrib.rnn.MultiRNNCell([GameACLSTMNetwork.create_cell(HIDDEN_SIZE, LAYER_NORMALIZATION) for i in range(N_LSTM_LAYERS)], state_is_tuple=True)
 
 			# weight for policy output layer
-			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, 1])
+			self.W_hidden_to_action_median_fc, self.b_hidden_to_action_median_fc = self._fc_variable([HIDDEN_SIZE, 1])
 			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, 1])
 
 			# weight for value output layer
@@ -270,13 +276,13 @@ class GameACLSTMNetwork(GameACNetwork):
 			# print("lstm_outputs", lstm_outputs)
 			
 
-			raw_pi_mean = tf.matmul(lstm_outputs, self.W_hidden_to_action_mean_fc) + self.b_hidden_to_action_mean_fc
+			raw_pi_median = tf.matmul(lstm_outputs, self.W_hidden_to_action_median_fc) + self.b_hidden_to_action_median_fc
 			raw_pi_std = tf.matmul(lstm_outputs, self.W_hidden_to_action_std_fc) + self.b_hidden_to_action_std_fc
 			# policy (output)
 			self.pi = (
-				tf.nn.softplus(raw_pi_mean) + 1.0,
-				# tf.nn.softplus(raw_pi_std) + MINIMUM_STD
-				tf.nn.sigmoid(raw_pi_std)
+				tf.nn.softplus(raw_pi_median) + 1.0,
+				tf.nn.softplus(raw_pi_std) + MINIMUM_STD
+				# tf.nn.sigmoid(raw_pi_std)
 				# tf.constant(0.5, shape=(1,), dtype=PRECISION)
 			)
 
@@ -344,11 +350,11 @@ class GameACLSTMNetwork(GameACNetwork):
 
 	def run_loss(self, sess, feed_dict):
 		# We don't have to roll back the LSTM state here as it is restored in the "process" function of a3c_training_thread.py anyway and because run_loss is only called there. 
- 		return sess.run( [self.entropy, self.skewness, self.actor_loss, self.value_loss, self.total_loss, self.distribution_mean, self.distribution_std, self.inner_distribution_mean, self.inner_distribution_std], feed_dict = feed_dict )
+ 		return sess.run( [self.entropy, self.skewness, self.actor_loss, self.value_loss, self.total_loss, self.distribution_median, self.distribution_std, self.inner_distribution_mean, self.inner_distribution_std], feed_dict = feed_dict )
 
 	def get_vars(self):
 		return [self.W_state_to_hidden_fc, self.b_state_to_hidden_fc,
-						self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc,
+						self.W_hidden_to_action_median_fc, self.b_hidden_to_action_median_fc,
 						self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc,
 						self.W_hidden_to_value_packets_fc, self.b_hidden_to_value_packets_fc,
 						self.W_hidden_to_value_delay_fc, self.b_hidden_to_value_delay_fc,
