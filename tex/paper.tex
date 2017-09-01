@@ -3,6 +3,9 @@
 \usepackage[utf8]{inputenc}
 \usepackage{booktabs} % For formal tables
 \usepackage{algorithmicx}
+\usepackage{algpseudocode}
+\usepackage{algorithm}
+
 \usepackage{todonotes}
 \usepackage{svg}
 
@@ -16,9 +19,14 @@
 \DeclarePairedDelimiterX\Basics[1](){\let\given\sgiven #1}
 \newcommand\Average{E\Basics}
 
-\newcommand\fnurl[2]{%
-\href{#2}{#1}\footnote{\url{#2}}%
-}
+\makeatletter
+\newcommand{\StateIndent}[1][3]{%
+  \setlength\@tempdima{\algorithmicindent}%
+  \Statex\hskip\dimexpr#1\@tempdima\relax}
+\algdef{S}[WHILE]{WhileNoDo}[1]{\algorithmicwhile\ #1}%
+\makeatother
+
+\newcommand{\algorithmautorefname}{Algorithm}
 
 % Copyright
 %\setcopyright{none}
@@ -62,14 +70,14 @@
  \country{Austria}}
 \email{maximilian.bachl@tuwien.ac.at}
 
-\author{Joachim Fabini} 
-\affiliation{%
- \institution{Institute of Telecommunications}
- \streetaddress{Gußhausstraße 25}
- \postcode{1040}
- \city{Vienna} 
- \country{Austria}}
-\email{joachim.fabini@tuwien.ac.at}
+%\author{Joachim Fabini} 
+%\affiliation{%
+% \institution{Institute of Telecommunications}
+% \streetaddress{Gußhausstraße 25}
+% \postcode{1040}
+% \city{Vienna} 
+% \country{Austria}}
+%\email{joachim.fabini@tuwien.ac.at}
 
 \author{Tanja Zseby} 
 \affiliation{%
@@ -81,7 +89,7 @@
 \email{tanja.zseby@tuwien.ac.at}
 
 % The default list of authors is too long for headers}
-\renewcommand{\shortauthors}{Bachl et al.}
+\renewcommand{\shortauthors}{Bachl, Zseby}
 
 
 \begin{abstract}
@@ -147,15 +155,15 @@ In the following a time step $t$ corresponds to the reception of an acknowledgem
 
 The value network estimates the expected reward given a state $s_t$.
 
-Let $r_t$ be the reward that was received at time $t$. $V(s_t; \theta_v)$ designates the expected mean reward in state $s_t$ given the parameters of the value network $theta_v$. Then, with $\gamma$ being the roll-off factor, which designates the influence that future reward has on the moving average, (set to $0.99$), we generically define the expected n-step return as 
+Let $r_t$ be the reward that was received at time $t$. $V(s_t; \theta_\text{v})$ designates the expected mean reward in state $s_t$ given the parameters of the value network $theta_v$. Then, with $\gamma$ being the roll-off factor, which designates the influence that future reward has on the moving average, (set to $0.99$), we generically define the expected n-step return as 
 \begin{align*}
-R_t = \left(\left(\sum_{i=0}^{k-1} \gamma^ir_{t+i}\right) + \gamma^k \frac{V(s_{t+k}; \theta_v)}{1-\gamma}\right)\left(1-\gamma\right),
+R_t = \left(\left(\sum_{i=0}^{k-1} \gamma^ir_{t+i}\right) + \gamma^k \frac{V(s_{t+k}; \theta_\text{v})}{1-\gamma}\right)\left(1-\gamma\right),
 \end{align*}
 where $k$ is upper-bounded by $t_\text{max}$. $R$ is simply a moving average of future rewards. However, usual moving averages take into account values from the past while this one uses values from the future; it runs reversely. 
 
 The loss function, which the value network tries to minimize, is the square of the difference of the actual mean reward received and the expected mean reward
 \begin{align*}
-l_{\text{v}_t} = \left(R_t - V(s_t; \theta_v)\right)^2.
+l_{\text{v}_t} = \left(R_t - V(s_t; \theta_\text{v})\right)^2.
 \end{align*}
 
 We actually use four moving averages for four different types of reward: 
@@ -168,10 +176,10 @@ We actually use four moving averages for four different types of reward:
 
 The loss function $l_{v_t}$ of the value network is actually the sum of the square of the difference for each of these four moving averages:
 \begin{align*}
-l_{\text{v}_t} =& \left(R_{\text{packet}_t} - V_\text{packet}(s_t; \theta_v)\right)^2 \\
-&+\left(R_{\text{byte}_t} - V_\text{byte}(s_t; \theta_v)\right)^2 \\
-&+\left(R_{\text{delay}_t} - V_\text{delay}(s_t; \theta_v)\right)^2 \\
-&+\left(R_{\text{duration}_t} - V_\text{duration}(s_t; \theta_v)\right)^2
+l_{\text{v}_t} =& \left(R_{\text{packet}_t} - V_\text{packet}(s_t; \theta_\text{v})\right)^2 \\
+&+\left(R_{\text{byte}_t} - V_\text{byte}(s_t; \theta_\text{v})\right)^2 \\
+&+\left(R_{\text{delay}_t} - V_\text{delay}(s_t; \theta_\text{v})\right)^2 \\
+&+\left(R_{\text{duration}_t} - V_\text{duration}(s_t; \theta_\text{v})\right)^2
 \end{align*}
 
 \subsection{Actor Network}
@@ -212,12 +220,11 @@ $a_t$ is the sampled value $W$ at time $t$ at it is used as the window until the
 %\Sigma v_t = \sum_{i \in \left \{\text{packet}, \text{byte}, \text{delay}, \text{duration}\right \}} v_{i_t}.
 %\end{align*}
 
-With $H$ being the entropy and $S$ being the skewness, the actor network minimizes the loss
+With $H$ being the entropy, the actor network minimizes the loss
 \begin{align*}
-l_{\text{a}_t} =& -\log \left( \pi_W\left( a_t-1 < W \leq a_t \given s_t; \theta_a \right)\right)\\
+l_{\text{a}_t} =& -\log \left( \pi_W\left( a_t-1 < W \leq a_t \given s_t; \theta_\text{a} \right)\right)\\
 &\left( \left(\frac{R_{\text{byte}_t}}{{R_{\text{duration}_t}}} - \frac{v_{\text{byte}_t}}{{v_{\text{duration}_t}}}\right) - \left( \frac{R_{\text{delay}_t}}{{R_{\text{packet}_t}}}- \frac{v_{\text{delay}_t}}{{v_{\text{packet}_t}}} \right)\right)\\ 
-&+ \beta H\left(\text{Lognormal}\left( \mu_\text{normal}, {\sigma_{\text{normal}}}^{2}\right) \right)\\
-&- \delta S\left(\text{Lognormal}\left( \mu_\text{normal}, {\sigma_{\text{normal}}}^{2}\right) \right).
+&+ \beta H\left(\text{Lognormal}\left( \mu_\text{normal}, {\sigma_{\text{normal}}}^{2}\right) \right).
 \end{align*}
 
 $\beta$ was set to $\frac 1 2 10^{-3}$ and $\delta$ to $10^{-3}$.
@@ -231,7 +238,7 @@ Reinforcement learning assumes that a reward follows an action and vice-versa (s
 \end{figure}
 \footnotetext{adapted from \url{https://upload.wikimedia.org/wikipedia/commons/1/1b/Reinforcement_learning_diagram.svg}}
 
-Thus we propose the Partial Action Actor Critic Learning (PAL) framework (see \autoref{fig:pal}) in which one action generates a number of partial actions ($leq 1$). Each partial interaction generates a partial reward upon generating with the environment. Upon receiving a partial reward, the agent estimates the current state and triggers a new action. When all partial rewards of one action were received, the agent combines them to form the reward and updates the value and actor networks. 
+Thus we propose the Partial Action Actor Critic Learning (PAL) framework (see \autoref{fig:pal}) in which one action generates a number of partial actions ($leq 1$). Each partial interaction generates a partial reward upon generating with the environment. Upon receiving a partial reward, the agent estimates the current state and triggers a new action. When all partial rewards of one action were received, the agent combines them to form the reward and updates the value and actor networks (see \autoref{alg:pal}). 
 
 \begin{figure}
 \includesvg{figures/Reinforcement_learning_diagram_PAL}
@@ -240,7 +247,67 @@ Thus we propose the Partial Action Actor Critic Learning (PAL) framework (see \a
 \end{figure}
 \footnotetext{adapted from \url{https://upload.wikimedia.org/wikipedia/commons/1/1b/Reinforcement_learning_diagram.svg}}
 
-Spam and eggs
+\begin{algorithm}
+\caption{Partial Action Actor Critic Learning -- pseudocode for each learning thread.}
+\label{alg:pal}
+\begin{algorithmic}
+\Loop
+	\State $l_\text{actions} \gets  [] $
+	\State $l_\text{states} \gets  [] $
+	\State $l_\text{values} \gets  [] $
+	\State $l_\text{rewards} \gets  [] $
+	\State $l_\text{estimatedValues} \gets  [] $
+	\State $l_\text{snapshots} \gets  [] $
+	\State $t \gets 0$
+	\State $s_0 \gets \text{initialState}()$
+	\State $\theta_\text{a} \gets \theta_{\text{a}_\text{g}}$
+	\State $\theta_\text{v} \gets \theta_{\text{v}_\text{g}}$
+	\Repeat
+		\State $l_\text{states}.\text{append}(s_t)$
+		\State $l_\text{estimatedValues}.\text{append}(V(s_t; \theta_\text{v}))$
+		\If{$t \bmod t_\text{max} = 0$}
+			\State $\theta_\text{a} \gets \theta_{\text{a}_\text{g}}$
+			\State $\theta_\text{v} \gets \theta_{\text{v}_\text{g}}$
+			\State $l_\text{snapshots}.\text{append}((\theta_\text{a}, \theta_\text{v}))$
+		\EndIf
+		\State Sample $a_t$ from the probability distribution
+		\State $l_\text{actions}.\text{append}(a_t)$
+		\State $l_{\text{partialActions}_t} \gets \text{partialActions}(a_t)$
+		\ForAll{partial actions $a_{\text{p}_{nt}}$ in $l_{\text{partialActions}_t}$}
+			\State Take partial action $a_{\text{p}_{nt}}$
+		\EndFor
+		\State Receive partial reward $r_{\text{p}_{nt'}}$
+		\StateIndent[3] where $t' \leq t$ and $0 \leq n \leq\#(l_{\text{partialActions}_{t'}})$
+		\If{all partial rewards of $a_{t'}$ were received}
+			\State $r_{t'} \gets \text{combination of all partial rewards }r_{\text{p}_{nt'}}$
+			\State $l_\text{rewards}.\text{append}(r_{t'})$
+			\If{$\#\left(l_\text{rewards}\right) > t_\text{max}$ or the episode is over}
+				\State $t_\text{end} = \min\left(t_\text{max}, \#\left( l_\text{rewards} \right)\right)$
+				\State $\theta_\text{backup} \gets \left(\theta_\text{a}, \theta_\text{v}\right)$
+				\State $\theta_\text{a}, \theta_\text{v} \gets l_\text{snapshots}[0]$
+				\State $R_i+1 \gets \frac{l_\text{estimatedValues}[t_\text{end}]}{1-\gamma}]$
+				\For{$i\gets t_\text{end}-1, 0$}
+					\State $R_i \gets r_i + \gamma r_{i+1}$
+					\todo[inline]{Calculate the gradients}
+					\State Calculate the gradients $d\theta_\text{a}$ and $d\theta_\text{v}$
+					\State $\theta_{\text{a}_\text{g}} \gets \theta_{\text{a}_\text{g}} + d\theta_\text{a}$
+					\State $\theta_{\text{v}_\text{g}} \gets \theta_{\text{v}_\text{g}} + d\theta_\text{v}$
+				\EndFor
+				\State $l_\text{actions} \gets l_\text{actions}[t_\text{max}:] $
+				\State $l_\text{states} \gets l_\text{states}[t_\text{max}:] $
+				\State $l_\text{values} \gets l_\text{values}[t_\text{max}:] $
+				\State $l_\text{rewards} \gets l_\text{rewards}[t_\text{max}:] $
+				\State $l_\text{estimatedValues} \gets l_\text{estimatedValues}[t_\text{max}:] $
+				\State $l_\text{snapshots} \gets l_\text{snapshots}[1:] $
+				\State $\theta_\text{a}, \theta_\text{v} = \theta_\text{backup}$
+			\EndIf
+		\EndIf
+		\State Generate $s_{t+1}$ using $r_{\text{p}_{t'}}$
+		\State $t \gets t+1$
+	\Until{reaching the end the episode}
+\EndLoop
+\end{algorithmic}
+\end{algorithm}
  
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{congestion}
