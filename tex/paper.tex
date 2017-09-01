@@ -229,7 +229,7 @@ Reinforcement learning assumes that a reward follows an action and vice-versa (s
 \caption{The classic reinforcement learning approach.\protect\footnotemark}
 \label{fig:reinforcement}
 \end{figure}
-\footnotetext{from \url{https://upload.wikimedia.org/wikipedia/commons/1/1b/Reinforcement_learning_diagram.svg}}
+\footnotetext{adapted from \url{https://upload.wikimedia.org/wikipedia/commons/1/1b/Reinforcement_learning_diagram.svg}}
 
 Thus we propose the Partial Action Actor Critic Learning (PAL) framework (see \autoref{fig:pal}) in which one action generates a number of partial actions ($leq 1$). Each partial interaction generates a partial reward upon generating with the environment. Upon receiving a partial reward, the agent estimates the current state and triggers a new action. When all partial rewards of one action were received, the agent combines them to form the reward and updates the value and actor networks. 
 

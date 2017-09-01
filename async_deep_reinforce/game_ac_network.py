@@ -281,8 +281,8 @@ class GameACLSTMNetwork(GameACNetwork):
 			# policy (output)
 			self.pi = (
 				tf.nn.softplus(raw_pi_median) + 1.0,
-				tf.nn.softplus(raw_pi_std) + MINIMUM_STD
-				# tf.nn.sigmoid(raw_pi_std)
+				# tf.nn.softplus(raw_pi_std) + MINIMUM_STD
+				tf.nn.sigmoid(raw_pi_std)
 				# tf.constant(0.5, shape=(1,), dtype=PRECISION)
 			)
 
