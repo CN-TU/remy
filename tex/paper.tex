@@ -176,10 +176,10 @@ We actually use four moving averages for four different types of reward:
 
 The loss function $l_{v_t}$ of the value network is actually the sum of the square of the difference for each of these four moving averages:
 \begin{align*}
-l_{\text{v}_t} =& \left(R_{\text{packet}_t} - V_\text{packet}(s_t; \theta_\text{v})\right)^2 \\
-&+\left(R_{\text{byte}_t} - V_\text{byte}(s_t; \theta_\text{v})\right)^2 \\
-&+\left(R_{\text{delay}_t} - V_\text{delay}(s_t; \theta_\text{v})\right)^2 \\
-&+\left(R_{\text{duration}_t} - V_\text{duration}(s_t; \theta_\text{v})\right)^2
+l_{\text{v}_t} =& \left(R_{\text{packet},t} - V_\text{packet}(s_t; \theta_\text{v})\right)^2 \\
+&+\left(R_{\text{byte},t} - V_\text{byte}(s_t; \theta_\text{v})\right)^2 \\
+&+\left(R_{\text{delay},t} - V_\text{delay}(s_t; \theta_\text{v})\right)^2 \\
+&+\left(R_{\text{duration},t} - V_\text{duration}(s_t; \theta_\text{v})\right)^2
 \end{align*}
 
 \subsection{Actor Network}
@@ -223,8 +223,8 @@ $a_t$ is the sampled value $W$ at time $t$ at it is used as the window until the
 With $H$ being the entropy, the actor network minimizes the loss
 \begin{align*}
 l_{\text{a}_t} =& -\log \left( \pi_W\left( a_t-1 < W \leq a_t \given s_t; \theta_\text{a} \right)\right)\\
-&\left( \left(\frac{R_{\text{byte}_t}}{{R_{\text{duration}_t}}} - \frac{v_{\text{byte}_t}}{{v_{\text{duration}_t}}}\right) - \left( \frac{R_{\text{delay}_t}}{{R_{\text{packet}_t}}}- \frac{v_{\text{delay}_t}}{{v_{\text{packet}_t}}} \right)\right)\\ 
-&+ \beta H\left(\text{Lognormal}\left( \mu_\text{normal}, {\sigma_{\text{normal}}}^{2}\right) \right).
+&\left( \left(\frac{R_{\text{byte},t}}{{R_{\text{duration},t}}} - \frac{v_{\text{byte},t}}{{v_{\text{duration},t}}}\right) - \left( \frac{R_{\text{delay},t}}{{R_{\text{packet},t}}}- \frac{v_{\text{delay},t}}{{v_{\text{packet},t}}} \right)\right)\\ 
+&+ \beta H\left( \pi\left( l_\text{states}[i]; \theta_a \right)\right).
 \end{align*}
 
 $\beta$ was set to $\frac 1 2 10^{-3}$ and $\delta$ to $10^{-3}$.
@@ -250,7 +250,7 @@ Thus we propose the Partial Action Actor Critic Learning (PAL) framework (see \a
 \begin{algorithm}
 \caption{Partial Action Actor Critic Learning -- pseudocode for each learning thread.}
 \label{alg:pal}
-\begin{algorithmic}
+\begin{algorithmic}[1]
 \Loop
 	\State $l_\text{actions} \gets  [] $
 	\State $l_\text{states} \gets  [] $
@@ -260,52 +260,67 @@ Thus we propose the Partial Action Actor Critic Learning (PAL) framework (see \a
 	\State $l_\text{snapshots} \gets  [] $
 	\State $t \gets 0$
 	\State $s_0 \gets \text{initialState}()$
-	\State $\theta_\text{a} \gets \theta_{\text{a}_\text{g}}$
-	\State $\theta_\text{v} \gets \theta_{\text{v}_\text{g}}$
+	\State $\theta_\text{a} \gets \theta_{\text{a},\text{g}}$
+	\State $\theta_\text{v} \gets \theta_{\text{v},\text{g}}$
 	\Repeat
 		\State $l_\text{states}.\text{append}(s_t)$
 		\State $l_\text{estimatedValues}.\text{append}(V(s_t; \theta_\text{v}))$
 		\If{$t \bmod t_\text{max} = 0$}
-			\State $\theta_\text{a} \gets \theta_{\text{a}_\text{g}}$
-			\State $\theta_\text{v} \gets \theta_{\text{v}_\text{g}}$
+			\State $\theta_\text{a} \gets \theta_{\text{a},\text{g}}$
+			\State $\theta_\text{v} \gets \theta_{\text{v},\text{g}}$
 			\State $l_\text{snapshots}.\text{append}((\theta_\text{a}, \theta_\text{v}))$
 		\EndIf
 		\State Sample $a_t$ from the probability distribution
 		\State $l_\text{actions}.\text{append}(a_t)$
-		\State $l_{\text{partialActions}_t} \gets \text{partialActions}(a_t)$
-		\ForAll{partial actions $a_{\text{p}_{nt}}$ in $l_{\text{partialActions}_t}$}
-			\State Take partial action $a_{\text{p}_{nt}}$
+		\State $l_{\text{partialActions},t} \gets \text{partialActions}(a_t)$
+		\ForAll{partial actions $a_{{\text{p},n,t}}$ in $l_{\text{partialActions},t}$}
+			\State Take partial action $a_{{\text{p},n,t}}$
 		\EndFor
-		\State Receive partial reward $r_{\text{p}_{nt'}}$
-		\StateIndent[3] where $t' \leq t$ and $0 \leq n \leq\#(l_{\text{partialActions}_{t'}})$
+		\State Receive partial reward $r_{\text{p},n,t'}$
+		\StateIndent[3] where $t' \leq t$ and $0 \leq n \leq\#(l_{\text{partialActions},t'})$
 		\If{all partial rewards of $a_{t'}$ were received}
-			\State $r_{t'} \gets \text{combination of all partial rewards }r_{\text{p}_{nt'}}$
-			\State $l_\text{rewards}.\text{append}(r_{t'})$
-			\If{$\#\left(l_\text{rewards}\right) > t_\text{max}$ or the episode is over}
-				\State $t_\text{end} = \min\left(t_\text{max}, \#\left( l_\text{rewards} \right)\right)$
-				\State $\theta_\text{backup} \gets \left(\theta_\text{a}, \theta_\text{v}\right)$
-				\State $\theta_\text{a}, \theta_\text{v} \gets l_\text{snapshots}[0]$
-				\State $R_i+1 \gets \frac{l_\text{estimatedValues}[t_\text{end}]}{1-\gamma}$
-				\For{$i\gets t_\text{end}-1, 0$}
-					\State $R_i \gets r_i + \gamma r_{i+1}$
-					\todo[inline]{Calculate the gradients}
-					\State Calculate the gradients $d\theta_\text{a}$ and $d\theta_\text{v}$
-					\State $\theta_{\text{a}_\text{g}} \gets \theta_{\text{a}_\text{g}} + d\theta_\text{a}$
-					\State $\theta_{\text{v}_\text{g}} \gets \theta_{\text{v}_\text{g}} + d\theta_\text{v}$
-				\EndFor
-				\State $l_\text{actions} \gets l_\text{actions}[t_\text{max}:] $
-				\State $l_\text{states} \gets l_\text{states}[t_\text{max}:] $
-				\State $l_\text{values} \gets l_\text{values}[t_\text{max}:] $
-				\State $l_\text{rewards} \gets l_\text{rewards}[t_\text{max}:] $
-				\State $l_\text{estimatedValues} \gets l_\text{estimatedValues}[t_\text{max}:] $
-				\State $l_\text{snapshots} \gets l_\text{snapshots}[1:] $
-				\State $\theta_\text{a}, \theta_\text{v} = \theta_\text{backup}$
-			\EndIf
+			\State \Call{computeGradients}{}
 		\EndIf
 		\State Generate $s_{t+1}$ using $r_{\text{p}_{t'}}$
 		\State $t \gets t+1$
 	\Until{reaching the end the episode}
 \EndLoop
+%\algstore{palalg}
+\end{algorithmic}
+\end{algorithm}
+\begin{algorithm}
+\caption{Partial Action Actor Critic Learning -- procedure which computes and applies the gradients.}
+\label{alg:grad}
+\begin{algorithmic}[1]%
+%\algrestore{palalg}
+\Function{computeGradients}{}
+	\State $r_{t'} \gets \text{combination of all partial rewards }r_{\text{p},n,t'}$
+	\State $l_\text{rewards}.\text{append}(r_{t'})$
+	\If{$\#\left(l_\text{rewards}\right) > t_\text{max}$ or the episode is over}
+		\State $t_\text{end} = \min\left(t_\text{max}, \#\left( l_\text{rewards} \right)\right)$
+		\State $\theta_\text{backup} \gets \left(\theta_\text{a}, \theta_\text{v}\right)$
+		\State $\theta_\text{a}, \theta_\text{v} \gets l_\text{snapshots}[0]$
+		\State $R_{i+1} \gets \frac{l_\text{estimatedValues}[t_\text{end}]}{1-\gamma}$
+		\For{$i\gets t_\text{end}-1, 0$}
+			\State $R_i \gets r_i + \gamma r_{i+1}$
+			\State $a \gets l_\text{actions}[i]$
+			\State $s \gets l_\text{states}[i]$
+			\State $v \gets l_\text{values}[i]$
+			\State $d\theta_\text{v} \gets \frac{\partial\left(R_i - l_\text{values}[i]\right)}{\partial\theta_v}$
+			\State $d\theta_\text{v} \gets -\frac{\partial\log \left( \pi_W\left( a-1 < W \leq a \given s; \theta_\text{a} \right)\right)\left(R_i - v\right)}{\partial\theta_a}$
+			\StateIndent[6] $-\frac{\partial\beta H\left( \pi\left( l_\text{states}[i]; \theta_a \right)\right)}{\partial\theta_a}$
+			\State $\theta_{\text{a},\text{g}} \gets \theta_{\text{a},\text{g}} + d\theta_\text{a}$
+			\State $\theta_{\text{v},\text{g}} \gets \theta_{\text{v},\text{g}} + d\theta_\text{v}$
+		\EndFor
+		\State $l_\text{actions} \gets l_\text{actions}[t_\text{max}:] $
+		\State $l_\text{states} \gets l_\text{states}[t_\text{max}:] $
+		\State $l_\text{values} \gets l_\text{values}[t_\text{max}:] $
+		\State $l_\text{rewards} \gets l_\text{rewards}[t_\text{max}:] $
+		\State $l_\text{estimatedValues} \gets l_\text{estimatedValues}[t_\text{max}:] $
+		\State $l_\text{snapshots} \gets l_\text{snapshots}[1:] $
+		\State $\theta_\text{a}, \theta_\text{v} = \theta_\text{backup}$
+	\EndIf
+\EndFunction
 \end{algorithmic}
 \end{algorithm}
  
