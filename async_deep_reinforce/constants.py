@@ -14,11 +14,11 @@ PRECISION = tf.float64
 
 INITIAL_ALPHA_LOG_RATE = 0.4226 # log_uniform interpolate rate for learning rate (around 7 * 10^-4)
 GAMMA = 0.99 # discount factor for rewards
-ENTROPY_BETA = 0.
+ENTROPY_BETA = 1e-4
 MAX_TIME_STEP = 10 * 1e7
 # GRAD_NORM_CLIP = 40.0 # gradient norm clipping
 USE_GPU = False # To use GPU, set True
-N_LSTM_LAYERS = 3
+N_LSTM_LAYERS = 1
 
 STATE_SIZE = 11
 HIDDEN_SIZE = 128
@@ -29,3 +29,4 @@ ALPHA = 1.0
 BETA = 1.0
 LOG_LEVEL = logging.INFO
 MINIMUM_STD = 1e-2
+ACTOR_FACTOR = 0.25

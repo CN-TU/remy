@@ -285,7 +285,7 @@ Thus we propose the Partial Action Actor Critic Learning (PAL) framework (see \a
 				\State $t_\text{end} = \min\left(t_\text{max}, \#\left( l_\text{rewards} \right)\right)$
 				\State $\theta_\text{backup} \gets \left(\theta_\text{a}, \theta_\text{v}\right)$
 				\State $\theta_\text{a}, \theta_\text{v} \gets l_\text{snapshots}[0]$
-				\State $R_i+1 \gets \frac{l_\text{estimatedValues}[t_\text{end}]}{1-\gamma}]$
+				\State $R_i+1 \gets \frac{l_\text{estimatedValues}[t_\text{end}]}{1-\gamma}$
 				\For{$i\gets t_\text{end}-1, 0$}
 					\State $R_i \gets r_i + \gamma r_{i+1}$
 					\todo[inline]{Calculate the gradients}
