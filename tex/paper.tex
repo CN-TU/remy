@@ -141,12 +141,12 @@ ACM SIG Proceedings.\footnote{This is an abstract footnote}
 \section{Partial Action Actor Critic Learning}
 \label{sec:pal}
 
-Partial Action Actor Critic Learning (PAL) is a modification of the Asynchronous Advantage Actor Critic algorithm proposed by \citet{mnih_asynchronous_2016}. It consists of two Artificial Neural Networks (ANNs), the Actor Network and the Value Network (the Critic part in the abbreviation stands for the Value Network). Given a state, the Actor Networks outputs what it deems to be the optimum action in that certain state. The Value Network estimates what long-term reward can be expected in this state. So an action is considered good if it achieved a long-term reward that is higher than the long-term reward expected by the Value Network and it is considered bad if the reward was lower than expected. The long-term reward is implemented as a moving average of future rewards. So if a high reward can be achieved right now this is more favorable than if it can be achieved in the future. However it can also be beneficial to get a low reward now and instead get a very large one in the future. 
+Partial Action Actor Critic Learning (PAL) is a modification of the Asynchronous Advantage Actor Critic algorithm proposed by \citet{mnih_asynchronous_2016}. It consists of two Artificial Neural Networks (ANNs), the Actor Network and the Value Network (the Critic part in the abbreviation stands for the Value Network). Given a state, the Actor Networks outputs what it deems to be the optimum action to perform in that certain state. The Value Network estimates what long-term reward can be expected in this state. So an action is considered good if it achieved a long-term reward that is higher than the long-term reward expected by the Value Network and it is considered bad if the reward was lower than expected. The long-term reward is implemented as a moving average of future rewards. So if a high reward can be achieved right now this is more favorable than if it can be achieved in the future. However it can also be beneficial to get a low reward now and instead get a very large one in the future. 
 
 \subsection{Algorithm}
 \label{subsec:alg}
 
-In \autoref{alg:pal} we show the code that runs in one of the learning threads. As proposed in the literature, we use several concurrent thread to improve training performance. A major difference to previous approaches to reinforcement learning is the fact that we allow more actions to be taken before the previous actions' rewards have been received. In classical reinforcement learning, an action is always followed by a reward and a reward is always followed by a action. In our proposed concept, however, it is possible to take new actions while the previous action hasn't received its reward yet.
+In \autoref{alg:pal} we show the code that runs in one of the learning threads. As proposed in literature, we use several concurrent thread to improve training performance. A major difference to previous approaches to reinforcement learning is the fact that we allow more actions to be taken before the previous actions' rewards have been received. In classical reinforcement learning, an action is always followed by a reward and a reward is always followed by a action. In our proposed concept, however, it is possible to take new actions while the previous action hasn't received its reward yet.
 
 \begin{figure}
 \begin{minipage}{\columnwidth}
@@ -156,7 +156,7 @@ In \autoref{alg:pal} we show the code that runs in one of the learning threads. 
 \end{minipage}
 \end{figure}
 
-Another major difference in PAL is that one action generates a number of partial actions ($\leq 1$) (see \autoref{fig:pal}). Each partial interaction generates a partial reward upon generating with the environment. Upon receiving a partial reward, the agent estimates the current state and triggers a new action. When all partial rewards of one action were received, the agent combines them to form the reward and updates the value and actor networks (see \autoref{alg:grad}). 
+Another major difference in PAL is that one action generates a number of partial actions ($\geq 1$) (see \autoref{fig:pal}). Each partial action generates a partial reward upon interacting with the environment. Upon receiving a partial reward, the agent determines the current state and triggers a new action. When all partial rewards of one action were received, the agent combines them to form the reward and updates the value and actor networks (see \autoref{alg:grad}). 
 
 \begin{figure}
 \begin{minipage}{\columnwidth}
@@ -246,7 +246,7 @@ Another major difference in PAL is that one action generates a number of partial
 
 The value network estimates the expected long-term reward given a state $s_t$.
 
-Let $r_t$ be the reward that was received at time $t$. $V(s_t; \theta_\text{v})$ designates the expected mean reward in state $s_t$ given the parameters of the value network $\theta_v$. Then, with $\gamma$ being the roll-off factor, which designates the influence that future reward has on the moving average, (set to $0.99$), we define the average reward as 
+Let $r_t$ be the reward that was received at time $t$. $V(s_t; \theta_\text{v})$ designates the expected mean reward in state $s_t$ given the parameters (neural network weights) of the value network $\theta_v$. Then, with $\gamma$ being the roll-off factor, which designates the influence that future reward has on the moving average, (set to $0.99$), we define the average reward as 
 \begin{align*}
 R_t = \left(\left(\sum_{i=0}^{k-1} \gamma^ir_{t+i}\right) + \gamma^k \frac{V(s_{t+k}; \theta_\text{v})}{1-\gamma}\right)\left(1-\gamma\right),
 \end{align*}
@@ -254,15 +254,15 @@ where $k$ is upper-bounded by $t_\text{max}$ ($t_\text{max}$ is a fixed hyperpar
 
 The loss function, which the value network tries to minimize, is the square of the difference of the actual average reward received and the expected average reward
 \begin{align*}
-l_{\text{v}_t} = \left(R_t - V(s_t; \theta_\text{v})\right)^2.
+l_{\text{v},t} = \left(R_t - V(s_t; \theta_\text{v})\right)^2.
 \end{align*}
 
 \subsection{Actor Network}
 \label{subsec:genericactor}
 
-Let $a_t$ be the action that was taken at time step $t$, $v_t$ the value that the value network estimated as the future reward given the current state $s_t$ at time step $t$ ($v_t$ is just an abbreviation for $V(s_t; \theta_\text{v})$) and $\theta_a$ the parameters of the actor network. Furthermore, let $\beta$ be a factor that specifies the importance of the entropy $H$. $\pi$ designates the probability density function, so $\pi\left( a_t \given s_t; \theta_\text{a} \right)$ is the value of the probability density function of taking action $a_t$ in state $s_t$ with the current weights of the actor network $\theta_\text{a}$. Then
+Let $a_t$ be the action that was taken at time step $t$, $v_t$ the value that the value network estimated as the future reward given the current state $s_t$ at time step $t$ ($v_t$ is just an abbreviation for $V(s_t; \theta_\text{v})$) and $\theta_a$ the parameters (neural network weights) of the actor network. Furthermore, let $\beta$ be a factor that specifies the importance of the entropy $H$. $\pi$ designates the probability density function, which means that $\pi\left( a_t \given s_t; \theta_\text{a} \right)$ is the value of the probability density function of taking action $a_t$ in state $s_t$ with the current weights of the actor network $\theta_\text{a}$. Then
 \begin{align*}
-l_{\text{a}_t} =& -\log \left( \pi\left( a_t \given s_t; \theta_\text{a} \right)\right)\left( R_t - v_t \right)\\ 
+l_{\text{a},t} =& -\log \left( \pi\left( a_t \given s_t; \theta_\text{a} \right)\right)\left( R_t - v_t \right)\\ 
 &- \beta H\left( \pi\left( s_t; \theta_a \right)\right)
 \end{align*}
 is the actor loss that we try to minimize. 
@@ -277,7 +277,7 @@ In the following a time step $t$ corresponds to the reception of an acknowledgem
 \item[$\textit{s}_\text{t}$] The state  describes the current ``congestion state''. Various features that indicate congestion are included in it. Each time an acknowledgement is received, the state is updated and the actor network is asked for the next action. 
 \item[$\textit{a}_\text{t}$] Based on a given state and the history of previous states, the actor network returns an action $a_t$, which is an integer ($\geq 1$) that stands for the congestion window to be used until the next acknowledgement is received. 
 \item[$\textit{r}_\text{t}$] The reward is a tuple of at least one reward metrics. These are discussed in more detail in \autoref{subsec:value}
-\item[$\textit{v}_\text{t}$] The value is a tuple of the average expected rewards estimated by the value network (see \autoref{subsec:value}) for each of the reward metrics. 
+\item[$\textit{v}_\text{t}$] The value is a tuple of the expected average reward estimated by the value network (see \autoref{subsec:value}) for each of the reward metrics. 
 \end{description}
 
 We actually use four different types of reward: 
@@ -299,9 +299,9 @@ We actually use four different types of reward:
 \subsection{Value Network}
 \label{subsec:value}
 
-In the case of congestion control, the loss function $l_{v_t}$ of the value network is actually the sum of the square of the difference for each of the four moving averages for each type of reward:
+In the case of congestion control, the loss function $l_{\text{v},t}$ of the value network is actually the sum of the square of the difference for each of the four moving averages for each type of reward:
 \begin{align*}
-l_{\text{v}_t} =& \left(R_{\text{packet},t} - V_\text{packet}(s_t; \theta_\text{v})\right)^2 \\
+l_{\text{v},t} =& \left(R_{\text{packet},t} - V_\text{packet}(s_t; \theta_\text{v})\right)^2 \\
 &+\left(R_{\text{byte},t} - V_\text{byte}(s_t; \theta_\text{v})\right)^2 \\
 &+\left(R_{\text{delay},t} - V_\text{delay}(s_t; \theta_\text{v})\right)^2 \\
 &+\left(R_{\text{duration},t} - V_\text{duration}(s_t; \theta_\text{v})\right)^2
@@ -347,7 +347,7 @@ $a_t$ is the sampled value $W$ at time $t$ and it is used as the window until th
 
 With $H$ being the entropy, the actor network minimizes the loss
 \begin{align*}
-l_{\text{a}_t} =& -\log \left( \pi_W\left( a_t-1 < W \leq a_t \given s_t; \theta_\text{a} \right)\right)\\
+l_{\text{a},t} =& -\log \left( \pi_W\left( a_t-1 < W \leq a_t \given s_t; \theta_\text{a} \right)\right)\\
 &\left( \left(\frac{R_{\text{byte},t}}{{R_{\text{duration},t}}} - \frac{v_{\text{byte},t}}{{v_{\text{duration},t}}}\right) - \left( \frac{R_{\text{delay},t}}{{R_{\text{packet},t}}}- \frac{v_{\text{delay},t}}{{v_{\text{packet},t}}} \right)\right)\\ 
 &+ \beta H\left( \pi\left( s_t; \theta_a \right)\right).
 \end{align*}
