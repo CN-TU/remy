@@ -133,6 +133,7 @@ class A3CTrainingThread(object):
     self.estimated_values = self.estimated_values[:-actions_to_remove+1]
 
     # If, for some strange reason, absolutely nothing happened in this episode, don't do anyting...
+    # Or if you're actually in testing mode :)
     if len(self.rewards)>0:
       time_diff = self.process(sess, global_t, summary_writer, summary_op, summary_inputs, time_difference)
     else:

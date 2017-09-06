@@ -22,7 +22,9 @@ Unicorn::Unicorn()
     _put_actions(0),
     _put_rewards(0),
     _outstanding_rewards(),
-    _start_tick(0.0)
+    _start_tick(0.0),
+    _training(true),
+    _id_to_sent_during_action()
 {
   // puts("Creating a Unicorn");
 }
@@ -46,13 +48,15 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
     const unsigned int lost_since_last_time = (unsigned int) packet.seq_num-_largest_ack-1;
     _memory.lost(lost_since_last_time);
 
-    for (auto it=_outstanding_rewards.begin(); it!=_outstanding_rewards.lower_bound(packet.sent_during_action);) {
+    for (auto it=_outstanding_rewards.begin(); it!=_outstanding_rewards.lower_bound(_id_to_sent_during_action[packet.id]);) {
       const double throughput_final = it->second["received"];
       const double delay_final = it->second["delay_acc"];
       // const double duration = it->second["end_time"] - it->second["start_time"];
       // const double duration = it->second["intersend_duration_acc"];    
       const double duration = it->second["interreceive_duration_acc"];
-      _rainbow.put_reward(_thread_id, throughput_final, delay_final, duration);
+      if (_training) {
+        _rainbow.put_reward(_thread_id, throughput_final, delay_final, duration);
+      }
       _put_rewards += 1;
       it = _outstanding_rewards.erase(it);
     }
@@ -75,6 +79,8 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
     _largest_ack = packet.seq_num;
 
     get_action(packet.tick_received, packets_sent_in_previous_episode);
+
+    _id_to_sent_during_action.erase(_id_to_sent_during_action]);
   }
 
   // _largest_ack = max( packets.at( packets.size() - 1 ).seq_num, _largest_ack );
@@ -112,6 +118,7 @@ void Unicorn::reset(const double & tickno)
   _put_actions = 0;
   _put_rewards = 0;
   _outstanding_rewards.clear();
+  _id_to_sent_during_action.clear();
   _start_tick = tickno;
 
   assert( _flow_id != 0 );

@@ -21,16 +21,12 @@
 
 class Unicorn
 {
-private:
+protected:
 
   Memory _memory;
 
   unsigned int _packets_sent, _packets_received;
-
-  // bool _track;
-
   double _last_send_time;
-
   int _the_window;
   double _intersend_time;
 
@@ -51,6 +47,9 @@ private:
   std::map<uint32_t, std::unordered_map<std::string, double>> _outstanding_rewards;
   // std::unordered_map<uint32t_t, uint32_t> _packet_to_action;
   double _start_tick;
+  bool _training;
+  
+  std::unordered_map<unsigned int, long unsigned int> _id_to_sent_during_action; 
 
   // static double soft_ceil(const double x) {
   //   return MAX_WINDOW-log(1+exp(MAX_WINDOW-x));
