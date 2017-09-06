@@ -16,7 +16,6 @@ Makefile.in
 *.blg
 *.dvi
 *.out
-*.pdf
 *.run.xml
 *.synctex.gz
 /tex/svg-inkscape/
