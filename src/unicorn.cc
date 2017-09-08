@@ -42,13 +42,13 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
   const int previous_largest_ack = _largest_ack;
 
   for ( auto const &packet : packets ) {
-    const int packets_sent_in_previous_episode = (int) _outstanding_rewards[packet.sent_during_action]["sent"];    
+    const int packets_sent_in_previous_episode = (int) _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["sent"];    
 
     const double delay = packet.tick_received - packet.tick_sent;
     const unsigned int lost_since_last_time = (unsigned int) packet.seq_num-_largest_ack-1;
     _memory.lost(lost_since_last_time);
 
-    for (auto it=_outstanding_rewards.begin(); it!=_outstanding_rewards.lower_bound(_id_to_sent_during_action[packet.id]);) {
+    for (auto it=_outstanding_rewards.begin(); it!=_outstanding_rewards.lower_bound(_id_to_sent_during_action[packet.seq_num]);) {
       const double throughput_final = it->second["received"];
       const double delay_final = it->second["delay_acc"];
       // const double duration = it->second["end_time"] - it->second["start_time"];
@@ -61,15 +61,15 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
       it = _outstanding_rewards.erase(it);
     }
 
-    _outstanding_rewards[packet.sent_during_action]["received"] += 1;
-    _outstanding_rewards[packet.sent_during_action]["delay_acc"] += delay;
+    _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["received"] += 1;
+    _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["delay_acc"] += delay;
     // FIXME: It doesn't really matter but conceptually it's wrong. It should be the time since the start of the simulation, for example
     if (_memory._last_tick_received != 0) {
-      _outstanding_rewards[packet.sent_during_action]["interreceive_duration_acc"] += packet.tick_received - _memory._last_tick_received;
+      _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["interreceive_duration_acc"] += packet.tick_received - _memory._last_tick_received;
     } else {
-      _outstanding_rewards[packet.sent_during_action]["interreceive_duration_acc"] += packet.tick_received - _start_tick;
+      _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["interreceive_duration_acc"] += packet.tick_received - _start_tick;
     }
-    // _outstanding_rewards[packet.sent_during_action]["end_time"] = packet.tick_received;
+    // _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["end_time"] = packet.tick_received;
 
     _packets_received += 1;
     vector<Packet> packet_for_memory_update;
@@ -80,7 +80,7 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
 
     get_action(packet.tick_received, packets_sent_in_previous_episode);
 
-    _id_to_sent_during_action.erase(_id_to_sent_during_action]);
+    _id_to_sent_during_action.erase(packet.seq_num);
   }
 
   // _largest_ack = max( packets.at( packets.size() - 1 ).seq_num, _largest_ack );

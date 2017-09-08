@@ -32,7 +32,7 @@ public:
   : src( 0 ),
     flow_id( 0 ), tick_sent( 0 ),
     tick_received( 0 ),
-    seq_num( 0 ),
+    seq_num( 0 )
   {}
   
 };
