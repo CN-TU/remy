@@ -88,8 +88,8 @@ UnicornEvaluator::Outcome UnicornEvaluator::score(
   for ( auto &x : shuffled_configs ) {
     printf("Running for %.f ticks\n", x.simulation_ticks);
     /* run once */
-    Network<SenderGang<Unicorn, TimeSwitchedSender<Unicorn>>,
-      SenderGang<Unicorn, TimeSwitchedSender<Unicorn>>> network1( Unicorn(), run_prng, x );
+    Network<SenderGang<Unicorn, ByteSwitchedSender<Unicorn>>,
+      SenderGang<Unicorn, ByteSwitchedSender<Unicorn>>> network1( Unicorn(), run_prng, x );
     network1.run_simulation( x.simulation_ticks );
     
     the_outcome.score += network1.senders().utility();
