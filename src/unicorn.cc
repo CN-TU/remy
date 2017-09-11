@@ -42,7 +42,7 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
   const int previous_largest_ack = _largest_ack;
 
   for ( auto const &packet : packets ) {
-    const int packets_sent_in_previous_episode = (int) _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["sent"];    
+    const int packets_sent_in_this_episode = (int) _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["sent"];    
 
     const double delay = packet.tick_received - packet.tick_sent;
     const unsigned int lost_since_last_time = (unsigned int) packet.seq_num-_largest_ack-1;
@@ -56,8 +56,8 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
       const double duration = it->second["interreceive_duration_acc"];
       if (_training) {
         _rainbow.put_reward(_thread_id, throughput_final, delay_final, duration);
+        _put_rewards += 1;        
       }
-      _put_rewards += 1;
       it = _outstanding_rewards.erase(it);
     }
 
@@ -78,7 +78,7 @@ void Unicorn::packets_received( const vector< Packet > & packets ) {
 
     _largest_ack = packet.seq_num;
 
-    get_action(packet.tick_received, packets_sent_in_previous_episode);
+    get_action(packet.tick_received, packets_sent_in_this_episode);
 
     _id_to_sent_during_action.erase(packet.seq_num);
   }
@@ -95,6 +95,9 @@ void Unicorn::reset(const double & tickno)
   // assert(false);
   // printf("%lu: Resetting\n", _thread_id);
   // _largest_ack -= 1;
+  if (_outstanding_rewards.size() != _put_actions-_put_rewards) {
+    printf("%lu: _outstanding_rewards=%lu, _put_actions=%lu, _put_rewards=%lu\n", _thread_id, _outstanding_rewards.size(), _put_actions, _put_rewards);
+  }
   assert(_outstanding_rewards.size() == _put_actions-_put_rewards);  
   if (_thread_id > 0) {
     // printf("%lu: Lost rewards at reset\n", _thread_id);
@@ -147,7 +150,7 @@ double Unicorn::next_event_time( const double & tickno ) const
   }
 }
 
-void Unicorn::get_action(const double& tickno, const int& packets_sent_in_previous_episode) {
+void Unicorn::get_action(const double& tickno, const int& packets_sent_in_this_episode) {
   
   const double action = _rainbow.get_action(
     _thread_id, 
@@ -165,7 +168,7 @@ void Unicorn::get_action(const double& tickno, const int& packets_sent_in_previo
       _memory._last_tick_received - _memory._last_tick_sent,
       // _largest_ack + 1.0 + _the_window - _packets_sent,
       (double) _the_window,
-      (double) packets_sent_in_previous_episode,
+      (double) packets_sent_in_this_episode,
       (double) tickno - _last_send_time
       // (tickno - _memory._last_tick_received)/LAST_SENT_TIME_NORMALIZER,
     }

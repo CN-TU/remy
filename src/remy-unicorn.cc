@@ -15,6 +15,10 @@
 #include <stdlib.h>
 #include <limits>
 
+#include <unistd.h>
+
+struct stat st = {};
+
 using namespace std;
 
 void print_range( const Range & range, const string & name )
@@ -32,7 +36,7 @@ void signal_handler(int s) {
 
 void unicorn_thread(const size_t thread_id, const BreederOptionsUnicorn options, const size_t iterations_per_thread) {
   printf("Creating thread no %zd\n", thread_id);
-  UnicornBreeder breeder(options);
+  UnicornBreeder breeder(options, thread_id);
   auto outcome = breeder.run(iterations_per_thread);
   printf("thread = %u, score = %f\n", (unsigned int) thread_id, outcome.score);
 }
@@ -149,6 +153,9 @@ int main( int argc, char *argv[] )
   const size_t iterations_per_thread = std::numeric_limits<size_t>::max();
   vector<thread> thread_array(options.config_range.num_threads);
 
+  if (stat("stats", &st) == -1) {
+    mkdir("stats", 0700);
+  }  
   for (size_t i=0; i<options.config_range.num_threads; i++) {
     thread_array[i] = thread(unicorn_thread, i, options, iterations_per_thread);
   }

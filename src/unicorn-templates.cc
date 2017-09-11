@@ -21,7 +21,7 @@ void Unicorn::send( const unsigned int id, NextHop & next, const double & tickno
     (_packets_sent < packets_sent_cap)) {
 
     Packet p( id, _flow_id, tickno, _packets_sent );
-    _id_to_sent_during_action[id] = _put_actions;
+    _id_to_sent_during_action[_packets_sent] = _put_actions;
     _outstanding_rewards[_put_actions]["sent"] += 1;
     if (_last_send_time != 0) {
       _outstanding_rewards[_put_actions]["intersend_duration_acc"] += tickno - _last_send_time;

@@ -26,7 +26,7 @@ Rainbow::Rainbow() :
 	puts("Initializing Python interpreter");
 	Py_Initialize();
 		
-	char cwd[1024];
+	char cwd[1024 * sizeof(char)];
 	if (getcwd(cwd, sizeof(cwd)) != NULL)
 		fprintf(stdout, "Current working dir: %s\n", cwd);
 	else
