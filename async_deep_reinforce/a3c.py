@@ -186,6 +186,7 @@ def create_training_thread():
   # set start time
   start_time = time.time() - wall_t
   created_thread.set_start_time(start_time)
+  created_thread.episode_count = 0
 
   created_thread.states = []
   created_thread.actions = []

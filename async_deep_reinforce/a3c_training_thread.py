@@ -20,8 +20,7 @@ from constants import LOG_LEVEL
 import logging
 logging.basicConfig(level=LOG_LEVEL)
 
-LOG_INTERVAL = 100
-PERFORMANCE_LOG_INTERVAL = 1000
+LOG_INTERVAL = 10
 
 class A3CTrainingThread(object):
   def __init__(self,
@@ -53,6 +52,7 @@ class A3CTrainingThread(object):
       zip(self.gradients, global_network.get_vars()) )
     
     self.sync = self.local_network.sync_from(global_network)
+    self.episode_count = 0
 
     self.backup_vars = self.local_network.backup_vars()
     self.restore_backup = self.local_network.restore_backup()
@@ -108,9 +108,9 @@ class A3CTrainingThread(object):
     action = action[0]
 
     self.values.append(value_)
-    if self.local_t % LOG_INTERVAL == 0:
-      logging.debug("{}: pi={}".format(self.thread_index, pi_))
-      logging.debug("{}: V={}".format(self.thread_index, value_))
+    # if self.local_t % LOG_INTERVAL == 0:
+    #   logging.debug("{}: pi={}".format(self.thread_index, pi_))
+    #   logging.debug("{}: V={}".format(self.thread_index, value_))
     return action
 
   def reward_step(self, sess, global_t, summary_writer, summary_op, summary_inputs, reward_throughput, reward_delay, duration):
@@ -268,38 +268,40 @@ class A3CTrainingThread(object):
       normalized_final_score_delay = self.episode_reward_delay/self.episode_reward_throughput
       logging.debug("{}: score_throughput={}, score_delay={}".format(self.thread_index, normalized_final_score_throughput, normalized_final_score_delay))
 
-      feed_dict = {
-        self.local_network.s: [batch_si[0]],
-        self.local_network.a: [batch_ai[0]],
-        self.local_network.td_throughput: [batch_td_throughput[0]],
-        self.local_network.td_delay: [batch_td_delay[0]],
-        self.local_network.r_duration: [batch_R_duration[0]],
-        self.local_network.r_packets: [batch_R_packets[0]],
-        self.local_network.r_accumulated_delay: [batch_R_accumulated_delay[0]],
-        self.local_network.initial_lstm_state: self.start_lstm_states[0],
-        self.local_network.step_size : [1],
-      }
-      feed_dict.update(var_dict)
+      if self.episode_count % LOG_INTERVAL == 0:
+        feed_dict = {
+          self.local_network.s: [batch_si[0]],
+          self.local_network.a: [batch_ai[0]],
+          self.local_network.td_throughput: [batch_td_throughput[0]],
+          self.local_network.td_delay: [batch_td_delay[0]],
+          self.local_network.r_duration: [batch_R_duration[0]],
+          self.local_network.r_packets: [batch_R_packets[0]],
+          self.local_network.r_accumulated_delay: [batch_R_accumulated_delay[0]],
+          self.local_network.initial_lstm_state: self.start_lstm_states[0],
+          self.local_network.step_size : [1],
+        }
+        feed_dict.update(var_dict)
 
-      entropy, skewness, actor_loss, value_loss, total_loss, window, std, inner_mean, inner_std = self.local_network.run_loss(sess, feed_dict)
+        entropy, skewness, actor_loss, value_loss, total_loss, window, std, inner_mean, inner_std = self.local_network.run_loss(sess, feed_dict)
 
-      things = {"score_throughput": normalized_final_score_throughput,
-        "score_delay": normalized_final_score_delay, 
-        "actor_loss": actor_loss.item(),
-        "value_loss": value_loss,
-        "entropy": entropy.item(),
-        "skewness": skewness.item(),
-        "total_loss": total_loss,
-        "window": window.item(),
-        "std": std.item(),
-        "inner_mean": inner_mean.item(),
-        "inner_std": inner_std.item()}
-      logging.debug(" ".join(map(str,("things", things))))
-      self._record_score(sess, summary_writer, summary_op, summary_inputs, things, global_t) # TODO:NOW: is that "not terminal_end" correct?
+        things = {"score_throughput": normalized_final_score_throughput,
+          "score_delay": normalized_final_score_delay, 
+          "actor_loss": actor_loss.item(),
+          "value_loss": value_loss,
+          "entropy": entropy.item(),
+          "skewness": skewness.item(),
+          "total_loss": total_loss,
+          "window": window.item(),
+          "std": std.item(),
+          "inner_mean": inner_mean.item(),
+          "inner_std": inner_std.item()}
+        logging.debug(" ".join(map(str,("things", things))))
+        self._record_score(sess, summary_writer, summary_op, summary_inputs, things, global_t) # TODO:NOW: is that "not terminal_end" correct?
 
-      elapsed_time = time.time() - self.start_time
-      steps_per_sec = self.local_t / elapsed_time
-      logging.info("### {}: Performance: {} STEPS in {:.0f} sec. {:.0f} STEPS/sec. {:.2f}M STEPS/hour".format(self.thread_index, self.local_t, elapsed_time, steps_per_sec, steps_per_sec * 3600 / 1000000.))
+        elapsed_time = time.time() - self.start_time
+        steps_per_sec = self.local_t / elapsed_time
+        logging.info("### {}: Performance: {} STEPS in {:.0f} sec. {:.0f} STEPS/sec. {:.2f}M STEPS/hour".format(self.thread_index, self.local_t, elapsed_time, steps_per_sec, steps_per_sec * 3600 / 1000000.))
+      self.episode_count += 1
     else:
       self.restore_backup()
 

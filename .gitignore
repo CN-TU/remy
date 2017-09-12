@@ -19,7 +19,8 @@ Makefile.in
 *.run.xml
 *.synctex.gz
 /tex/svg-inkscape/
-
+/stats/
+/stored_checkpoints/
 
 /.vscode
 
