@@ -24,7 +24,7 @@ UnicornEvaluator::Outcome UnicornBreeder::run(const size_t iterations)
     const double final_score = outcome.score;
     fprintf(f, "%lu,%lu,%f\n", iteration_number, (unsigned long)time(NULL), final_score);
     fflush(f);
-    printf("Finished one iteration (%lu) in thread %lu! Score is %f.\n", iteration_number, _thread_id, final_score);
+    printf("Finished iteration %lu in thread %lu! Score is %f.\n", iteration_number, _thread_id, final_score);
 
     iteration_number += 1;
   }

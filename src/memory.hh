@@ -5,7 +5,7 @@
 #include <string>
 
 #include "packet.hh"
-#include "dna.pb.h"
+#include "../protobufs/dna.pb.h"
 
 class Memory {
 public:

@@ -9,7 +9,7 @@
 #include "stochastic-loss.hh"
 #include "receiver.hh"
 #include "random.hh"
-#include "answer.pb.h"
+#include "../protobufs/answer.pb.h"
 
 class SimulationRunData; // from simulationresults.hh
 

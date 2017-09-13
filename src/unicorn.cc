@@ -2,7 +2,6 @@
 #include <limits>
 #include <cassert>
 #include "unicorn.hh"
-#include "simulationresults.pb.h"
 #include <cstdio>
 #include <cmath>
 

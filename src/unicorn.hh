@@ -10,7 +10,6 @@
 
 #include "packet.hh"
 #include "memory.hh"
-#include "simulationresults.pb.h"
 
 #include "rainbow.hh"
 #include <cmath>
