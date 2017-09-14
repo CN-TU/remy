@@ -10,7 +10,7 @@ LOG_FILE = 'tmp/a3c_log'
 INITIAL_ALPHA_LOW = 1e-4    # log_uniform low limit for learning rate
 INITIAL_ALPHA_HIGH = 1e-2   # log_uniform high limit for learning rate
 
-PRECISION = tf.float64	
+PRECISION = tf.float64
 
 INITIAL_ALPHA_LOG_RATE = 0.4226 # log_uniform interpolate rate for learning rate (around 7 * 10^-4)
 GAMMA = 0.99 # discount factor for rewards
@@ -25,8 +25,8 @@ HIDDEN_SIZE = 128
 # ACTION_SIZE = 1 # action size
 LAYER_NORMALIZATION = True
 
-ALPHA = 1.0
-BETA = 1.0
+# Why? Because the guys of Remy also use it...
+DELAY_MULTIPLIER = 1.0
 LOG_LEVEL = logging.INFO
-MINIMUM_STD = 1e-2
-ACTOR_FACTOR = 1e2
+MINIMUM_STD = 0.5
+ACTOR_FACTOR = 1e-1

@@ -2,6 +2,7 @@
 #define STOCHASTICLOSS_HH
 
 #include "packet.hh"
+using namespace remy;
 #include <deque>
 #include <tuple>
 #include <random>

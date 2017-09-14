@@ -7,7 +7,6 @@
 using namespace std;
 
 static const double alpha = 1.0 / 8.0;
-
 static const double slow_alpha = 1.0 / 256.0;
 
 void Memory::lost(const int lost) {
@@ -18,7 +17,7 @@ void Memory::lost(const int lost) {
   _lost_since_last_time = lost;
 }
 
-void Memory::packets_received( const vector< Packet > & packets, const unsigned int flow_id,
+void Memory::packets_received( const vector< remy::Packet > & packets, const unsigned int flow_id,
   const int largest_ack )
 {
   for ( const auto &x : packets ) {

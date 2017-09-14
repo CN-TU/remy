@@ -97,14 +97,14 @@ RemyBuffers::MemoryRange MemoryRange::DNA( void ) const
   for (auto & x : _active_axis) {
     ret.add_active_axis(x);
   }
-  
+
   return ret;
 }
 
 MemoryRange::MemoryRange( const RemyBuffers::MemoryRange & dna )
   : _lower( true, dna.lower() ),
     _upper( false, dna.upper() ),
-    _active_axis( ), 
+    _active_axis( ),
     _acc( Memory::datasize ),
     _count( 0 )
 {
@@ -113,7 +113,7 @@ MemoryRange::MemoryRange( const RemyBuffers::MemoryRange & dna )
   }
   /* Backward compatibility: old remys don't have active axis; set to default */
   if ( _active_axis.empty() ) {
-    _active_axis = vector<Axis>( { RemyBuffers::MemoryRange::SEND_EWMA, RemyBuffers::MemoryRange::REC_EWMA, 
+    _active_axis = vector<Axis>( { RemyBuffers::MemoryRange::SEND_EWMA, RemyBuffers::MemoryRange::REC_EWMA,
                                    RemyBuffers::MemoryRange::RTT_RATIO, RemyBuffers::MemoryRange::SLOW_REC_EWMA } );
   }
 }

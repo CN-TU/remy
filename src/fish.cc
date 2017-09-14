@@ -13,7 +13,7 @@ Fish::Fish( const FinTree & fins, const unsigned int s_prng_seed, const bool s_t
      _last_send_time( 0 ),
      _next_send_time( 0 ),
      _flow_id( 0 ),
-     _largest_ack( -1 ), 
+     _largest_ack( -1 ),
      _track( s_track ),
      _lambda( 0 ),
      _max_intersend( 0 ),
@@ -27,7 +27,7 @@ void Fish::packets_received( const vector< Packet > & packets ) {
     _packets_received += packets.size();
     _memory.packets_received( packets, _flow_id, _largest_ack );
     _largest_ack = max( packets.at( packets.size() - 1 ).seq_num, _largest_ack );
-    
+
     const Fin & current_fin( _fins.use_fin( _memory, _track ) );
     _update_lambda( current_fin.lambda() );
     _update_send_time( _last_send_time );
@@ -62,7 +62,7 @@ void Fish::_update_send_time( const double tickno )
   _next_send_time = _last_send_time + _batch_size * min( _distribution.sample( _prng ), _max_intersend );
 }
 
-void Fish::_update_lambda( const double lambda ) 
+void Fish::_update_lambda( const double lambda )
 {
   _lambda = lambda;
   _max_intersend = 2.0 / lambda;

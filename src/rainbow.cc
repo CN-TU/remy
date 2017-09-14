@@ -13,7 +13,7 @@ Rainbow& Rainbow::getInstance() {
 	return instance;
 }
 
-Rainbow::Rainbow() : 
+Rainbow::Rainbow() :
 	global_lock(),
 	pModule(NULL),
 	pActionFunc(NULL),
@@ -21,11 +21,12 @@ Rainbow::Rainbow() :
 	pCreateFunc(NULL),
 	pDeleteFunc(NULL),
 	pFinishFunc(NULL),
-	pSaveFunc(NULL) {
-	
+	pSaveFunc(NULL),
+	_training(true) {
+
 	puts("Initializing Python interpreter");
 	Py_Initialize();
-		
+
 	char cwd[1024 * sizeof(char)];
 	if (getcwd(cwd, sizeof(cwd)) != NULL)
 		fprintf(stdout, "Current working dir: %s\n", cwd);
@@ -34,7 +35,7 @@ Rainbow::Rainbow() :
 	const char python_directory[] = "/async_deep_reinforce";
 	char* search_path = new char[strlen(cwd)+strlen(python_directory)+1];
 	sprintf(search_path, "%s%s", cwd, python_directory);
-	printf("%s\n", search_path);
+	printf("Current search path: %s\n", search_path);
 
 	const char pModuleName[] = "a3c";
 	const char pActionFuncName[] = "call_process_action";
@@ -57,7 +58,7 @@ Rainbow::Rainbow() :
 	Py_DECREF(pSearchPath);
 
 	size_t dummy_size = 1;
-	// FIXME: pArgString never gets freed. 
+	// FIXME: pArgString never gets freed.
 	wchar_t* pArgString = Py_DecodeLocale("", &dummy_size);
 	PySys_SetArgv(1, &pArgString);
 	pModule = PyImport_ImportModule(pModuleName);
@@ -91,7 +92,7 @@ int Rainbow::get_action(const long unsigned int thread_id, const vector<double> 
 
 	int action = (int) PyLong_AsLong(pActionReturnValue);
 	Py_DECREF(pActionReturnValue);
-	Py_DECREF(pArgs);	
+	Py_DECREF(pArgs);
 	Py_DECREF(pState);
 
 	return action;
@@ -112,12 +113,18 @@ void Rainbow::put_reward(const long unsigned int thread_id, const double reward_
 long unsigned int Rainbow::create_thread() {
 	lock_guard<mutex> guard(global_lock);
 
-	PyObject* pThreadId = PyObject_CallObject(pCreateFunc, NULL);
+	PyObject* pArgs = Py_BuildValue("(O)", _training ? Py_True : Py_False);
+	if (pArgs == NULL) {
+		PyErr_Print();
+	}
+
+	PyObject* pThreadId = PyObject_CallObject(pCreateFunc, pArgs);
 	if (pThreadId == NULL) {
 		puts("Oh no, NULL value for create_thread");
 		PyErr_Print();
 	}
 	long unsigned int thread_id = (int) PyLong_AsLong(pThreadId);
+	Py_DECREF(pArgs);
 	Py_DECREF(pThreadId);
 
 	printf("%lu: Created training thread\n", thread_id);
@@ -131,7 +138,7 @@ void Rainbow::delete_thread(const long unsigned int thread_id) {
 	PyObject* pReturnValue = PyObject_CallObject(pDeleteFunc, pThreadIdTuple);
 	if (pReturnValue == NULL) {
 		PyErr_Print();
-	}	
+	}
 	Py_DECREF(pReturnValue);
 	Py_DECREF(pThreadIdTuple);
 }
@@ -147,7 +154,7 @@ void Rainbow::finish(const long unsigned int thread_id, size_t actions_to_remove
 	if (pReturnValue == NULL) {
 		PyErr_Print();
 	}
-	Py_DECREF(pArgs);	
+	Py_DECREF(pArgs);
 	Py_DECREF(pReturnValue);
 }
 

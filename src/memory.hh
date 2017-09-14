@@ -27,7 +27,7 @@ public:
   double _send;
   double _rec;
   int _lost_since_last_time;
-  
+
   Memory( const std::vector< DataType > & s_data )
     : _rec_send_ewma( s_data.at( 0 ) ),
       _rec_rec_ewma( s_data.at( 1 ) ),
@@ -67,23 +67,23 @@ public:
   const DataType & field( unsigned int num ) const { return num == 0 ? _rec_send_ewma : num == 1 ? _rec_rec_ewma : num == 2 ? _rtt_ratio : num == 3 ? _slow_rec_rec_ewma : num == 4 ? _rtt_diff : num == 5 ? _queueing_delay : _loss ; }
   DataType & mutable_field( unsigned int num )     { return num == 0 ? _rec_send_ewma : num == 1 ? _rec_rec_ewma : num == 2 ? _rtt_ratio : num == 3 ? _slow_rec_rec_ewma : num == 4 ? _rtt_diff : num == 5 ? _queueing_delay : _loss ; }
 
-  void packet_sent( const Packet & packet __attribute((unused)) ) {}
-  void packets_received( const std::vector< Packet > & packets, const unsigned int flow_id, const int largest_ack );
+  void packet_sent( const remy::Packet & packet __attribute((unused)) ) {}
+  void packets_received( const std::vector< remy::Packet > & packets, const unsigned int flow_id, const int largest_ack );
   void lost(const int lost);
   void advance_to( const unsigned int tickno __attribute((unused)) ) {}
 
   std::string str( void ) const;
   std::string str( unsigned int num ) const;
 
-  bool operator>=( const Memory & other ) const { 
+  bool operator>=( const Memory & other ) const {
     for (unsigned int i = 0; i < datasize; i ++) { if ( field(i) < other.field(i) ) return false; }
     return true;
   }
-  bool operator<( const Memory & other ) const { 
+  bool operator<( const Memory & other ) const {
     for (unsigned int i = 0; i < datasize; i ++) { if ( field(i) >= other.field(i) ) return false; }
     return true;
   }
-  bool operator==( const Memory & other ) const { 
+  bool operator==( const Memory & other ) const {
     for (unsigned int i = 0; i < datasize; i ++) { if ( field(i) != other.field(i) ) return false; }
     return true;
   }

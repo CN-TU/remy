@@ -6,6 +6,7 @@
 #include <string>
 
 #include "packet.hh"
+using namespace remy;
 
 class Aimd
 {

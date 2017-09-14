@@ -16,7 +16,7 @@ private:
 public:
   Whisker( const Whisker & other );
   Whisker( const unsigned int s_window_increment, const double s_window_multiple, const double s_intersend, const MemoryRange & s_domain );
-  
+
   Whisker( const MemoryRange & s_domain ) : Whisker( get_optimizer().window_increment.default_value,
                  get_optimizer().window_multiple.default_value,
                  get_optimizer().intersend.default_value, s_domain ) {};
@@ -24,14 +24,14 @@ public:
 
   unsigned int window( const unsigned int previous_window ) const { return std::min( std::max( 0, int( previous_window * _window_multiple + _window_increment ) ), 1000000 ); }
   const double & intersend( void ) const { return _intersend; }
-  
+
   std::vector< Whisker > next_generation( bool optimize_window_increment, bool optimize_window_multiple, bool optimize_intersend ) const;
 
   std::string str( const unsigned int total=1 ) const;
-  
+
   RemyBuffers::Whisker DNA( void ) const;
   Whisker( const RemyBuffers::Whisker & dna );
-  
+
   void round( void );
 
   bool operator==( const Whisker & other ) const { return (_window_increment == other._window_increment) && (_window_multiple == other._window_multiple) && (_intersend == other._intersend) && (_domain == other._domain); }

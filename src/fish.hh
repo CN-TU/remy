@@ -6,6 +6,7 @@
 #include <string>
 
 #include "packet.hh"
+using namespace remy;
 #include "memory.hh"
 #include "random.hh"
 #include "exponential.hh"

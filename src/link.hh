@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "packet.hh"
+using namespace remy;
 #include "delay.hh"
 #include "receiver.hh"
 

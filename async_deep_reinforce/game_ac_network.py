@@ -8,8 +8,6 @@ from constants import HIDDEN_SIZE
 from constants import N_LSTM_LAYERS
 from constants import PRECISION
 from constants import LAYER_NORMALIZATION
-from constants import ALPHA
-from constants import BETA
 from constants import ENTROPY_BETA
 from constants import MINIMUM_STD
 from constants import ACTOR_FACTOR
@@ -29,7 +27,7 @@ import itertools
 
 from tensorflow.python.ops import variable_scope as vs
 
-# # Super cool for debugging reasons! 
+# # Super cool for debugging reasons!
 # def verbose(original_function):
 # 		# make a new function that prints a message when original_function starts and finishes
 # 		def new_function(*args, **kwargs):
@@ -54,11 +52,11 @@ class GameACNetwork(object):
 		with tf.device(self._device):
 			# taken action (input for policy)
 			self.a = tf.placeholder(PRECISION, [None, 1], name="a")
-		
+
 			# temporary difference (R-V) (input for policy)
 			self.td_throughput = tf.placeholder(PRECISION, [None], name="td_throughput")
 			self.td_delay = tf.placeholder(PRECISION, [None], name="td_delay")
-			
+
 			normal_variance = tf.log((self.pi[1]*self.pi[1])/(self.pi[0]*self.pi[0])+1.0)
 			self.distribution = ds.TransformedDistribution(
 					distribution=ds.Normal(loc=tf.log(self.pi[0])-normal_variance/2.0, scale=tf.sqrt(normal_variance), allow_nan_stats=False, validate_args=True),
@@ -87,7 +85,7 @@ class GameACNetwork(object):
 			self.r_packets = tf.placeholder(PRECISION, [None], name="r_packets")
 			self.r_accumulated_delay = tf.placeholder(PRECISION, [None], name="r_accumulated_delay")
 			self.r_duration = tf.placeholder(PRECISION, [None], name="r_duration")
-			
+
 			# value loss (output)
 			# (Learning rate for Critic is half of Actor's, so multiply by 0.5)
 			# TODO: Why is the learning rate half of the Actor's? Sources?
@@ -99,7 +97,7 @@ class GameACNetwork(object):
 
 	def run_policy_and_value(self, sess, s_t):
 		raise NotImplementedError()
-		
+
 	def run_policy(self, sess, s_t):
 		raise NotImplementedError()
 
@@ -113,7 +111,7 @@ class GameACNetwork(object):
 		def backup_vars_inner_function():
 			self.backup_lstm_state = self.lstm_state
 		return backup_vars_inner_function
-		
+
 	def restore_backup(self, name=None):
 		def restore_backup_inner_function():
 			self.lstm_state = self.backup_lstm_state
@@ -133,9 +131,9 @@ class GameACNetwork(object):
 	# 			def backup_vars_inner_function(sess):
 	# 				self.backup_lstm_state = self.lstm_state
 	# 				sess.run(group)
-				
+
 	# 			return backup_vars_inner_function
-		
+
 	# def restore_backup(self, name=None):
 	# 	sync_ops = []
 
@@ -244,13 +242,13 @@ class GameACLSTMNetwork(GameACNetwork):
 			self.step_size = tf.placeholder(PRECISION, [1])
 
 			self.initial_lstm_state = lstm_state_tuple()
-			
+
 			# Unrolling LSTM up to LOCAL_T_MAX time steps. (= 5time steps.)
 			# When episode terminates unrolling time steps becomes less than LOCAL_TIME_STEP.
 			# Unrolling step size is applied via self.step_size placeholder.
 			# When forward propagating, step_size is 1.
 			# (time_major = False, so output shape is [batch_size, max_time, cell.output_size])
-				
+
 			h_fc = tf.matmul(self.s, self.W_state_to_hidden_fc) + self.b_state_to_hidden_fc
 			h_fc_reshaped = tf.reshape(h_fc, [1,-1,HIDDEN_SIZE])
 
@@ -273,7 +271,7 @@ class GameACLSTMNetwork(GameACNetwork):
 				# tf.nn.softplus(raw_pi_std) + MINIMUM_STD
 				# tf.nn.sigmoid(raw_pi_std)
 				# tf.constant(0.5, shape=(1,1), dtype=PRECISION)
-				tf.clip_by_value(raw_pi_mean*0.01, 1.0, float("inf"))
+				tf.clip_by_value(raw_pi_mean*0.01, MINIMUM_STD, float("inf"))
 			)
 
 			# value (output)
@@ -293,18 +291,18 @@ class GameACLSTMNetwork(GameACNetwork):
 			self.LSTM_variables = [tf.get_variable(weight_name, dtype=PRECISION) for weight_name in all_weight_names]
 
 			self.reset_state()
-			
+
 	def reset_state(self):
 		self.lstm_state_out = lstm_state_tuple(use_np=True)
 
 	# def run_policy_and_value(self, sess, s_t):
 	# 	# This run_policy_and_value() is used when forward propagating.
 	# 	# so the step size is 1.
-	# 	pi_out, v_packets_out, v_accumulated_delay_out, v_duration_out, self.lstm_state_out = sess.run( 
+	# 	pi_out, v_packets_out, v_accumulated_delay_out, v_duration_out, self.lstm_state_out = sess.run(
 	# 		[self.pi, self.v_packets, self.v_accumulated_delay, self.v_duration, self.lstm_state],
 	# 		feed_dict = {self.s : [s_t],
 	# 		self.initial_lstm_state : self.lstm_state_out,
-	# 		self.step_size : [1]} 
+	# 		self.step_size : [1]}
 	# 	)
 	# 	# pi_out: (1,3), v_out: (1)
 	# 	return ((pi_out[0][0], pi_out[1][0]), (v_packets_out[0], v_accumulated_delay_out[0], v_duration_out[0]))
@@ -316,13 +314,13 @@ class GameACLSTMNetwork(GameACNetwork):
 			[self.pi, self.chosen_action, self.v_packets, self.v_accumulated_delay, self.v_duration, self.lstm_state],
 			feed_dict = {self.s : [s_t],
 			self.initial_lstm_state : self.lstm_state_out,
-			self.step_size : [1]} 
+			self.step_size : [1]}
 		)
 		# pi_out: (1,3), v_out: (1)
 		return ((pi_out[0][0], pi_out[1][0]), action_out[0],(v_packets_out[0], v_accumulated_delay_out[0], v_duration_out[0]))
 
 	def run_value(self, sess, s_t):
-		# This run_value() is used for calculating V for bootstrapping at the 
+		# This run_value() is used for calculating V for bootstrapping at the
 		# end of LOCAL_T_MAX time step sequence.
 		# When next sequence starts, V will be calculated again with the same state using updated network weights,
 		# so we don't update LSTM state here.
@@ -333,13 +331,13 @@ class GameACLSTMNetwork(GameACNetwork):
 								# self.initial_lstm_state0 : self.lstm_state_out[0],
 								# self.initial_lstm_state1 : self.lstm_state_out[1],
 								self.step_size : [1]} )
-		
+
 		# roll back lstm state
 		self.lstm_state_out = prev_lstm_state_out
 		return (v_packets_out[0], v_accumulated_delay_out[0], v_duration_out[0])
 
 	def run_loss(self, sess, feed_dict):
-		# We don't have to roll back the LSTM state here as it is restored in the "process" function of a3c_training_thread.py anyway and because run_loss is only called there. 
+		# We don't have to roll back the LSTM state here as it is restored in the "process" function of a3c_training_thread.py anyway and because run_loss is only called there.
  		return sess.run( [self.entropy, self.skewness, self.actor_loss, self.value_loss, self.total_loss, self.distribution_mean, self.distribution_std, self.inner_distribution_mean, self.inner_distribution_std], feed_dict = feed_dict )
 
 	def get_vars(self):

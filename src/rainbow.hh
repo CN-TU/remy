@@ -20,9 +20,10 @@ private:
 	Rainbow();
 
 public:
+	bool _training;
 	Rainbow(Rainbow const&) = delete;
 	void operator=(Rainbow const&) = delete;
-	
+
 	static Rainbow& getInstance();
 	long unsigned int create_thread();
 	int get_action(const long unsigned int thread_id, const std::vector<double> state);

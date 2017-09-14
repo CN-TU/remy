@@ -8,6 +8,7 @@
 #include <cstdio>
 
 #include "packet.hh"
+using namespace remy;
 
 class Delay
 {
@@ -37,7 +38,7 @@ private:
 
 public:
   Delay( const double s_delay ) : _queue(), _delay( s_delay ), _adjusted_packets_are_in_flight( false ) {}
- 
+
   void accept( const Packet & p, const double & tickno ) noexcept
   {
     /* Make sure that we haven't reordered packets when delay was adjusted

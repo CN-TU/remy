@@ -28,7 +28,6 @@ from constants import RMSP_EPSILON
 from constants import RMSP_ALPHA
 from constants import USE_GPU
 from constants import PRECISION
-from constants import ALPHA, BETA
 from constants import LOG_LEVEL
 
 import logging
@@ -130,6 +129,7 @@ window = tf.placeholder(PRECISION)
 std = tf.placeholder(PRECISION)
 inner_mean = tf.placeholder(PRECISION)
 inner_std = tf.placeholder(PRECISION)
+speed = tf.placeholder(PRECISION)
 tf.summary.scalar("score_throughput", score_throughput)
 tf.summary.scalar("score_delay", score_delay)
 tf.summary.scalar("entropy", entropy)
@@ -141,6 +141,7 @@ tf.summary.scalar("window", window)
 tf.summary.scalar("std", std)
 tf.summary.scalar("inner_mean", inner_mean)
 tf.summary.scalar("inner_std", inner_std)
+tf.summary.scalar("speed", speed)
 summary_inputs = {
   "score_throughput": score_throughput,
   "score_delay": score_delay,
@@ -152,7 +153,8 @@ summary_inputs = {
   "window": window,
   "std": std,
   "inner_mean": inner_mean,
-  "inner_std": inner_std
+  "inner_std": inner_std,
+  "speed": speed
 }
 
 summary_op = tf.summary.merge_all()
@@ -166,14 +168,17 @@ idle_threads = set()
 
 start_time = time.time() - wall_t
 
-def create_training_thread():
+global training
+
+def create_training_thread(training):
+  logging.info(" ".join(map(str,("training", training))))
   global global_t, global_thread_index, wall_t, sess
   if len(idle_threads) == 0:
     logging.info(" ".join(map(str,("Creating new thread", global_thread_index))))
     created_thread = A3CTrainingThread(global_thread_index, global_network, initial_learning_rate,
                                         learning_rate_input,
                                         grad_applier, MAX_TIME_STEP,
-                                        device = device)
+                                        device, training)
     training_threads[global_thread_index] = created_thread
     return_index = global_thread_index
     global_thread_index += 1
@@ -182,12 +187,13 @@ def create_training_thread():
     return_index = idle_threads.pop()
     logging.info(" ".join(map(str,("Recycling thread", return_index))))
     created_thread = training_threads[return_index]
-    
+
   # set start time
   start_time = time.time() - wall_t
   created_thread.set_start_time(start_time)
   created_thread.episode_count = 0
 
+  created_thread.time_difference = None
   created_thread.states = []
   created_thread.actions = []
   created_thread.rewards = []
@@ -196,6 +202,7 @@ def create_training_thread():
   created_thread.estimated_values = []
   created_thread.start_lstm_states = []
   created_thread.variable_snapshots = []
+  created_thread.time_differences = []
   created_thread.local_t = 0
   created_thread.episode_reward_throughput = 0
   created_thread.episode_reward_delay = 0

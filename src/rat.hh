@@ -6,6 +6,7 @@
 #include <limits>
 
 #include "packet.hh"
+using namespace remy;
 #include "whiskertree.hh"
 #include "memory.hh"
 #include "simulationresults.pb.h"
