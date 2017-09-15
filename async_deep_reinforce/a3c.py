@@ -193,7 +193,7 @@ def create_training_thread(training):
   created_thread.set_start_time(start_time)
   created_thread.episode_count = 0
 
-  created_thread.time_difference = None
+  created_thread.time_differences = []
   created_thread.states = []
   created_thread.actions = []
   created_thread.rewards = []
@@ -252,3 +252,5 @@ def save_session():
     f.write(str(current_datetime))
 
   saver.save(sess, CHECKPOINT_DIR + '/' + 'checkpoint', global_step = global_t)
+
+print("Reached the end of the a3c.py file!")

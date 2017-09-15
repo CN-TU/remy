@@ -32,9 +32,12 @@ Rainbow::Rainbow() :
 		fprintf(stdout, "Current working dir: %s\n", cwd);
 	else
 		perror("getcwd() error");
-	const char python_directory[] = "/async_deep_reinforce";
-	char* search_path = new char[strlen(cwd)+strlen(python_directory)+1];
-	sprintf(search_path, "%s%s", cwd, python_directory);
+	// const char python_directory[] = "/async_deep_reinforce";
+	// char* search_path = new char[strlen(cwd)+strlen(python_directory)+1];
+	// sprintf(search_path, "%s%s", cwd, python_directory);
+	// FIXME: Hardcoded path to python stuff is NOT GOOD.
+	const char python_directory[] = "/home/max/repos/remy/async_deep_reinforce";
+	const char* search_path = python_directory;
 	printf("Current search path: %s\n", search_path);
 
 	const char pModuleName[] = "a3c";
@@ -53,7 +56,8 @@ Rainbow::Rainbow() :
 	if (pSearchPath == NULL) {
 		PyErr_Print();
 	}
-	delete search_path;
+	// FIXME: search_path doesn't get deleted anymore... but shouldn't actually matter...
+	// delete search_path;
 	PyList_Append(path, pSearchPath);
 	Py_DECREF(pSearchPath);
 

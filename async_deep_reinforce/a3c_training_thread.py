@@ -19,7 +19,7 @@ from constants import LOG_LEVEL
 import logging
 logging.basicConfig(level=LOG_LEVEL)
 
-LOG_INTERVAL = 5
+LOG_INTERVAL = 100
 
 class A3CTrainingThread(object):
   def __init__(self,
@@ -96,6 +96,7 @@ class A3CTrainingThread(object):
       self.estimated_values.append(self.local_network.run_value(sess, state))
 
       if len(self.actions) % LOCAL_T_MAX == 0:
+        self.time_differences.append(None)
         # Sync for the next iteration
         sess.run( self.sync )
         self.start_lstm_states.append(self.local_network.lstm_state_out)
@@ -121,60 +122,75 @@ class A3CTrainingThread(object):
     assert(duration >= 0)
     self.durations.append(duration)
 
-    if len(self.rewards)>=LOCAL_T_MAX:
-      assert(len(self.rewards) == LOCAL_T_MAX)
-      return self.process(sess, global_t, summary_writer, summary_op, summary_inputs)
+    if len(self.rewards)>=LOCAL_T_MAX or (len([item for item in self.actions[:LOCAL_T_MAX] if item is not None]) == len(self.rewards) and len(self.rewards) > 0 and self.time_differences[0] is not None):
+      # print(self.thread_index, "rewards", self.rewards, "actions", self.actions, "time_diffs", self.time_differences)
+      assert(len(self.rewards) <= LOCAL_T_MAX)
+      # print(len([item for item in self.actions[:LOCAL_T_MAX] if item is not None]), len(self.rewards[:LOCAL_T_MAX]))
+      assert(len([item for item in self.actions[:LOCAL_T_MAX] if item is not None]) == len(self.rewards[:LOCAL_T_MAX]))
+      return self.process(sess, global_t, summary_writer, summary_op, summary_inputs, self.time_differences[0])
     else:
       return  0
 
   def final_step(self, sess, global_t, summary_writer, summary_op, summary_inputs, actions_to_remove, time_difference):
-    self.actions = self.actions[:-actions_to_remove]
-    self.states = self.states[:-actions_to_remove]
-    self.values = self.values[:-actions_to_remove]
-    self.estimated_values = self.estimated_values[:-actions_to_remove+1]
+    # self.actions = self.actions[:-actions_to_remove]
+    # self.states = self.states[:-actions_to_remove]
+    # self.values = self.values[:-actions_to_remove]
+    # self.estimated_values = self.estimated_values[:-actions_to_remove+1]
+    if self.training and len(self.actions) > 0:
+      self.time_differences = self.time_differences[:-1]
+      self.time_differences.append(time_difference)
+
+      nones_to_add = [None] * ((LOCAL_T_MAX - (len(self.actions) % LOCAL_T_MAX)) % LOCAL_T_MAX)
+      self.actions += nones_to_add
+      self.states += nones_to_add
+      self.values += nones_to_add
+      self.estimated_values += nones_to_add
 
     # If, for some strange reason, absolutely nothing happened in this episode, don't do anyting...
     # Or if you're actually in testing mode :)
-    if len(self.rewards)>0:
-      time_diff = self.process(sess, global_t, summary_writer, summary_op, summary_inputs, time_difference)
-    else:
-      time_diff = 0
+    # if len(self.rewards)>0:
+    #   time_diff = self.process(sess, global_t, summary_writer, summary_op, summary_inputs, time_difference)
+    # else:
+    #   time_diff = 0
 
-    self.states = []
-    self.actions = []
-    self.rewards = []
-    self.durations = []
-    self.values = []
-    self.estimated_values = []
-    self.start_lstm_states = []
-    self.variable_snapshots = []
+    # self.states = []
+    # self.actions = []
+    # self.rewards = []
+    # self.durations = []
+    # self.values = []
+    # self.estimated_values = []
+    # self.start_lstm_states = []
+    # self.variable_snapshots = []
     self.local_t = 0
     self.episode_reward_throughput = 0
     self.episode_reward_delay = 0
     self.local_network.reset_state()
-    sess.run( self.sync )
+    # sess.run( self.sync )
 
-    return time_diff
+    return 0
 
   def process(self, sess, global_t, summary_writer, summary_op, summary_inputs, time_difference=None):
     final = time_difference is not None
 
     start_local_t = self.local_t
 
-    logging.debug(" ".join(map(str,(self.thread_index, "In process: len(rewards)", len(self.rewards), "len(durations)", len(self.durations), "len(states)", len(self.states), "len(actions)", len(self.actions), "len(values)", len(self.values)))))
+    # logging.debug(" ".join(map(str,(self.thread_index, "In process: len(rewards)", len(self.rewards), "len(durations)", len(self.durations), "len(states)", len(self.states), "len(actions)", len(self.actions), "len(values)", len(self.values)))))
 
-    actions = self.actions[:LOCAL_T_MAX]
-    states = self.states[:LOCAL_T_MAX]
-    rewards = self.rewards[:LOCAL_T_MAX]
-    durations = self.durations[:LOCAL_T_MAX]
-    values = self.values[:LOCAL_T_MAX]
+    actions = [item for item in self.actions[:LOCAL_T_MAX] if item is not None]
+    states = [item for item in self.states[:LOCAL_T_MAX] if item is not None]
+    rewards = [item for item in self.rewards[:LOCAL_T_MAX] if item is not None]
+    durations = [item for item in self.durations[:LOCAL_T_MAX] if item is not None]
+    values = [item for item in self.values[:LOCAL_T_MAX] if item is not None]
 
     # logging.debug(" ".join(map(str,(self.thread_index, "In process: rewards", rewards, "durations", durations, "states", states, "actions", actions, "values", values))))
 
     # get estimated value of step n+1
-    assert((not len(self.estimated_values) <= len(rewards)) or final)
-    R_packets, R_accumulated_delay, R_duration = self.estimated_values[len(rewards)] if len(self.estimated_values) > len(rewards) else self.estimated_values[-1]
-    logging.debug("final:"+str(final)+", "+" ".join(map(str,("R_packets", R_packets, "R_accumulated_delay", R_accumulated_delay, "R_duration", R_duration))))
+    # assert((not len(self.estimated_values) <= len(rewards)) or final)
+    # print("self.estimated_values", self.estimated_values)
+    # print("Spam and eggs")
+    # print(self.thread_index, "actions", self.actions, "rewards", self.rewards, "estimated_values", self.estimated_values)
+    R_packets, R_accumulated_delay, R_duration = self.estimated_values[len(rewards)] if self.estimated_values[len(rewards)] is not None else self.estimated_values[len(rewards)-1]
+    # logging.debug("final:"+str(final)+", "+" ".join(map(str,("R_packets", R_packets, "R_accumulated_delay", R_accumulated_delay, "R_duration", R_duration))))
 
     R_packets, R_accumulated_delay, R_duration = (R_packets)/(1-GAMMA), (R_accumulated_delay)/(1-GAMMA), (R_duration)/(1-GAMMA)
     # logging.debug(" ".join(map(str,("exp(R_packets)", R_packets, "exp(R_accumulated_delay)", R_accumulated_delay, "exp(R_duration)", R_duration))))
@@ -267,7 +283,7 @@ class A3CTrainingThread(object):
       normalized_final_score_throughput = self.episode_reward_throughput/time_difference
       # logging.info("{}: self.episode_reward_throughput={}, time_difference={}".format(self.thread_index, self.episode_reward_throughput, time_difference))
       normalized_final_score_delay = self.episode_reward_delay/self.episode_reward_throughput
-      logging.debug("{}: score_throughput={}, score_delay={}".format(self.thread_index, normalized_final_score_throughput, normalized_final_score_delay))
+      # logging.debug("{}: score_throughput={}, score_delay={}".format(self.thread_index, normalized_final_score_throughput, normalized_final_score_delay))
 
       if self.episode_count % LOG_INTERVAL == 0:
         elapsed_time = time.time() - self.start_time
@@ -301,20 +317,21 @@ class A3CTrainingThread(object):
           "inner_mean": inner_mean.item(),
           "inner_std": inner_std.item(),
           "speed": steps_per_sec}
-        logging.debug(" ".join(map(str,("things", things))))
+        # logging.debug(" ".join(map(str,("things", things))))
         self._record_score(sess, summary_writer, summary_op, summary_inputs, things, global_t) # TODO:NOW: is that "not terminal_end" correct?
 
       self.episode_count += 1
     else:
       self.restore_backup()
 
-      self.actions = self.actions[LOCAL_T_MAX:]
-      self.states = self.states[LOCAL_T_MAX:]
-      self.values = self.values[LOCAL_T_MAX:]
-      self.rewards = self.rewards[LOCAL_T_MAX:]
-      self.durations = self.durations[LOCAL_T_MAX:]
-      self.estimated_values = self.estimated_values[LOCAL_T_MAX:]
-      self.start_lstm_states = self.start_lstm_states[1:]
-      self.variable_snapshots = self.variable_snapshots[1:]
+    self.actions = self.actions[LOCAL_T_MAX:]
+    self.states = self.states[LOCAL_T_MAX:]
+    self.values = self.values[LOCAL_T_MAX:]
+    self.rewards = self.rewards[LOCAL_T_MAX:]
+    self.durations = self.durations[LOCAL_T_MAX:]
+    self.estimated_values = self.estimated_values[LOCAL_T_MAX:]
+    self.time_differences = self.time_differences[1:]
+    self.start_lstm_states = self.start_lstm_states[1:]
+    self.variable_snapshots = self.variable_snapshots[1:]
 
     return diff_local_t
