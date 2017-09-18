@@ -165,7 +165,9 @@ class A3CTrainingThread(object):
     self.episode_reward_throughput = 0
     self.episode_reward_delay = 0
     self.local_network.reset_state()
-    # sess.run( self.sync )
+
+    if not self.training:
+      sess.run( self.sync )
 
     return 0
 

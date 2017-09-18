@@ -58,8 +58,8 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
       const double duration = it->second["interreceive_duration_acc"];
       if (_training) {
         _rainbow.put_reward(_thread_id, throughput_final, delay_final, duration);
-        _put_rewards += 1;
       }
+      _put_rewards += 1;
       it = _outstanding_rewards.erase(it);
     }
 

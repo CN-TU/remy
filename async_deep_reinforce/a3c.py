@@ -171,6 +171,7 @@ start_time = time.time() - wall_t
 global training
 
 def create_training_thread(training):
+  # print("Oh yeah, creating thraining thread!!!")
   logging.info(" ".join(map(str,("training", training))))
   global global_t, global_thread_index, wall_t, sess
   if len(idle_threads) == 0:
