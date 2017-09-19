@@ -19,7 +19,7 @@ from constants import LOG_LEVEL
 import logging
 logging.basicConfig(level=LOG_LEVEL)
 
-LOG_INTERVAL = 100
+LOG_INTERVAL = 10
 
 class A3CTrainingThread(object):
   def __init__(self,
@@ -161,6 +161,7 @@ class A3CTrainingThread(object):
     # self.estimated_values = []
     # self.start_lstm_states = []
     # self.variable_snapshots = []
+    self.start_time = time.time()
     self.local_t = 0
     self.episode_reward_throughput = 0
     self.episode_reward_delay = 0
