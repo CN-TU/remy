@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cerrno>
 #include <cmath>
+#include <cstdlib>
 
 using namespace std;
 
@@ -27,17 +28,18 @@ Rainbow::Rainbow() :
 	puts("Initializing Python interpreter");
 	Py_Initialize();
 
-	char cwd[1024 * sizeof(char)];
-	if (getcwd(cwd, sizeof(cwd)) != NULL)
-		fprintf(stdout, "Current working dir: %s\n", cwd);
-	else
-		perror("getcwd() error");
-	// const char python_directory[] = "/async_deep_reinforce";
-	// char* search_path = new char[strlen(cwd)+strlen(python_directory)+1];
-	// sprintf(search_path, "%s%s", cwd, python_directory);
-	// FIXME: Hardcoded path to python stuff is NOT GOOD.
-	const char python_directory[] = "~/repos/remy/async_deep_reinforce";
-	const char* search_path = python_directory;
+	// char cwd[1024 * sizeof(char)];
+	// if (getcwd(cwd, sizeof(cwd)) != NULL)
+	// 	fprintf(stdout, "Current working dir: %s\n", cwd);
+	// else
+	// 	perror("getcwd() error");
+	const char python_directory[] = "/repos/remy/async_deep_reinforce";
+	const char* home_directory = getenv("HOME");
+	char* search_path = new char[strlen(home_directory)+strlen(python_directory)+1];
+	sprintf(search_path, "%s%s", home_directory, python_directory);
+	// // FIXME: Hardcoded path to python stuff is NOT GOOD.
+	// const char python_directory[] = "~/repos/remy/async_deep_reinforce";
+	// const char* search_path = python_directory;
 	printf("Current search path: %s\n", search_path);
 
 	const char pModuleName[] = "a3c";
