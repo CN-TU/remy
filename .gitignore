@@ -20,7 +20,6 @@ Makefile.in
 *.synctex.gz
 /tex/svg-inkscape/
 /stats/
-/stored_checkpoints/
 
 /.vscode
 
@@ -57,6 +56,5 @@ Makefile.in
 /graph/ratatouille
 /src/scoring-example
 /src/tmp
-/checkpoints
 
 test.py
