@@ -189,7 +189,7 @@ void Unicorn::get_action(const double& tickno, const int& packets_sent_in_this_e
 
   // _the_window = window(_the_window, action.window_increment, action.window_multiple);
   _the_window = std::min(std::max(action, MIN_WINDOW), MAX_WINDOW);
-  // printf("%lu: window: %f\n", _thread_id, _the_window);
+  // if (!_training) printf("%lu: window: %d\n", _thread_id, _the_window);
 
   for (auto it=_outstanding_rewards.begin(); it!=_outstanding_rewards.end(); it++) {
     if (it->second["end_time"] < 0) {
