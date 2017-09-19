@@ -36,7 +36,7 @@ Rainbow::Rainbow() :
 	// char* search_path = new char[strlen(cwd)+strlen(python_directory)+1];
 	// sprintf(search_path, "%s%s", cwd, python_directory);
 	// FIXME: Hardcoded path to python stuff is NOT GOOD.
-	const char python_directory[] = "/home/max/repos/remy/async_deep_reinforce";
+	const char python_directory[] = "~/repos/remy/async_deep_reinforce";
 	const char* search_path = python_directory;
 	printf("Current search path: %s\n", search_path);
 
