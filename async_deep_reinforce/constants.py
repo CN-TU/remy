@@ -10,7 +10,7 @@ RMSP_EPSILON = 0.1 # epsilon parameter for RMSProp
 # LOG_FILE = 'tmp/a3c_log'
 
 # FIXME: Super ugly to hardcode the path!!!
-ABSOLUTE_PATH = os.path.join(os.path.expanduser('~'),"/repos/remy/")
+ABSOLUTE_PATH = os.path.join(os.path.expanduser('~'),"repos/remy/")
 CHECKPOINT_DIR = ABSOLUTE_PATH+'checkpoints'
 LOG_FILE = ABSOLUTE_PATH+'tmp/a3c_log'
 INITIAL_ALPHA_LOW = 1e-4    # log_uniform low limit for learning rate
