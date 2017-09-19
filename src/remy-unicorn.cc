@@ -34,6 +34,12 @@ void signal_handler(int s) {
   exit(EXIT_SUCCESS);
 }
 
+void signal_handler_just_save(int s) {
+  printf("Signal Handler: Caught signal %d\n", s);
+  Rainbow& unicorn_farm = Rainbow::getInstance();
+  unicorn_farm.save_session();
+}
+
 void unicorn_thread(const size_t thread_id, const BreederOptionsUnicorn options, const size_t iterations_per_thread) {
   printf("Creating thread no %zd\n", thread_id);
   UnicornBreeder breeder(options, thread_id);
@@ -155,7 +161,7 @@ int main( int argc, char *argv[] )
 
   if (stat("stats", &st) == -1) {
     mkdir("stats", 0700);
-  }  
+  }
   for (size_t i=0; i<options.config_range.num_threads; i++) {
     thread_array[i] = thread(unicorn_thread, i, options, iterations_per_thread);
   }
@@ -163,6 +169,7 @@ int main( int argc, char *argv[] )
   printf("Created threads\n");
   signal(SIGINT, signal_handler);
   signal(SIGTERM, signal_handler);
+  signal(SIGUSR1, signal_handler_just_save);
   printf("Registered handlers\n");
 
   // Never gonna happen
