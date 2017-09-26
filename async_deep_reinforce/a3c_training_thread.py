@@ -292,7 +292,8 @@ class A3CTrainingThread(object):
       normalized_final_score_delay = self.episode_reward_delay/self.episode_reward_throughput
       # logging.debug("{}: score_throughput={}, score_delay={}".format(self.thread_index, normalized_final_score_throughput, normalized_final_score_delay))
 
-      if self.episode_count % LOG_INTERVAL == 0:
+      # time_difference > 0 because of a bug in Unicorn.cc that makes it possible for time_difference to be smaller than 0.
+      if self.episode_count % LOG_INTERVAL == 0 and time_difference > 0:
         elapsed_time = time.time() - self.start_time
         steps_per_sec = self.local_t / elapsed_time
         logging.info("### {}: Performance: {} STEPS in {:.0f} sec. {:.0f} STEPS/sec. {:.2f}M STEPS/hour".format(self.thread_index, self.local_t, elapsed_time, steps_per_sec, steps_per_sec * 3600 / 1000000.))
