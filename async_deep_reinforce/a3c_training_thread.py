@@ -87,9 +87,6 @@ class A3CTrainingThread(object):
     summary_writer.add_summary(summary_str, global_t)
     summary_writer.flush()
 
-  def set_start_time(self, start_time):
-    self.start_time = start_time
-
   def action_step(self, sess, state):
     # Run this still with the old weights, before syncing them
     if self.training:
@@ -132,19 +129,27 @@ class A3CTrainingThread(object):
       return  0
 
   def final_step(self, sess, global_t, summary_writer, summary_op, summary_inputs, actions_to_remove, time_difference):
+    print(self.thread_index, "self.time_differences", self.time_differences)
     # self.actions = self.actions[:-actions_to_remove]
     # self.states = self.states[:-actions_to_remove]
     # self.values = self.values[:-actions_to_remove]
     # self.estimated_values = self.estimated_values[:-actions_to_remove+1]
-    if self.training and len(self.actions) > 0:
-      self.time_differences = self.time_differences[:-1]
-      self.time_differences.append(time_difference)
+    if self.training:
+      if len(self.actions) > 0:
+        self.time_differences = self.time_differences[:-1]
+        self.time_differences.append(time_difference)
 
-      nones_to_add = [None] * ((LOCAL_T_MAX - (len(self.actions) % LOCAL_T_MAX)) % LOCAL_T_MAX)
-      self.actions += nones_to_add
-      self.states += nones_to_add
-      self.values += nones_to_add
-      self.estimated_values += nones_to_add
+        nones_to_add = [None] * ((LOCAL_T_MAX - (len(self.actions) % LOCAL_T_MAX)) % LOCAL_T_MAX)
+        self.actions += nones_to_add
+        self.states += nones_to_add
+        self.values += nones_to_add
+        self.estimated_values += nones_to_add
+      # TODO: Is this useful? I guess only the `local_t' is actually needed...
+      elif len(self.actions) <= 0:
+        self.episode_count += 1
+        self.local_t = 0
+        self.episode_reward_throughput = 0
+        self.episode_reward_delay = 0
 
     # If, for some strange reason, absolutely nothing happened in this episode, don't do anyting...
     # Or if you're actually in testing mode :)
@@ -161,18 +166,17 @@ class A3CTrainingThread(object):
     # self.estimated_values = []
     # self.start_lstm_states = []
     # self.variable_snapshots = []
-    self.start_time = time.time()
-    self.local_t = 0
-    self.episode_reward_throughput = 0
-    self.episode_reward_delay = 0
     self.local_network.reset_state()
 
     if not self.training:
-      sess.run( self.sync )
+      sess.run(self.sync)
 
     return 0
 
   def process(self, sess, global_t, summary_writer, summary_op, summary_inputs, time_difference=None):
+    if self.local_t <= 0:
+      self.start_time = time.time()
+
     final = time_difference is not None
 
     start_local_t = self.local_t
@@ -324,6 +328,9 @@ class A3CTrainingThread(object):
         self._record_score(sess, summary_writer, summary_op, summary_inputs, things, global_t) # TODO:NOW: is that "not terminal_end" correct?
 
       self.episode_count += 1
+      self.local_t = 0
+      self.episode_reward_throughput = 0
+      self.episode_reward_delay = 0
     else:
       self.restore_backup()
 

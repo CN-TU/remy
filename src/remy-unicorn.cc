@@ -50,7 +50,6 @@ void unicorn_thread(const size_t thread_id, const BreederOptionsUnicorn options,
 int main( int argc, char *argv[] )
 {
   // WhiskerTree whiskers;
-  string output_filename;
   BreederOptionsUnicorn options;
   // FIXME: Unused. Might be useful to compare to original Remy...
   // WhiskerImproverOptions whisker_options;
@@ -79,8 +78,8 @@ int main( int argc, char *argv[] )
         exit( 1 );
       }
 
-    } else if ( arg.substr( 0, 3 ) == "of=" ) {
-      output_filename = string( arg.substr( 3 ) );
+    // } else if ( arg.substr( 0, 3 ) == "of=" ) {
+    //   output_filename = string( arg.substr( 3 ) );
 
     // } else if ( arg.substr( 0, 4 ) == "opt=" ) {
     //   whisker_options.optimize_window_increment = false;
@@ -150,11 +149,11 @@ int main( int argc, char *argv[] )
   // printf( "Initial rules (use if=FILENAME to read from disk): %s\n", whiskers.str().c_str() );
   printf( "#######################\n" );
 
-  if ( !output_filename.empty() ) {
-    printf( "Writing to \"%s.N\".\n", output_filename.c_str() );
-  } else {
-    printf( "Not saving output. Use the of=FILENAME argument to save the results.\n" );
-  }
+  // if ( !output_filename.empty() ) {
+  //   printf( "Writing to \"%s.N\".\n", output_filename.c_str() );
+  // } else {
+  //   printf( "Not saving output. Use the of=FILENAME argument to save the results.\n" );
+  // }
 
   const size_t iterations_per_thread = std::numeric_limits<size_t>::max();
   vector<thread> thread_array(options.config_range.num_threads);

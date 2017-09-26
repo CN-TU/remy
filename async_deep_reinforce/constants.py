@@ -34,6 +34,6 @@ LAYER_NORMALIZATION = True
 # Why? Because the guys of Remy also use it...
 DELAY_MULTIPLIER = 1.0
 LOG_LEVEL = logging.INFO
-# MINIMUM_STD = 0.5
-MINIMUM_STD = 1e-2
-ACTOR_FACTOR = 1.0
+MINIMUM_STD = 0.5
+# MINIMUM_STD = 1e-2
+ACTOR_FACTOR = 1e-1

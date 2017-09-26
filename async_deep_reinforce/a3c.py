@@ -103,7 +103,7 @@ if checkpoint and checkpoint.model_checkpoint_path:
   tokens = checkpoint.model_checkpoint_path.split("-")
   # set global step
   global_t = int(tokens[1])
-  print(">>> global step set: ", global_t)
+  print(">>> global step set:", global_t)
   # set wall time
   wall_t_fname = CHECKPOINT_DIR + '/' + 'wall_t.' + str(global_t)
   with open(wall_t_fname, 'r') as f:
@@ -166,7 +166,7 @@ training_threads = {}
 global_thread_index = 1
 idle_threads = set()
 
-start_time = time.time() - wall_t
+# start_time = time.time() - wall_t
 
 global training
 
@@ -190,8 +190,8 @@ def create_training_thread(training):
     created_thread = training_threads[return_index]
 
   # set start time
-  start_time = time.time() - wall_t
-  created_thread.set_start_time(start_time)
+  # start_time = time.time() - wall_t
+  # created_thread.set_start_time(start_time)
   created_thread.episode_count = 0
 
   created_thread.time_differences = []
@@ -243,7 +243,9 @@ def save_session():
     os.mkdir(CHECKPOINT_DIR)
 
   # write wall time
-  wall_t = time.time() - start_time
+  # wall_t = time.time() - start_time
+  # FIXME: Currently completely useless...
+  wall_t = time.time()
   wall_t_fname = CHECKPOINT_DIR + '/' + 'wall_t.' + str(global_t)
   with open(wall_t_fname, 'w') as f:
     f.write(str(wall_t))

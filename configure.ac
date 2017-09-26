@@ -19,7 +19,7 @@ AS_IF([test x"$PROTOC" = x],
 # Checks for libraries.
 PKG_CHECK_MODULES([protobuf], [protobuf >= 3.3])
 
-# Python stuff -- cargo cult...
+# Python stuff
 AM_PATH_PYTHON([3.5])
 PYTHON_LIBS=`python3-config --ldflags`
 PYTHON_CFLAGS=`python3-config --cflags | sed 's/\-Wstrict\-prototypes//' | sed 's/\-DNDEBUG//'`
