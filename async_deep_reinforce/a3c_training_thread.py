@@ -130,6 +130,15 @@ class A3CTrainingThread(object):
 
   def final_step(self, sess, global_t, summary_writer, summary_op, summary_inputs, actions_to_remove, time_difference):
     print(self.thread_index, "self.time_differences", self.time_differences)
+    print("self.actions", len(self.actions))
+    print("self.states", len(self.states))
+    print("self.values", len(self.values))
+    print("self.rewards", len(self.rewards))
+    print("self.durations", len(self.durations))
+    print("self.estimated_values", len(self.estimated_values))
+    print("self.time_differences", len(self.time_differences))
+    print("self.start_lstm_states", len(self.start_lstm_states))
+    print("self.variable_snapshots", len(self.variable_snapshots))
     # self.actions = self.actions[:-actions_to_remove]
     # self.states = self.states[:-actions_to_remove]
     # self.values = self.values[:-actions_to_remove]
