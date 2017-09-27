@@ -242,6 +242,7 @@ class A3CTrainingThread(object):
       R_accumulated_delay = (ri[1] + GAMMA*R_accumulated_delay)
       # R_delay = R_accumulated_delay/R_packets
       # td_delay = -(np.log(R_accumulated_delay/R_packets/DELAY_MULTIPLIER) - np.log(Vi[1]/Vi[0]/DELAY_MULTIPLIER))
+      # td_delay = -(R_accumulated_delay/R_packets - Vi[1]/Vi[0])/DELAY_MULTIPLIER
       td_delay = -(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
       batch_si.append(si)
