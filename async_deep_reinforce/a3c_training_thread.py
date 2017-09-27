@@ -242,8 +242,8 @@ class A3CTrainingThread(object):
       R_accumulated_delay = (ri[1] + GAMMA*R_accumulated_delay)
       # R_delay = R_accumulated_delay/R_packets
       # td_delay = -(np.log(R_accumulated_delay/R_packets/DELAY_MULTIPLIER) - np.log(Vi[1]/Vi[0]/DELAY_MULTIPLIER))
-      # td_delay = -(R_accumulated_delay/R_packets - Vi[1]/Vi[0])/DELAY_MULTIPLIER
-      td_delay = -(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+      td_delay = -(R_accumulated_delay/R_packets - Vi[1]/Vi[0])/DELAY_MULTIPLIER
+      # td_delay = -(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
       batch_si.append(si)
       batch_ai.append(ai)
@@ -339,7 +339,7 @@ class A3CTrainingThread(object):
           "inner_std": inner_std.item(),
           "speed": steps_per_sec}
         # logging.debug(" ".join(map(str,("things", things))))
-        self._record_score(sess, summary_writer, summary_op, summary_inputs, things, global_t) # TODO:NOW: is that "not terminal_end" correct?
+        self._record_score(sess, summary_writer, summary_op, summary_inputs, things, global_t)
 
       self.episode_count += 1
       self.local_t = 0
