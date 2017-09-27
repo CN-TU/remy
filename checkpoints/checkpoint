@@ -1,3 +1,4 @@
-model_checkpoint_path: "/home/max/repos/remy/checkpoints/checkpoint-8279932"
+model_checkpoint_path: "/home/max/repos/remy/checkpoints/checkpoint-8450182"
 all_model_checkpoint_paths: "/home/max/repos/remy/checkpoints/checkpoint-2347351"
 all_model_checkpoint_paths: "/home/max/repos/remy/checkpoints/checkpoint-8279932"
+all_model_checkpoint_paths: "/home/max/repos/remy/checkpoints/checkpoint-8450182"

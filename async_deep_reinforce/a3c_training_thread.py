@@ -15,6 +15,7 @@ from constants import GAMMA
 # gamma_current, gamma_future = 1./(1+GAMMA), GAMMA/(1.+GAMMA)
 from constants import LOCAL_T_MAX
 from constants import LOG_LEVEL
+from constants import DELAY_MULTIPLIER
 
 import logging
 logging.basicConfig(level=LOG_LEVEL)
@@ -129,16 +130,16 @@ class A3CTrainingThread(object):
       return  0
 
   def final_step(self, sess, global_t, summary_writer, summary_op, summary_inputs, actions_to_remove, time_difference):
-    print(self.thread_index, "self.time_differences", self.time_differences)
-    print("self.actions", len(self.actions))
-    print("self.states", len(self.states))
-    print("self.values", len(self.values))
-    print("self.rewards", len(self.rewards))
-    print("self.durations", len(self.durations))
-    print("self.estimated_values", len(self.estimated_values))
-    print("self.time_differences", len(self.time_differences))
-    print("self.start_lstm_states", len(self.start_lstm_states))
-    print("self.variable_snapshots", len(self.variable_snapshots))
+    # print(self.thread_index, "self.time_differences", self.time_differences)
+    # print("self.actions", len(self.actions))
+    # print("self.states", len(self.states))
+    # print("self.values", len(self.values))
+    # print("self.rewards", len(self.rewards))
+    # print("self.durations", len(self.durations))
+    # print("self.estimated_values", len(self.estimated_values))
+    # print("self.time_differences", len(self.time_differences))
+    # print("self.start_lstm_states", len(self.start_lstm_states))
+    # print("self.variable_snapshots", len(self.variable_snapshots))
     # self.actions = self.actions[:-actions_to_remove]
     # self.states = self.states[:-actions_to_remove]
     # self.values = self.values[:-actions_to_remove]
@@ -240,7 +241,8 @@ class A3CTrainingThread(object):
 
       R_accumulated_delay = (ri[1] + GAMMA*R_accumulated_delay)
       # R_delay = R_accumulated_delay/R_packets
-      td_delay = -(np.log(R_accumulated_delay/R_packets) - np.log(Vi[1]/Vi[0]))
+      td_delay = -(np.log(R_accumulated_delay/R_packets/DELAY_MULTIPLIER) - np.log(Vi[1]/Vi[0]/DELAY_MULTIPLIER))
+      # td_delay = -(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
       batch_si.append(si)
       batch_ai.append(ai)
@@ -296,13 +298,14 @@ class A3CTrainingThread(object):
               feed_dict = feed_dict )
 
     if final:
-      normalized_final_score_throughput = self.episode_reward_throughput/time_difference
-      # logging.info("{}: self.episode_reward_throughput={}, time_difference={}".format(self.thread_index, self.episode_reward_throughput, time_difference))
-      normalized_final_score_delay = self.episode_reward_delay/self.episode_reward_throughput
-      # logging.debug("{}: score_throughput={}, score_delay={}".format(self.thread_index, normalized_final_score_throughput, normalized_final_score_delay))
-
-      # time_difference > 0 because of a bug in Unicorn.cc that makes it possible for time_difference to be smaller than 0.
       if self.episode_count % LOG_INTERVAL == 0 and time_difference > 0:
+        normalized_final_score_throughput = self.episode_reward_throughput/time_difference
+        # logging.info("{}: self.episode_reward_throughput={}, time_difference={}".format(self.thread_index, self.episode_reward_throughput, time_difference))
+        normalized_final_score_delay = self.episode_reward_delay/self.episode_reward_throughput
+        # logging.debug("{}: score_throughput={}, score_delay={}".format(self.thread_index, normalized_final_score_throughput, normalized_final_score_delay))
+
+        # time_difference > 0 because of a bug in Unicorn.cc that makes it possible for time_difference to be smaller than 0.
+
         elapsed_time = time.time() - self.start_time
         steps_per_sec = self.local_t / elapsed_time
         logging.info("### {}: Performance: {} STEPS in {:.0f} sec. {:.0f} STEPS/sec. {:.2f}M STEPS/hour".format(self.thread_index, self.local_t, elapsed_time, steps_per_sec, steps_per_sec * 3600 / 1000000.))
