@@ -248,7 +248,7 @@ The value network estimates the expected long-term reward given a state $s_t$.
 
 Let $r_t$ be the reward that was received at time $t$. $V(s_t; \theta_\text{v})$ designates the expected mean reward in state $s_t$ given the parameters (neural network weights) of the value network $\theta_v$. Then, with $\gamma$ being the roll-off factor, which designates the influence that future reward has on the moving average, (set to $0.99$), we define the average reward as 
 \begin{align*}
-R_t = \left(\left(\sum_{i=0}^{k-1} \gamma^ir_{t+i}\right) + \gamma^k \frac{V(s_{t+k}; \theta_\text{v})}{1-\gamma}\right)\left(1-\gamma\right),
+R_t = \left(\left(\sum_{i=0}^{k-1} \gamma^ir_{t+i}\right) + \gamma^k V(s_{t+k}; \theta_\text{v})\right),
 \end{align*}
 where $k$ is upper-bounded by $t_\text{max}$ ($t_\text{max}$ is a fixed hyperparameter that indicates how many steps should be performed before updating the neural network). So $R$ is simply a moving average of rewards. However, usual moving averages take into account values from the past while this one uses values from the future; it runs reversely. 
 
