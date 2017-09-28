@@ -57,29 +57,34 @@ class GameACNetwork(object):
 			self.td_throughput = tf.placeholder(PRECISION, [None], name="td_throughput")
 			self.td_delay = tf.placeholder(PRECISION, [None], name="td_delay")
 
-			normal_variance = tf.log((self.pi[1]*self.pi[1])/(self.pi[0]*self.pi[0])+1.0)
-			self.distribution = ds.TransformedDistribution(
-					distribution=ds.Normal(loc=tf.log(self.pi[0])-normal_variance/2.0, scale=tf.sqrt(normal_variance), allow_nan_stats=False, validate_args=True),
-					bijector=ds.bijectors.Exp(),
-					name="LogNormalTransformedDistribution")
+			self.distribution = ds.Normal(loc=self.pi[0], scale=self.pi[1], allow_nan_stats=False, validate_args=True)
+
+			# normal_variance = tf.log((self.pi[1]*self.pi[1])/(self.pi[0]*self.pi[0])+1.0)
+			# self.distribution = ds.TransformedDistribution(
+			# 		distribution=ds.Normal(loc=tf.log(self.pi[0])-normal_variance/2.0, scale=tf.sqrt(normal_variance), allow_nan_stats=False, validate_args=True),
+			# 		bijector=ds.bijectors.Exp(),
+			# 		name="LogNormalTransformedDistribution")
 
 			self.distribution_mean = self.pi[0]
 			self.distribution_std = self.pi[1]
-			self.inner_distribution_mean = self.distribution.distribution.mean()
-			self.inner_distribution_std = self.distribution.distribution.stddev()
-			self.chosen_action = tf.ceil(self.distribution.sample())
-			# self.chosen_action = self.distribution.sample() + OFFSET
+			# self.inner_distribution_mean = self.distribution.distribution.mean()
+			# self.inner_distribution_std = self.distribution.distribution.stddev()
+			self.inner_distribution_mean = self.pi[0]
+			self.inner_distribution_std = self.pi[1]
+			# self.chosen_action = tf.ceil(self.distribution.sample())
+			self.chosen_action = self.distribution.sample()
 
 			# policy entropy
-			self.entropy = ENTROPY_BETA * tf.reduce_sum(self.distribution.distribution.mean() + 0.5 * tf.log(2.0*math.pi*math.e*self.distribution.distribution.variance()), axis=1)
-			# self.entropy = ENTROPY_BETA * tf.reduce_sum(0.5 * tf.log(2.0*math.pi*math.e*self.pi[1]*self.pi[1]), axis=1)
-			self.skewness = ENTROPY_BETA * tf.reduce_sum((tf.exp(self.distribution.distribution.variance()) + 2.0)*tf.sqrt(tf.exp(self.distribution.distribution.variance()) - 1.0), axis=1)
-			# self.actor_loss = tf.reduce_sum(self.distribution.log_prob(self.a - OFFSET), axis=1) * (self.td_throughput + self.td_delay)
-			self.actor_loss = tf.reduce_sum(tf.log(self.distribution.cdf(self.a) - self.distribution.cdf(tf.clip_by_value(self.a - 1.0, tiny, float("inf")))), axis=1) * (self.td_throughput + self.td_delay)
+			# self.entropy = ENTROPY_BETA * tf.reduce_sum(self.distribution.distribution.mean() + 0.5 * tf.log(2.0*math.pi*math.e*self.distribution.distribution.variance()), axis=1)
+			self.entropy = ENTROPY_BETA * tf.reduce_sum(0.5 * tf.log(2.0*math.pi*math.e*self.pi[1]*self.pi[1]), axis=1)
+			# self.skewness = ENTROPY_BETA * tf.reduce_sum((tf.exp(self.distribution.distribution.variance()) + 2.0)*tf.sqrt(tf.exp(self.distribution.distribution.variance()) - 1.0), axis=1)
+			self.skewness = tf.constant(0.0, dtype=PRECISION)
+			self.actor_loss = tf.reduce_sum(self.distribution.log_prob(self.a), axis=1) * (self.td_throughput + self.td_delay)
+			# self.actor_loss = tf.reduce_sum(tf.log(self.distribution.cdf(self.a) - self.distribution.cdf(tf.clip_by_value(self.a - 1.0, tiny, float("inf")))), axis=1) * (self.td_throughput + self.td_delay)
 
 			# self.policy_loss = - tf.reduce_sum(self.actor_loss + ENTROPY_BETA * self.entropy - SKEWNESS_GAMMA * self.skewness)
-			# self.policy_loss = - ACTOR_FACTOR * tf.reduce_sum(self.actor_loss + self.entropy)
-			self.policy_loss = - ACTOR_FACTOR * tf.reduce_sum(self.actor_loss)
+			self.policy_loss = - ACTOR_FACTOR * tf.reduce_sum(self.actor_loss + self.entropy)
+			# self.policy_loss = - ACTOR_FACTOR * tf.reduce_sum(self.actor_loss)
 
 			# R (input for value)
 			self.r_packets = tf.placeholder(PRECISION, [None], name="r_packets")
@@ -228,7 +233,7 @@ class GameACLSTMNetwork(GameACNetwork):
 
 			# weight for policy output layer
 			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, 1])
-			# self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, 1])
+			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, 1])
 
 			# weight for value output layer
 			self.W_hidden_to_value_packets_fc, self.b_hidden_to_value_packets_fc = self._fc_variable([HIDDEN_SIZE, 1])
@@ -264,14 +269,14 @@ class GameACLSTMNetwork(GameACNetwork):
 			lstm_outputs = tf.reshape(lstm_outputs, [-1,HIDDEN_SIZE])
 
 			raw_pi_mean = tf.matmul(lstm_outputs, self.W_hidden_to_action_mean_fc) + self.b_hidden_to_action_mean_fc
-			# raw_pi_std = tf.matmul(lstm_outputs, self.W_hidden_to_action_std_fc) + self.b_hidden_to_action_std_fc
+			raw_pi_std = tf.matmul(lstm_outputs, self.W_hidden_to_action_std_fc) + self.b_hidden_to_action_std_fc
 			# policy (output)
 			self.pi = (
-				tf.nn.softplus(raw_pi_mean) + 1.0,
+				raw_pi_mean,
 				# tf.nn.softplus(raw_pi_std) + MINIMUM_STD
-				# tf.nn.sigmoid(raw_pi_std)
+				tf.nn.softplus(raw_pi_std)
 				# tf.constant(0.5, shape=(1,1), dtype=PRECISION)
-				tf.clip_by_value(raw_pi_mean*0.01, MINIMUM_STD, float("inf"))
+				# tf.clip_by_value(raw_pi_mean*0.01, MINIMUM_STD, float("inf"))
 			)
 
 			# value (output)
@@ -343,7 +348,7 @@ class GameACLSTMNetwork(GameACNetwork):
 	def get_vars(self):
 		return [self.W_state_to_hidden_fc, self.b_state_to_hidden_fc,
 						self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc,
-						# self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc,
+						self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc,
 						self.W_hidden_to_value_packets_fc, self.b_hidden_to_value_packets_fc,
 						self.W_hidden_to_value_delay_fc, self.b_hidden_to_value_delay_fc,
 						self.W_hidden_to_value_duration_fc, self.b_hidden_to_value_duration_fc] + self.LSTM_variables

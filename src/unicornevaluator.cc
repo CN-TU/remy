@@ -26,7 +26,8 @@ UnicornEvaluator::UnicornEvaluator( const ConfigRangeUnicorn & range )
             for (double off = range.mean_off_duration.low; off <= range.mean_off_duration.high; off += range.mean_off_duration.incr) {
               for ( double buffer_size = range.buffer_size.low; buffer_size <= range.buffer_size.high; buffer_size += range.buffer_size.incr) {
                 for ( double loss_rate = range.stochastic_loss_rate.low; loss_rate <= range.stochastic_loss_rate.high; loss_rate += range.stochastic_loss_rate.incr) {
-                  _configs.push_back( NetConfig().set_link_ppt( link_ppt ).set_delay( rtt ).set_num_senders( senders ).set_on_duration( on ).set_off_duration(off).set_buffer_size( buffer_size ).set_stochastic_loss_rate( loss_rate ).set_simulation_ticks(round(rand() % ((int)simulation_ticks) +1)) );
+                  // _configs.push_back( NetConfig().set_link_ppt( link_ppt ).set_delay( rtt ).set_num_senders( senders ).set_on_duration( on ).set_off_duration(off).set_buffer_size( buffer_size ).set_stochastic_loss_rate( loss_rate ).set_simulation_ticks(round(rand() % ((int)simulation_ticks) +1)) );
+                  _configs.push_back( NetConfig().set_link_ppt( link_ppt ).set_delay( rtt ).set_num_senders( senders ).set_on_duration( on ).set_off_duration(off).set_buffer_size( buffer_size ).set_stochastic_loss_rate( loss_rate ).set_simulation_ticks( simulation_ticks )) ;
                   if ( range.stochastic_loss_rate.isOne() ) { break; }
                 }
                 if ( range.buffer_size.isOne() ) { break; }
@@ -81,7 +82,7 @@ UnicornEvaluator::Outcome UnicornEvaluator::score(
 
   /* run tests */
   UnicornEvaluator::Outcome the_outcome;
-  
+
   vector<NetConfig> shuffled_configs(configs);
   std::shuffle(shuffled_configs.begin(), shuffled_configs.end(), run_prng);
 
@@ -91,7 +92,7 @@ UnicornEvaluator::Outcome UnicornEvaluator::score(
     Network<SenderGang<Unicorn, ByteSwitchedSender<Unicorn>>,
       SenderGang<Unicorn, ByteSwitchedSender<Unicorn>>> network1( Unicorn(), run_prng, x );
     network1.run_simulation( x.simulation_ticks );
-    
+
     the_outcome.score += network1.senders().utility();
     the_outcome.throughputs_delays.emplace_back( x, network1.senders().throughputs_delays() );
   }
@@ -124,7 +125,7 @@ UnicornEvaluator::Outcome UnicornEvaluator::score(
 
 //     for ( const auto & x : run.second ) {
 //       AnswerBuffers::SenderResults *results = tp_del->add_results();
-//       results->set_throughput( x.first ); 
+//       results->set_throughput( x.first );
 //       results->set_delay( x.second );
 //     }
 //   }

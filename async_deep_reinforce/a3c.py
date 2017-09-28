@@ -33,6 +33,10 @@ from constants import LOG_LEVEL
 import logging
 logging.basicConfig(level=LOG_LEVEL)
 
+device = "/cpu:0"
+if USE_GPU:
+  device = "/gpu:0"
+
 def log_uniform(lo, hi, rate):
   log_lo = math.log(lo)
   log_hi = math.log(hi)
@@ -40,6 +44,7 @@ def log_uniform(lo, hi, rate):
   return math.exp(v)
 
 def initialize_uninitialized(sess):
+  with tf.device(device):
     global_vars          = tf.global_variables()
     is_not_initialized   = sess.run([tf.is_variable_initialized(var) for var in global_vars])
     not_initialized_vars = [v for (v, f) in zip(global_vars, is_not_initialized) if not f]
@@ -48,18 +53,12 @@ def initialize_uninitialized(sess):
     if len(not_initialized_vars) > 0:
         sess.run(tf.variables_initializer(not_initialized_vars))
 
-device = "/cpu:0"
-if USE_GPU:
-  device = "/gpu:0"
-
 initial_learning_rate = log_uniform(INITIAL_ALPHA_LOW,
                                     INITIAL_ALPHA_HIGH,
                                     INITIAL_ALPHA_LOG_RATE)
 
 global_t = 0
-
 stop_requested = False
-
 global_network = GameACLSTMNetwork(-1, device)
 
 learning_rate_input = tf.placeholder(PRECISION)
@@ -71,12 +70,13 @@ learning_rate_input = tf.placeholder(PRECISION)
 #                               clip_norm = GRAD_NORM_CLIP,
 #                               device = device)
 
-grad_applier = tf.train.RMSPropOptimizer(
-  learning_rate = learning_rate_input,
-  decay = RMSP_ALPHA,
-  momentum = 0.0,
-  epsilon = RMSP_EPSILON,
-)
+with tf.device(device):
+  grad_applier = tf.train.RMSPropOptimizer(
+    learning_rate = learning_rate_input,
+    decay = RMSP_ALPHA,
+    momentum = 0.0,
+    epsilon = RMSP_EPSILON
+  )
 
 # grad_applier = tf.train.GradientDescentOptimizer(learning_rate = learning_rate_input)
 
@@ -118,47 +118,51 @@ else:
   current_datetime = datetime.datetime.now().isoformat()[:-7]
 
 # summary for tensorboard
-score_throughput = tf.placeholder(PRECISION)
-score_delay = tf.placeholder(PRECISION)
-entropy = tf.placeholder(PRECISION)
-skewness = tf.placeholder(PRECISION)
-actor_loss = tf.placeholder(PRECISION)
-value_loss = tf.placeholder(PRECISION)
-total_loss = tf.placeholder(PRECISION)
-window = tf.placeholder(PRECISION)
-std = tf.placeholder(PRECISION)
-inner_mean = tf.placeholder(PRECISION)
-inner_std = tf.placeholder(PRECISION)
-speed = tf.placeholder(PRECISION)
-tf.summary.scalar("score_throughput", score_throughput)
-tf.summary.scalar("score_delay", score_delay)
-tf.summary.scalar("entropy", entropy)
-tf.summary.scalar("skewness", skewness)
-tf.summary.scalar("actor_loss", actor_loss)
-tf.summary.scalar("value_loss", value_loss)
-tf.summary.scalar("total_loss", total_loss)
-tf.summary.scalar("window", window)
-tf.summary.scalar("std", std)
-tf.summary.scalar("inner_mean", inner_mean)
-tf.summary.scalar("inner_std", inner_std)
-tf.summary.scalar("speed", speed)
-summary_inputs = {
-  "score_throughput": score_throughput,
-  "score_delay": score_delay,
-  "entropy": entropy,
-  "skewness": skewness,
-  "actor_loss": actor_loss,
-  "value_loss": value_loss,
-  "total_loss": total_loss,
-  "window": window,
-  "std": std,
-  "inner_mean": inner_mean,
-  "inner_std": inner_std,
-  "speed": speed
-}
+with tf.device(device):
+  score_throughput = tf.placeholder(PRECISION)
+  score_delay = tf.placeholder(PRECISION)
+  entropy = tf.placeholder(PRECISION)
+  skewness = tf.placeholder(PRECISION)
+  actor_loss = tf.placeholder(PRECISION)
+  value_loss = tf.placeholder(PRECISION)
+  total_loss = tf.placeholder(PRECISION)
+  window = tf.placeholder(PRECISION)
+  window_increase = tf.placeholder(PRECISION)
+  std = tf.placeholder(PRECISION)
+  inner_mean = tf.placeholder(PRECISION)
+  inner_std = tf.placeholder(PRECISION)
+  speed = tf.placeholder(PRECISION)
+  tf.summary.scalar("score_throughput", score_throughput)
+  tf.summary.scalar("score_delay", score_delay)
+  tf.summary.scalar("entropy", entropy)
+  tf.summary.scalar("skewness", skewness)
+  tf.summary.scalar("actor_loss", actor_loss)
+  tf.summary.scalar("value_loss", value_loss)
+  tf.summary.scalar("total_loss", total_loss)
+  tf.summary.scalar("window", window)
+  tf.summary.scalar("window_increase", window_increase)
+  tf.summary.scalar("std", std)
+  tf.summary.scalar("inner_mean", inner_mean)
+  tf.summary.scalar("inner_std", inner_std)
+  tf.summary.scalar("speed", speed)
+  summary_inputs = {
+    "score_throughput": score_throughput,
+    "score_delay": score_delay,
+    "entropy": entropy,
+    "skewness": skewness,
+    "actor_loss": actor_loss,
+    "value_loss": value_loss,
+    "total_loss": total_loss,
+    "window": window,
+    "window_increase": window_increase,
+    "std": std,
+    "inner_mean": inner_mean,
+    "inner_std": inner_std,
+    "speed": speed
+  }
 
-summary_op = tf.summary.merge_all()
-summary_writer = tf.summary.FileWriter(LOG_FILE+'/'+current_datetime, sess.graph)
+  summary_op = tf.summary.merge_all()
+  summary_writer = tf.summary.FileWriter(LOG_FILE+'/'+current_datetime, sess.graph)
 
 training_threads = {}
 
@@ -195,6 +199,7 @@ def create_training_thread(training):
   created_thread.episode_count = 0
 
   created_thread.time_differences = []
+  created_thread.windows = []
   created_thread.states = []
   created_thread.actions = []
   created_thread.rewards = []
@@ -203,7 +208,6 @@ def create_training_thread(training):
   created_thread.estimated_values = []
   created_thread.start_lstm_states = []
   created_thread.variable_snapshots = []
-  created_thread.time_differences = []
   created_thread.local_t = 0
   created_thread.episode_reward_throughput = 0
   created_thread.episode_reward_delay = 0
@@ -230,10 +234,10 @@ def call_process_reward(thread_id, reward_throughput, reward_delay, duration):
   diff_global_t = training_threads[thread_id].reward_step(sess, global_t, summary_writer, summary_op, summary_inputs, reward_throughput, reward_delay, duration)
   global_t += diff_global_t
 
-def call_process_finished(thread_id, actions_to_remove, time_difference):
+def call_process_finished(thread_id, actions_to_remove, time_difference, window):
   logging.debug(" ".join(map(str,("call_process_finished", thread_id, time_difference))))
   global sess, global_t, summary_writer, summary_op, summary_inputs
-  diff_global_t = training_threads[thread_id].final_step(sess, global_t, summary_writer, summary_op, summary_inputs, actions_to_remove, time_difference)
+  diff_global_t = training_threads[thread_id].final_step(sess, global_t, summary_writer, summary_op, summary_inputs, actions_to_remove, time_difference, window)
   global_t += diff_global_t
 
 def save_session():

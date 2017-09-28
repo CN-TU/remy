@@ -51,7 +51,8 @@ class A3CTrainingThread(object):
         colocate_gradients_with_ops=False)
 
     self.apply_gradients = grad_applier.apply_gradients(
-      zip(self.gradients, global_network.get_vars()) )
+      zip(self.gradients, global_network.get_vars())
+    )
 
     self.sync = self.local_network.sync_from(global_network)
     self.episode_count = 0
@@ -80,6 +81,7 @@ class A3CTrainingThread(object):
       summary_inputs["value_loss"]: things["value_loss"],
       summary_inputs["total_loss"]: things["total_loss"],
       summary_inputs["window"]: things["window"],
+      summary_inputs["window_increase"]: things["window_increase"],
       summary_inputs["std"]: things["std"],
       summary_inputs["inner_mean"]: things["inner_mean"],
       summary_inputs["inner_std"]: things["inner_std"],
@@ -95,6 +97,7 @@ class A3CTrainingThread(object):
 
       if len(self.actions) % LOCAL_T_MAX == 0:
         self.time_differences.append(None)
+        self.windows.append(None)
         # Sync for the next iteration
         sess.run( self.sync )
         self.start_lstm_states.append(self.local_network.lstm_state_out)
@@ -129,7 +132,7 @@ class A3CTrainingThread(object):
     else:
       return  0
 
-  def final_step(self, sess, global_t, summary_writer, summary_op, summary_inputs, actions_to_remove, time_difference):
+  def final_step(self, sess, global_t, summary_writer, summary_op, summary_inputs, actions_to_remove, time_difference, window):
     # print(self.thread_index, "self.time_differences", self.time_differences)
     # print("self.actions", len(self.actions))
     # print("self.states", len(self.states))
@@ -148,6 +151,8 @@ class A3CTrainingThread(object):
       if len(self.actions) > 0:
         self.time_differences = self.time_differences[:-1]
         self.time_differences.append(time_difference)
+        self.windows = self.windows[:-1]
+        self.windows.append(window)
 
         nones_to_add = [None] * ((LOCAL_T_MAX - (len(self.actions) % LOCAL_T_MAX)) % LOCAL_T_MAX)
         self.actions += nones_to_add
@@ -161,7 +166,7 @@ class A3CTrainingThread(object):
         self.episode_reward_throughput = 0
         self.episode_reward_delay = 0
 
-    # If, for some strange reason, absolutely nothing happened in this episode, don't do anyting...
+    # If, for some strange reason, absolutely nothing happened in this episode, don't do anything...
     # Or if you're actually in testing mode :)
     # if len(self.rewards)>0:
     #   time_diff = self.process(sess, global_t, summary_writer, summary_op, summary_inputs, time_difference)
@@ -242,7 +247,7 @@ class A3CTrainingThread(object):
       R_accumulated_delay = (ri[1] + GAMMA*R_accumulated_delay)
       # R_delay = R_accumulated_delay/R_packets
       # td_delay = -(np.log(R_accumulated_delay/R_packets/DELAY_MULTIPLIER) - np.log(Vi[1]/Vi[0]/DELAY_MULTIPLIER))
-      td_delay = -(R_accumulated_delay/R_packets - Vi[1]/Vi[0])/DELAY_MULTIPLIER
+      td_delay = -DELAY_MULTIPLIER*(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
       # td_delay = -(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
       batch_si.append(si)
@@ -324,7 +329,7 @@ class A3CTrainingThread(object):
         }
         feed_dict.update(var_dict)
 
-        entropy, skewness, actor_loss, value_loss, total_loss, window, std, inner_mean, inner_std = self.local_network.run_loss(sess, feed_dict)
+        entropy, skewness, actor_loss, value_loss, total_loss, window_increase, std, inner_mean, inner_std = self.local_network.run_loss(sess, feed_dict)
 
         things = {"score_throughput": normalized_final_score_throughput,
           "score_delay": normalized_final_score_delay,
@@ -333,7 +338,8 @@ class A3CTrainingThread(object):
           "entropy": entropy.item(),
           "skewness": skewness.item(),
           "total_loss": total_loss,
-          "window": window.item(),
+          "window_increase": window_increase.item(),
+          "window": self.windows[0],
           "std": std.item(),
           "inner_mean": inner_mean.item(),
           "inner_std": inner_std.item(),
@@ -355,6 +361,7 @@ class A3CTrainingThread(object):
     self.durations = self.durations[LOCAL_T_MAX:]
     self.estimated_values = self.estimated_values[LOCAL_T_MAX:]
     self.time_differences = self.time_differences[1:]
+    self.windows[1:] = self.windows[1:]
     self.start_lstm_states = self.start_lstm_states[1:]
     self.variable_snapshots = self.variable_snapshots[1:]
 

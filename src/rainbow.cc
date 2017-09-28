@@ -81,7 +81,7 @@ Rainbow::Rainbow() :
 	pSaveFunc = PyObject_GetAttrString(pModule, pSaveFuncName);
 }
 
-int Rainbow::get_action(const long unsigned int thread_id, const vector<double> state) {
+double Rainbow::get_action(const long unsigned int thread_id, const vector<double> state) {
 	lock_guard<mutex> guard(global_lock);
 
 	PyObject* pState = PyTuple_New(state.size());
@@ -149,10 +149,10 @@ void Rainbow::delete_thread(const long unsigned int thread_id) {
 	Py_DECREF(pThreadIdTuple);
 }
 
-void Rainbow::finish(const long unsigned int thread_id, size_t actions_to_remove, const double time_difference) {
+void Rainbow::finish(const long unsigned int thread_id, size_t actions_to_remove, const double time_difference, const double window) {
 	lock_guard<mutex> guard(global_lock);
 
-	PyObject* pArgs = Py_BuildValue("(iif)", (long) thread_id, (long) actions_to_remove, time_difference);
+	PyObject* pArgs = Py_BuildValue("(iiff)", (long) thread_id, (long) actions_to_remove, time_difference, window);
 	if (pArgs == NULL) {
 		PyErr_Print();
 	}
