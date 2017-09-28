@@ -20,7 +20,7 @@ from constants import DELAY_MULTIPLIER
 import logging
 logging.basicConfig(level=LOG_LEVEL)
 
-LOG_INTERVAL = 10
+LOG_INTERVAL = 1
 
 class A3CTrainingThread(object):
   def __init__(self,
@@ -72,6 +72,7 @@ class A3CTrainingThread(object):
     return learning_rate
 
   def _record_score(self, sess, summary_writer, summary_op, summary_inputs, things, global_t):
+    # print("window in _record_score", self.windows, self.time_differences)
     summary_str = sess.run(summary_op, feed_dict={
       summary_inputs["score_throughput"]: things["score_throughput"],
       summary_inputs["score_delay"]: things["score_delay"],
@@ -229,8 +230,7 @@ class A3CTrainingThread(object):
 
     batch_si = []
     batch_ai = []
-    batch_td_throughput = []
-    batch_td_delay = []
+    batch_td = []
     batch_R_duration = []
     batch_R_packets = []
     batch_R_accumulated_delay = []
@@ -242,18 +242,17 @@ class A3CTrainingThread(object):
 
       R_packets = (ri[0] + GAMMA*R_packets)
       # TODO: In theory it should be np.log(R_bytes/R_duration) but remy doesn't have bytes
-      td_throughput = (np.log(R_packets/R_duration) - np.log(Vi[0]/Vi[2]))
+      td = (np.log(R_packets/R_duration) - np.log(Vi[0]/Vi[2]))
 
       R_accumulated_delay = (ri[1] + GAMMA*R_accumulated_delay)
       # R_delay = R_accumulated_delay/R_packets
       # td_delay = -(np.log(R_accumulated_delay/R_packets/DELAY_MULTIPLIER) - np.log(Vi[1]/Vi[0]/DELAY_MULTIPLIER))
-      td_delay = -DELAY_MULTIPLIER*(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+      td -= DELAY_MULTIPLIER*(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
       # td_delay = -(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
       batch_si.append(si)
       batch_ai.append(ai)
-      batch_td_throughput.append(td_throughput)
-      batch_td_delay.append(td_delay)
+      batch_td.append(td)
       batch_R_duration.append(R_duration*(1-GAMMA))
       # batch_R_duration.append(np.log(R_duration))
       batch_R_packets.append(R_packets*(1-GAMMA))
@@ -279,8 +278,7 @@ class A3CTrainingThread(object):
 
     batch_si.reverse()
     batch_ai.reverse()
-    batch_td_throughput.reverse()
-    batch_td_delay.reverse()
+    batch_td.reverse()
     batch_R_duration.reverse()
     batch_R_packets.reverse()
     batch_R_accumulated_delay.reverse()
@@ -288,8 +286,7 @@ class A3CTrainingThread(object):
     feed_dict = {
       self.local_network.s: batch_si,
       self.local_network.a: batch_ai,
-      self.local_network.td_throughput: batch_td_throughput,
-      self.local_network.td_delay: batch_td_delay,
+      self.local_network.td: batch_td,
       self.local_network.r_duration: batch_R_duration,
       self.local_network.r_packets: batch_R_packets,
       self.local_network.r_accumulated_delay: batch_R_accumulated_delay,
@@ -319,8 +316,7 @@ class A3CTrainingThread(object):
         feed_dict = {
           self.local_network.s: [batch_si[0]],
           self.local_network.a: [batch_ai[0]],
-          self.local_network.td_throughput: [batch_td_throughput[0]],
-          self.local_network.td_delay: [batch_td_delay[0]],
+          self.local_network.td: [batch_td[0]],
           self.local_network.r_duration: [batch_R_duration[0]],
           self.local_network.r_packets: [batch_R_packets[0]],
           self.local_network.r_accumulated_delay: [batch_R_accumulated_delay[0]],
@@ -361,7 +357,7 @@ class A3CTrainingThread(object):
     self.durations = self.durations[LOCAL_T_MAX:]
     self.estimated_values = self.estimated_values[LOCAL_T_MAX:]
     self.time_differences = self.time_differences[1:]
-    self.windows[1:] = self.windows[1:]
+    self.windows = self.windows[1:]
     self.start_lstm_states = self.start_lstm_states[1:]
     self.variable_snapshots = self.variable_snapshots[1:]
 

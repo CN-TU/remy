@@ -96,7 +96,8 @@ double Rainbow::get_action(const long unsigned int thread_id, const vector<doubl
 		PyErr_Print();
 	}
 
-	int action = (int) PyLong_AsLong(pActionReturnValue);
+	double action = PyFloat_AsDouble(pActionReturnValue);
+	// printf("action: %f\n", action);
 	Py_DECREF(pActionReturnValue);
 	Py_DECREF(pArgs);
 	Py_DECREF(pState);

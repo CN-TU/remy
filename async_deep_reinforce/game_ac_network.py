@@ -54,8 +54,7 @@ class GameACNetwork(object):
 			self.a = tf.placeholder(PRECISION, [None, 1], name="a")
 
 			# temporary difference (R-V) (input for policy)
-			self.td_throughput = tf.placeholder(PRECISION, [None], name="td_throughput")
-			self.td_delay = tf.placeholder(PRECISION, [None], name="td_delay")
+			self.td = tf.placeholder(PRECISION, [None], name="td")
 
 			self.distribution = ds.Normal(loc=self.pi[0], scale=self.pi[1], allow_nan_stats=False, validate_args=True)
 
@@ -79,7 +78,7 @@ class GameACNetwork(object):
 			self.entropy = ENTROPY_BETA * tf.reduce_sum(0.5 * tf.log(2.0*math.pi*math.e*self.pi[1]*self.pi[1]), axis=1)
 			# self.skewness = ENTROPY_BETA * tf.reduce_sum((tf.exp(self.distribution.distribution.variance()) + 2.0)*tf.sqrt(tf.exp(self.distribution.distribution.variance()) - 1.0), axis=1)
 			self.skewness = tf.constant(0.0, dtype=PRECISION)
-			self.actor_loss = tf.reduce_sum(self.distribution.log_prob(self.a), axis=1) * (self.td_throughput + self.td_delay)
+			self.actor_loss = tf.reduce_sum(self.distribution.log_prob(self.a), axis=1) * (self.td)
 			# self.actor_loss = tf.reduce_sum(tf.log(self.distribution.cdf(self.a) - self.distribution.cdf(tf.clip_by_value(self.a - 1.0, tiny, float("inf")))), axis=1) * (self.td_throughput + self.td_delay)
 
 			# self.policy_loss = - tf.reduce_sum(self.actor_loss + ENTROPY_BETA * self.entropy - SKEWNESS_GAMMA * self.skewness)
@@ -171,14 +170,14 @@ class GameACNetwork(object):
 
 	# weight initialization based on muupan's code
 	# https://github.com/muupan/async-rl/blob/master/a3c_ale.py
-	def _fc_variable(self, weight_shape, factor=1.0):
+	def _fc_variable(self, weight_shape, factor=1.0, bias_offset=0):
 		input_channels  = weight_shape[0]
 		output_channels = weight_shape[1]
 		d = 1.0 / np.sqrt(input_channels)
 		d *= factor
 		bias_shape = [output_channels]
 		weight = tf.Variable(tf.random_uniform(weight_shape, minval=-d, maxval=d, dtype=PRECISION))
-		bias   = tf.Variable(tf.random_uniform(bias_shape, minval=-d, maxval=d, dtype=PRECISION))
+		bias   = tf.Variable(tf.random_uniform(bias_shape, minval=-d+bias_offset, maxval=d+bias_offset, dtype=PRECISION))
 		return weight, bias
 
 def lstm_state_tuple(use_np=False):
@@ -232,8 +231,8 @@ class GameACLSTMNetwork(GameACNetwork):
 			self.lstm = tf.contrib.rnn.MultiRNNCell([GameACLSTMNetwork.create_cell(HIDDEN_SIZE, LAYER_NORMALIZATION) for i in range(N_LSTM_LAYERS)], state_is_tuple=True)
 
 			# weight for policy output layer
-			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, 1])
-			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, 1])
+			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=0.01)
+			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=1.0, bias_offset=-2)
 
 			# weight for value output layer
 			self.W_hidden_to_value_packets_fc, self.b_hidden_to_value_packets_fc = self._fc_variable([HIDDEN_SIZE, 1])
