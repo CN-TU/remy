@@ -66,22 +66,15 @@ class GameACNetwork(object):
 
 			self.distribution_mean = self.pi[0]
 			self.distribution_std = self.pi[1]
-			# self.inner_distribution_mean = self.distribution.distribution.mean()
-			# self.inner_distribution_std = self.distribution.distribution.stddev()
-			self.inner_distribution_mean = self.pi[0]
-			self.inner_distribution_std = self.pi[1]
 			# self.chosen_action = tf.ceil(self.distribution.sample())
 			self.chosen_action = self.distribution.sample()
 
 			# policy entropy
 			# self.entropy = ENTROPY_BETA * tf.reduce_sum(self.distribution.distribution.mean() + 0.5 * tf.log(2.0*math.pi*math.e*self.distribution.distribution.variance()), axis=1)
 			self.entropy = ENTROPY_BETA * tf.reduce_sum(0.5 * tf.log(2.0*math.pi*math.e*self.pi[1]*self.pi[1]), axis=1)
-			# self.skewness = ENTROPY_BETA * tf.reduce_sum((tf.exp(self.distribution.distribution.variance()) + 2.0)*tf.sqrt(tf.exp(self.distribution.distribution.variance()) - 1.0), axis=1)
-			self.skewness = tf.constant(0.0, dtype=PRECISION)
 			self.actor_loss = tf.reduce_sum(self.distribution.log_prob(self.a), axis=1) * (self.td)
 			# self.actor_loss = tf.reduce_sum(tf.log(self.distribution.cdf(self.a) - self.distribution.cdf(tf.clip_by_value(self.a - 1.0, tiny, float("inf")))), axis=1) * (self.td_throughput + self.td_delay)
 
-			# self.policy_loss = - tf.reduce_sum(self.actor_loss + ENTROPY_BETA * self.entropy - SKEWNESS_GAMMA * self.skewness)
 			self.policy_loss = - ACTOR_FACTOR * tf.reduce_sum(self.actor_loss + self.entropy)
 			# self.policy_loss = - ACTOR_FACTOR * tf.reduce_sum(self.actor_loss)
 
@@ -342,7 +335,7 @@ class GameACLSTMNetwork(GameACNetwork):
 
 	def run_loss(self, sess, feed_dict):
 		# We don't have to roll back the LSTM state here as it is restored in the "process" function of a3c_training_thread.py anyway and because run_loss is only called there.
- 		return sess.run( [self.entropy, self.skewness, self.actor_loss, self.value_loss, self.total_loss, self.distribution_mean, self.distribution_std, self.inner_distribution_mean, self.inner_distribution_std], feed_dict = feed_dict )
+ 		return sess.run( [self.entropy, self.actor_loss, self.value_loss, self.total_loss, self.distribution_mean, self.distribution_std], feed_dict = feed_dict )
 
 	def get_vars(self):
 		return [self.W_state_to_hidden_fc, self.b_state_to_hidden_fc,

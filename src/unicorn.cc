@@ -211,7 +211,7 @@ void Unicorn::finishFlow() {
   // const bool at_least_one_packet_sent = true;
   // printf("%lu: finish, _packets_sent: %u\n", _thread_id, _packets_sent);
   // _rainbow.finish(_thread_id, {_memory.field(0), _memory.field(1), _memory.field(2), _memory.field(3), _memory.field(6), (double)_the_window/WINDOW_NORMALIZER}, at_least_one_packet_sent);
-  printf("%lu: Finishing, window=%f\n", _thread_id, _the_window);
+  // printf("%lu: Finishing, window=%f\n", _thread_id, _the_window);
   _rainbow.finish(_thread_id, _outstanding_rewards.size(), _memory._last_tick_received-_start_tick, _the_window);
   // printf("%lu: actions: %lu, rewards: %lu, outstanding_rewards: %lu\n", _thread_id, _put_actions, _put_rewards, _outstanding_rewards.size());
   // _put_actions -= _outstanding_rewards.size();
