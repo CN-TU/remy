@@ -33,7 +33,7 @@ HIDDEN_SIZE = 256
 LAYER_NORMALIZATION = True
 
 # Why? Because the guys of Remy also use it...
-DELAY_MULTIPLIER = 0.01
+DELAY_MULTIPLIER = 1
 LOG_LEVEL = logging.INFO
 MINIMUM_STD = 0.5
 # MINIMUM_STD = 1e-2
