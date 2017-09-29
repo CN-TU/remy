@@ -2,9 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import sys
-cooperative = sys.argv[1]
-print("Training", cooperative)
-cooperative = cooperative == "cooperative"
+cooperative = "cooperative" in sys.argv
+print("Cooperative:", cooperative)
 
 import datetime
 
@@ -229,8 +228,8 @@ def call_process_reward(thread_id, reward_throughput, reward_delay, duration):
   diff_global_t = training_threads[thread_id].reward_step(sess, global_t, summary_writer, summary_op, summary_inputs, reward_throughput, reward_delay, duration)
   global_t += diff_global_t
   if global_t >= MAX_TIME_STEP:
-    save_session()
     print("Reached maximum time step, saving and terminating...")
+    save_session()
     sys.exit()
 
 def call_process_finished(thread_id, actions_to_remove, time_difference, window):
