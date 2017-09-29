@@ -224,12 +224,14 @@ def call_process_reward(thread_id, reward_throughput, reward_delay, duration):
   global sess, global_t, summary_writer, summary_op, summary_inputs
   diff_global_t = training_threads[thread_id].reward_step(sess, global_t, summary_writer, summary_op, summary_inputs, reward_throughput, reward_delay, duration)
   global_t += diff_global_t
+  if global_t >= MAX_TIME_STEP:
+    save_session()
+    sys.exit()
 
 def call_process_finished(thread_id, actions_to_remove, time_difference, window):
   logging.debug(" ".join(map(str,("call_process_finished", thread_id, time_difference))))
   global sess, global_t, summary_writer, summary_op, summary_inputs
-  diff_global_t = training_threads[thread_id].final_step(sess, global_t, summary_writer, summary_op, summary_inputs, actions_to_remove, time_difference, window)
-  global_t += diff_global_t
+  training_threads[thread_id].final_step(sess, global_t, summary_writer, summary_op, summary_inputs, actions_to_remove, time_difference, window)
 
 def save_session():
   logging.debug("save_session")
@@ -250,5 +252,3 @@ def save_session():
     f.write(str(current_datetime))
 
   saver.save(sess, CHECKPOINT_DIR + '/' + 'checkpoint', global_step = global_t)
-
-print("Reached the end of the a3c.py file!")

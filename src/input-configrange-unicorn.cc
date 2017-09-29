@@ -112,6 +112,40 @@ bool update_config_with_uint32(RemyBuffers::ConfigRangeUnicorn & range,
   return false;
 }
 
+bool update_config_with_bool(RemyBuffers::ConfigRangeUnicorn & range,
+  void (RemyBuffers::ConfigRangeUnicorn::*set_fn)(bool), int argc, char *argv[],
+  string arg_name, bool mandatory) {
+
+bool found = false;
+bool value = false;
+int arg_name_size = arg_name.size();
+for ( int i = 1; i < argc; i++ ) {
+  string arg( argv[i] );
+  if ( arg.substr( 0, arg_name_size+1 ) == arg_name + "=" ) {
+    found = true;
+    try {
+      unsigned int intermediate_value = stoul( arg.substr( arg_name_size+1 ) );
+      value = (bool) intermediate_value;
+    } catch ( invalid_argument ) {
+      fprintf( stderr, "Could not parse %s argument: %s", arg_name.c_str(), arg.c_str() );
+      exit(1);
+    }
+    break;
+  }
+}
+if ( !found && mandatory ) {
+  fprintf( stderr, "Please provide an argument for %s\n", arg_name.c_str() );
+  exit(1);
+}
+if ( found ) {
+  fprintf( stderr, "Setting %s to %d\n", arg_name.c_str(), value );
+  (range.*set_fn)(value);
+  return true;
+}
+fprintf( stderr, "No argument found for %s\n", arg_name.c_str() );
+return false;
+}
+
 bool update_config_with_double(RemyBuffers::ConfigRangeUnicorn & range,
     void (RemyBuffers::ConfigRangeUnicorn::*set_fn)(double), int argc, char *argv[],
     string arg_name, bool mandatory) {
@@ -159,7 +193,7 @@ int main(int argc, char *argv[]) {
     }
     if ( arg == "inf_buffers") {
       infinite_buffers = true;
-    } 
+    }
   }
 
   if (output_filename.empty()) {
@@ -193,6 +227,7 @@ int main(int argc, char *argv[]) {
   update_config_with_range(input_config.mutable_stochastic_loss_rate(), argc, argv, "sloss", mandatory);
   update_config_with_range(input_config.mutable_simulation_ticks(), argc, argv, "ticks", mandatory);
   update_config_with_uint32(input_config, &RemyBuffers::ConfigRangeUnicorn::set_num_threads, argc, argv, "num_threads", mandatory);
+  update_config_with_bool(input_config, &RemyBuffers::ConfigRangeUnicorn::set_cooperative, argc, argv, "cooperative", mandatory);
   if ( !(infinite_buffers) ) {
     update_config_with_range(input_config.mutable_buffer_size(), argc, argv, "buf_size", mandatory);
   } else {

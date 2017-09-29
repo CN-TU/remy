@@ -13,9 +13,8 @@ RMSP_EPSILON = 0.1 # epsilon parameter for RMSProp
 ABSOLUTE_PATH = os.path.join(os.path.expanduser('~'),"repos/remy/")
 CHECKPOINT_DIR = ABSOLUTE_PATH+'checkpoints'
 LOG_FILE = ABSOLUTE_PATH+'tmp/a3c_log'
-LEARNING_RATE_FACTOR = 1e-1
-INITIAL_ALPHA_LOW = 1e-4*LEARNING_RATE_FACTOR    # log_uniform low limit for learning rate
-INITIAL_ALPHA_HIGH = 1e-2*LEARNING_RATE_FACTOR   # log_uniform high limit for learning rate
+INITIAL_ALPHA_LOW = 1e-4    # log_uniform low limit for learning rate
+INITIAL_ALPHA_HIGH = 1e-2   # log_uniform high limit for learning rate
 
 PRECISION = tf.float64
 

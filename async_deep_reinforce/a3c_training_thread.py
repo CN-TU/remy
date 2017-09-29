@@ -184,8 +184,6 @@ class A3CTrainingThread(object):
     if not self.training:
       sess.run(self.sync)
 
-    return 0
-
   def process(self, sess, global_t, summary_writer, summary_op, summary_inputs, time_difference=None):
     if self.local_t <= 0:
       self.start_time = time.time()

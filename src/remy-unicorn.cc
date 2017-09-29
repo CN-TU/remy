@@ -145,6 +145,7 @@ int main( int argc, char *argv[] )
     printf( "Optimizing for infinitely sized buffers. \n");
   }
   printf( "Number of threads is %u\n", options.config_range.num_threads );
+  printf( "Training %s\n", options.config_range.cooperative ? "cooperatively" : "independently" );
 
   // printf( "Initial rules (use if=FILENAME to read from disk): %s\n", whiskers.str().c_str() );
   printf( "#######################\n" );
