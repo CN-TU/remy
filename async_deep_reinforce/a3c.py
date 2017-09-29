@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import sys
+cooperative = sys.argv[1]
+print("Training", cooperative)
+cooperative = cooperative == "cooperative"
+
 import datetime
 
 import tensorflow as tf
@@ -11,7 +16,6 @@ import random
 import math
 import os
 import time
-import sys
 
 from game_ac_network import GameACLSTMNetwork
 from a3c_training_thread import A3CTrainingThread
@@ -226,6 +230,7 @@ def call_process_reward(thread_id, reward_throughput, reward_delay, duration):
   global_t += diff_global_t
   if global_t >= MAX_TIME_STEP:
     save_session()
+    print("Reached maximum time step, saving and terminating...")
     sys.exit()
 
 def call_process_finished(thread_id, actions_to_remove, time_difference, window):

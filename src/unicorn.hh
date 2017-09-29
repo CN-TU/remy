@@ -58,7 +58,7 @@ protected:
   // }
 
 public:
-  Unicorn();
+  Unicorn(const bool& cooperative);
   ~Unicorn();
 
   void packets_received( const std::vector< remy::Packet > & packets );

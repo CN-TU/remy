@@ -17,14 +17,14 @@ private:
 	PyObject* pDeleteFunc;
 	PyObject* pFinishFunc;
 	PyObject* pSaveFunc;
-	Rainbow();
+	Rainbow(const bool& cooperative);
 
 public:
 	bool _training;
 	Rainbow(Rainbow const&) = delete;
 	void operator=(Rainbow const&) = delete;
 
-	static Rainbow& getInstance();
+	static Rainbow& getInstance(const bool& cooperative);
 	long unsigned int create_thread();
 	double get_action(const long unsigned int thread_id, const std::vector<double> state);
 	void put_reward(const long unsigned int thread_id, const double reward_throughput, const double reward_delay, const double duration);

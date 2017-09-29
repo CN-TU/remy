@@ -7,7 +7,7 @@
 
 using namespace std;
 
-Unicorn::Unicorn()
+Unicorn::Unicorn(const bool& cooperative)
   : _memory(),
     _packets_sent( 0 ),
     _packets_received( 0 ),
@@ -17,7 +17,7 @@ Unicorn::Unicorn()
     _flow_id( 0 ),
     _largest_ack( -1 ),
     _thread_id(0),
-    _rainbow(Rainbow::getInstance()),
+    _rainbow(Rainbow::getInstance(cooperative)),
     _put_actions(0),
     _put_rewards(0),
     _outstanding_rewards(),

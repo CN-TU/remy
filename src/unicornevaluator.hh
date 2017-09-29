@@ -29,12 +29,13 @@ private:
   // unsigned int _tick_count;
 
   std::vector< NetConfig > _configs;
+  ConfigRangeUnicorn _config_range;
 
   // ProblemBuffers::Problem _ProblemSettings_DNA ( void ) const;
 
 public:
   UnicornEvaluator( const ConfigRangeUnicorn & range );
-  
+
   // ProblemBuffers::Problem DNA( const T & actions ) const;
 
   Outcome score() const;
@@ -43,7 +44,8 @@ public:
 
   static Outcome score(
 			const unsigned int prng_seed,
-			const std::vector<NetConfig> & configs);
+      const std::vector<NetConfig> & configs,
+      const ConfigRangeUnicorn& config_range);
 };
 
 #endif

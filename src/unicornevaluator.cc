@@ -13,7 +13,8 @@
 UnicornEvaluator::UnicornEvaluator( const ConfigRangeUnicorn & range )
   : _prng_seed( global_PRNG()() ), /* freeze the PRNG seed for the life of this UnicornEvaluator */
     // _tick_count( range.simulation_ticks ),
-    _configs()
+    _configs(),
+    _config_range(range)
 {
   // printf("Creating UnicornEvaluator with random seed %u\n", _prng_seed);
   srand(_prng_seed);
@@ -76,7 +77,8 @@ UnicornEvaluator::UnicornEvaluator( const ConfigRangeUnicorn & range )
 
 UnicornEvaluator::Outcome UnicornEvaluator::score(
              const unsigned int prng_seed,
-             const vector<NetConfig> & configs)
+             const vector<NetConfig> & configs,
+             const ConfigRangeUnicorn& config_range)
 {
   PRNG run_prng( prng_seed );
 
@@ -90,7 +92,7 @@ UnicornEvaluator::Outcome UnicornEvaluator::score(
     printf("Running for %.f ticks\n", x.simulation_ticks);
     /* run once */
     Network<SenderGang<Unicorn, ByteSwitchedSender<Unicorn>>,
-      SenderGang<Unicorn, ByteSwitchedSender<Unicorn>>> network1( Unicorn(), run_prng, x );
+      SenderGang<Unicorn, ByteSwitchedSender<Unicorn>>> network1( Unicorn(config_range.cooperative), run_prng, x );
     network1.run_simulation( x.simulation_ticks );
 
     the_outcome.score += network1.senders().utility();
@@ -150,5 +152,5 @@ UnicornEvaluator::Outcome UnicornEvaluator::score(
 
 UnicornEvaluator::Outcome UnicornEvaluator::score() const
 {
-  return score(_prng_seed, _configs);
+  return score(_prng_seed, _configs, _config_range);
 }

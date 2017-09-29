@@ -9,12 +9,12 @@
 
 using namespace std;
 
-Rainbow& Rainbow::getInstance() {
-	static Rainbow instance;
+Rainbow& Rainbow::getInstance(const bool& cooperative) {
+	static Rainbow instance(cooperative);
 	return instance;
 }
 
-Rainbow::Rainbow() :
+Rainbow::Rainbow(const bool& cooperative) :
 	global_lock(),
 	pModule(NULL),
 	pActionFunc(NULL),
@@ -63,10 +63,22 @@ Rainbow::Rainbow() :
 	PyList_Append(path, pSearchPath);
 	Py_DECREF(pSearchPath);
 
-	size_t dummy_size = 1;
-	// FIXME: pArgString never gets freed.
-	wchar_t* pArgString = Py_DecodeLocale("", &dummy_size);
-	PySys_SetArgv(1, &pArgString);
+	// size_t dummy_size = 1;
+	// // FIXME: pArgString never gets freed.
+	// wchar_t* pArgString = Py_DecodeLocale("", &dummy_size);
+
+	wchar_t* pArgCooperativeString = NULL;
+	if (cooperative) {
+		const char* raw_string = "cooperative";
+		size_t dummy_size = strlen(raw_string)+1;
+		pArgCooperativeString = Py_DecodeLocale(raw_string, &dummy_size);
+	} else {
+		const char* raw_string = "independent";
+		size_t dummy_size = strlen(raw_string)+1;
+		pArgCooperativeString = Py_DecodeLocale(raw_string, &dummy_size);
+	}
+	// PySys_SetArgv(1, &pArgString);
+	PySys_SetArgv(1, &pArgCooperativeString);
 	pModule = PyImport_ImportModule(pModuleName);
 	if (pModule == NULL) {
 		PyErr_Print();

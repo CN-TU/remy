@@ -18,6 +18,7 @@
 #include <unistd.h>
 
 struct stat st = {};
+bool cooperative = true;
 
 using namespace std;
 
@@ -29,14 +30,14 @@ void print_range( const Range & range, const string & name )
 
 void signal_handler(int s) {
   printf("Signal Handler: Caught signal %d\n", s);
-  Rainbow& unicorn_farm = Rainbow::getInstance();
+  Rainbow& unicorn_farm = Rainbow::getInstance(cooperative);
   unicorn_farm.save_session();
   exit(EXIT_SUCCESS);
 }
 
 void signal_handler_just_save(int s) {
   printf("Signal Handler: Caught signal %d\n", s);
-  Rainbow& unicorn_farm = Rainbow::getInstance();
+  Rainbow& unicorn_farm = Rainbow::getInstance(cooperative);
   unicorn_farm.save_session();
 }
 
@@ -146,6 +147,7 @@ int main( int argc, char *argv[] )
   }
   printf( "Number of threads is %u\n", options.config_range.num_threads );
   printf( "Training %s\n", options.config_range.cooperative ? "cooperatively" : "independently" );
+  cooperative = options.config_range.cooperative;
 
   // printf( "Initial rules (use if=FILENAME to read from disk): %s\n", whiskers.str().c_str() );
   printf( "#######################\n" );
