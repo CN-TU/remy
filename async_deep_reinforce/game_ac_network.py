@@ -10,7 +10,6 @@ from constants import PRECISION
 from constants import LAYER_NORMALIZATION
 from constants import ENTROPY_BETA
 from constants import MINIMUM_STD
-from constants import ACTOR_FACTOR
 
 # tiny = np.finfo(np.float32).tiny
 tiny = 1e-20
@@ -75,8 +74,7 @@ class GameACNetwork(object):
 			self.actor_loss = tf.reduce_sum(self.distribution.log_prob(self.a), axis=1) * (self.td)
 			# self.actor_loss = tf.reduce_sum(tf.log(self.distribution.cdf(self.a) - self.distribution.cdf(tf.clip_by_value(self.a - 1.0, tiny, float("inf")))), axis=1) * (self.td_throughput + self.td_delay)
 
-			self.policy_loss = - ACTOR_FACTOR * tf.reduce_sum(self.actor_loss + self.entropy)
-			# self.policy_loss = - ACTOR_FACTOR * tf.reduce_sum(self.actor_loss)
+			self.policy_loss = - tf.reduce_sum(self.actor_loss + self.entropy)
 
 			# R (input for value)
 			self.r_packets = tf.placeholder(PRECISION, [None], name="r_packets")
