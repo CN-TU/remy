@@ -90,6 +90,10 @@ class A3CTrainingThread(object):
 
   def action_step(self, sess, state):
     # Run this still with the old weights, before syncing them
+    # print("state", state)
+
+    # print(self.thread_index, "state", state)
+
     if self.training:
       self.estimated_values.append(self.local_network.run_value(sess, state))
 

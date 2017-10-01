@@ -9,7 +9,7 @@ from constants import N_LSTM_LAYERS
 from constants import PRECISION
 from constants import LAYER_NORMALIZATION
 from constants import ENTROPY_BETA
-from constants import MINIMUM_STD
+from constants import STD_BIAS_OFFSET
 
 # tiny = np.finfo(np.float32).tiny
 tiny = 1e-20
@@ -223,7 +223,7 @@ class GameACLSTMNetwork(GameACNetwork):
 
 			# weight for policy output layer
 			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=0.01)
-			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=1.0, bias_offset=-2)
+			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=1.0, bias_offset=STD_BIAS_OFFSET)
 
 			# weight for value output layer
 			self.W_hidden_to_value_packets_fc, self.b_hidden_to_value_packets_fc = self._fc_variable([HIDDEN_SIZE, 1])

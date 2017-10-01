@@ -17,13 +17,15 @@ void Memory::lost(const int lost) {
   _lost_since_last_time = lost;
 }
 
-void Memory::packets_received( const vector< remy::Packet > & packets, const unsigned int flow_id,
+void Memory::packets_received( const vector< remy::Packet > & packets, const unsigned int,
   const int largest_ack )
 {
   for ( const auto &x : packets ) {
-    if ( x.flow_id != flow_id ) {
-      continue;
-    }
+    /* This is already checked by Unicorn... */
+    // if ( x.flow_id != flow_id ) {
+    //   continue;
+    // }
+    // puts("I'm going through the freaking loop in RemyMemory when receiving a packet...");
     const double rtt = x.tick_received - x.tick_sent;
     int pkt_outstanding = 1;
     if ( x.seq_num > largest_ack ) {

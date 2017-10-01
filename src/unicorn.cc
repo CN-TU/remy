@@ -12,7 +12,7 @@ Unicorn::Unicorn(const bool& cooperative)
     _packets_sent( 0 ),
     _packets_received( 0 ),
     _last_send_time( 0 ),
-    _the_window( MIN_WINDOW ), // Start with the possibility to send at least one packet
+    _the_window( MIN_WINDOW_UNICORN ), // Start with the possibility to send at least one packet
     _intersend_time( 0 ),
     _flow_id( 0 ),
     _largest_ack( -1 ),
@@ -23,7 +23,8 @@ Unicorn::Unicorn(const bool& cooperative)
     _outstanding_rewards(),
     _start_tick(0.0),
     _training(true),
-    _id_to_sent_during_action()
+    _id_to_sent_during_action(),
+    _id_to_sent_during_flow()
 {
   // puts("Creating a Unicorn");
 }
@@ -42,12 +43,21 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
   const int previous_largest_ack = _largest_ack;
 
   for ( auto const &packet : packets ) {
+    // if (_id_to_sent_during_flow[packet.seq_num] != _flow_id) {
+    //   continue;
+    // }
+
     const int packets_sent_in_this_episode = (int) _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["sent"];
 
     const double delay = packet.tick_received - packet.tick_sent;
     const unsigned int lost_since_last_time = (unsigned int) packet.seq_num-_largest_ack-1;
-    if (packet.flow_id == _flow_id) {
+    if (_id_to_sent_during_flow[packet.seq_num] == _flow_id) {
       _memory.lost(lost_since_last_time);
+    }
+
+    for (auto it=_id_to_sent_during_action.begin(); it!=_id_to_sent_during_action.lower_bound(packet.seq_num);) {
+      _id_to_sent_during_action.erase(it->first);
+      _id_to_sent_during_flow.erase(it->first);
     }
 
     for (auto it=_outstanding_rewards.begin(); it!=_outstanding_rewards.lower_bound(_id_to_sent_during_action[packet.seq_num]);) {
@@ -77,17 +87,21 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
     vector<remy::Packet> packet_for_memory_update;
     packet_for_memory_update.push_back(packet);
 
-    if (packet.flow_id == _flow_id) {
+    // printf("%lu: %u, %u\n", _thread_id, _id_to_sent_during_flow[packet.seq_num], _flow_id);
+    if (_id_to_sent_during_flow[packet.seq_num] == _flow_id) {
+      // printf("%lu: Got packet flow of packet=%u, flow of Unicorn=%u, sent=%f, received=%f, seq_num=%d\n", _thread_id, _id_to_sent_during_flow[packet.seq_num], _flow_id, packet.tick_sent, packet.tick_received, packet.seq_num);
       _memory.packets_received( packet_for_memory_update, _flow_id, _largest_ack );
     }
 
     _largest_ack = packet.seq_num;
 
-    if (packet.flow_id == _flow_id) {
+    if (_id_to_sent_during_flow[packet.seq_num] == _flow_id) {
+      // printf("%lu: Yeah, getting action after receiving a packet...\n", _thread_id);
       get_action(packet.tick_received, packets_sent_in_this_episode);
     }
 
     _id_to_sent_during_action.erase(packet.seq_num);
+    _id_to_sent_during_flow.erase(packet.seq_num);
   }
 
   // _largest_ack = max( packets.at( packets.size() - 1 ).seq_num, _largest_ack );
@@ -99,6 +113,7 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
 
 void Unicorn::reset(const double & tickno)
 {
+  // printf("%lu: Fucking resetting\n", _thread_id);
   _rainbow._training = _training;
   // assert(false);
   // printf("%lu: Resetting\n", _thread_id);
@@ -123,7 +138,7 @@ void Unicorn::reset(const double & tickno)
 
   _memory.reset();
   _last_send_time = 0;
-  _the_window = MIN_WINDOW; // Reset the window to 1
+  _the_window = MIN_WINDOW_UNICORN; // Reset the window to 1
   _intersend_time = 0;
   _flow_id += 1;
   // _largest_ack = _packets_sent - 1; /* Assume everything's been delivered */
@@ -189,9 +204,9 @@ void Unicorn::get_action(const double& tickno, const int& packets_sent_in_this_e
 
   // printf("%lu: window=%f, action=%f\n", _thread_id, _the_window, action);
   // _the_window = window(_the_window, action.window_increment, action.window_multiple);
-  _the_window = std::min(std::max(_the_window + action, MIN_WINDOW), MAX_WINDOW);
+  _the_window = std::min(std::max(_the_window + action, MIN_WINDOW_UNICORN), MAX_WINDOW_UNICORN);
   // if (!_training) printf("%lu: window: %d\n", _thread_id, _the_window);
-
+  // printf("%lu: after update: window=%f, action=%f\n", _thread_id, _the_window, action);
   for (auto it=_outstanding_rewards.begin(); it!=_outstanding_rewards.end(); it++) {
     if (it->second["end_time"] < 0) {
       it->second["end_time"] = tickno;
@@ -212,7 +227,7 @@ void Unicorn::finishFlow() {
   // printf("%lu: finish, _packets_sent: %u\n", _thread_id, _packets_sent);
   // _rainbow.finish(_thread_id, {_memory.field(0), _memory.field(1), _memory.field(2), _memory.field(3), _memory.field(6), (double)_the_window/WINDOW_NORMALIZER}, at_least_one_packet_sent);
   // printf("%lu: Finishing, window=%f\n", _thread_id, _the_window);
-  _rainbow.finish(_thread_id, _outstanding_rewards.size(), _memory._last_tick_received-_start_tick, _the_window);
+  _rainbow.finish(_thread_id, _outstanding_rewards.size(), _memory._last_tick_sent-_start_tick, _the_window);
   // printf("%lu: actions: %lu, rewards: %lu, outstanding_rewards: %lu\n", _thread_id, _put_actions, _put_rewards, _outstanding_rewards.size());
   // _put_actions -= _outstanding_rewards.size();
 }

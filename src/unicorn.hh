@@ -15,8 +15,8 @@
 #include <cmath>
 
 // #define MAX_WINDOW 1000000
-#define MIN_WINDOW 1.0
-#define MAX_WINDOW 1000.0
+#define MIN_WINDOW_UNICORN 1.0
+#define MAX_WINDOW_UNICORN 1000.0
 
 class Unicorn
 {
@@ -47,7 +47,8 @@ protected:
   double _start_tick;
   bool _training;
 
-  std::unordered_map<unsigned int, long unsigned int> _id_to_sent_during_action;
+  std::map<unsigned int, long unsigned int> _id_to_sent_during_action;
+  std::map<unsigned int, unsigned int> _id_to_sent_during_flow;
 
   // static double soft_ceil(const double x) {
   //   return MAX_WINDOW-log(1+exp(MAX_WINDOW-x));
