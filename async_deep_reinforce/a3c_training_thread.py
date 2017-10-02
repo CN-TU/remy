@@ -18,6 +18,8 @@ from constants import LOG_LEVEL
 from constants import DELAY_MULTIPLIER
 
 import logging
+
+logging.info(" ".join(map(str,("DELAY_MULTIPLIER", DELAY_MULTIPLIER))))
 logging.basicConfig(level=LOG_LEVEL)
 
 LOG_INTERVAL = 1
@@ -31,9 +33,11 @@ class A3CTrainingThread(object):
                grad_applier,
                max_global_time_step,
                device,
-               training):
+               training,
+               cooperative):
 
     self.training = training
+    self.cooperative = cooperative
     self.thread_index = thread_index
     self.learning_rate_input = learning_rate_input
     self.max_global_time_step = max_global_time_step
@@ -50,9 +54,14 @@ class A3CTrainingThread(object):
         aggregation_method=None,
         colocate_gradients_with_ops=False)
 
-    self.apply_gradients = grad_applier.apply_gradients(
-      zip(self.gradients, global_network.get_vars())
-    )
+      if self.cooperative:
+        self.apply_gradients = grad_applier.apply_gradients(
+          zip(self.gradients, global_network.get_vars())
+        )
+      else:
+        self.apply_gradients = grad_applier.apply_gradients(
+          zip(self.gradients, local_network.get_vars())
+        )
 
     self.sync = self.local_network.sync_from(global_network)
     self.episode_count = 0
@@ -101,13 +110,14 @@ class A3CTrainingThread(object):
         self.time_differences.append(None)
         self.windows.append(None)
         # Sync for the next iteration
-        sess.run( self.sync )
+        if self.cooperative:
+          sess.run( self.sync )
         self.start_lstm_states.append(self.local_network.lstm_state_out)
         self.variable_snapshots.append(sess.run(self.local_network.get_vars()))
 
     pi_, action, value_ = self.local_network.run_policy_action_and_value(sess, state)
 
-    logging.debug(" ".join(map(str,(self.thread_index,"pi_values:",pi_))))
+    # logging.debug(" ".join(map(str,(self.thread_index,"pi_values:",pi_))))
 
     if self.training:
       self.states.append(state)
@@ -184,9 +194,6 @@ class A3CTrainingThread(object):
     # self.start_lstm_states = []
     # self.variable_snapshots = []
     self.local_network.reset_state()
-
-    if not self.training:
-      sess.run(self.sync)
 
   def process(self, sess, global_t, summary_writer, summary_op, summary_inputs, time_difference=None):
     if self.local_t <= 0:

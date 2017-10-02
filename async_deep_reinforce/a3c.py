@@ -177,7 +177,7 @@ def create_training_thread(training):
     created_thread = A3CTrainingThread(global_thread_index, global_network, initial_learning_rate,
                                         learning_rate_input,
                                         grad_applier, MAX_TIME_STEP,
-                                        device, training)
+                                        device, training, cooperative)
     training_threads[global_thread_index] = created_thread
     return_index = global_thread_index
     global_thread_index += 1
@@ -206,7 +206,8 @@ def create_training_thread(training):
   created_thread.episode_reward_throughput = 0
   created_thread.episode_reward_delay = 0
   created_thread.local_network.reset_state()
-  sess.run( created_thread.sync )
+  if cooperative:
+    sess.run( created_thread.sync )
 
   return return_index
 
