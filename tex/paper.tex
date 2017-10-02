@@ -156,7 +156,7 @@ In \autoref{alg:pal} we show the code that runs in one of the learning threads. 
 \end{minipage}
 \end{figure}
 
-Another major difference in PAL is that one action generates a number of partial actions ($\geq 1$) (see \autoref{fig:pal}). Each partial action generates a partial reward upon interacting with the environment. Upon receiving a partial reward, the agent determines the current state and triggers a new action. When all partial rewards of one action were received, the agent combines them to form the reward and updates the value and actor networks (see \autoref{alg:grad}). 
+Another major difference in PAL is that one action generates a number of partial actions ($\geq 1$) (see \autoref{fig:pal}). Each partial action generates feedback upon interacting with the environment. Upon receiving feedback for a partial action, the agent determines the current state and triggers a new action. When all partial rewards of one action were received, the agent combines them to form the reward and updates the value and actor networks (see \autoref{alg:grad}).
 
 \begin{figure}
 \begin{minipage}{\columnwidth}
@@ -196,10 +196,10 @@ Another major difference in PAL is that one action generates a number of partial
 		\ForAll{partial actions $a_{{\text{p},n,t}}$ in $l_{\text{partialActions},t}$}
 			\State Take partial action $a_{{\text{p},n,t}}$
 		\EndFor
-		\State Receive partial reward $r_{\text{p},n,t'}$
+		\State Receive feedback $r_{\text{p},n,t'}$
 		\StateIndent[3] where $t' \leq t$ and $0 \leq n \leq\#(l_{\text{partialActions},t'})$
-		\If{all partial rewards of $a_{t'}$ were received}
-			\State $r_{t'} \gets \text{combination of all partial rewards }r_{\text{p},n,t'}$
+		\If{all feedback of $a_{t'}$ was received}
+			\State $r_{t'} \gets \text{reward w.r.t all feedback }r_{\text{p},n,t'}$
 			\State $l_\text{rewards}.\text{append}(r_{t'})$
 			\If{$\#\left(l_\text{rewards}\right) > t_\text{max}$ or the episode is over}
 				\State \Call{computeGradients}{}
@@ -228,7 +228,7 @@ Another major difference in PAL is that one action generates a number of partial
 		\State $s \gets l_\text{states}[i]$
 		\State $v \gets l_\text{values}[i]$
 		\State $d\theta_\text{v} \gets \frac{\partial\left(R_i - v\right)}{\partial\theta_v}$
-		\State $d\theta_\text{v} \gets -\frac{\partial\log \left( \pi_W\left( a-1 < W \leq a \given s; \theta_\text{a} \right)\right)\left(R_i - v\right)}{\partial\theta_a}$
+		\State $d\theta_\text{v} \gets -\frac{\partial\log \left( \pi\left( a \given s; \theta_\text{a} \right)\right)\left(R_i - v\right)}{\partial\theta_a}$
 		\StateIndent[4] $-\frac{\partial\beta H\left( \pi\left( s; \theta_a \right)\right)}{\partial\theta_a}$
 		\State $\theta_{\text{a},\text{g}} \gets \theta_{\text{a},\text{g}} + d\theta_\text{a}$
 		\State $\theta_{\text{v},\text{g}} \gets \theta_{\text{v},\text{g}} + d\theta_\text{v}$
@@ -276,7 +276,7 @@ In the following a time step $t$ corresponds to the reception of an acknowledgem
 \begin{description}
 \item[$\textit{s}_\text{t}$] The state  describes the current ``congestion state''. Various features that indicate congestion are included in it. Each time an acknowledgement is received, the state is updated and the actor network is asked for the next action. 
 \item[$\textit{a}_\text{t}$] Based on a given state and the history of previous states, the actor network returns an action $a_t$, which is an integer ($\geq 1$) that stands for the congestion window to be used until the next acknowledgement is received. 
-\item[$\textit{r}_\text{t}$] The reward is a tuple of at least one reward metrics. These are discussed in more detail in \autoref{subsec:value}
+\item[$\textit{r}_\text{t}$] The reward is a tuple of at least one reward metric. These are discussed in more detail in \autoref{subsec:value}
 \item[$\textit{v}_\text{t}$] The value is a tuple of the expected average reward estimated by the value network (see \autoref{subsec:value}) for each of the reward metrics. 
 \end{description}
 
@@ -310,44 +310,18 @@ l_{\text{v},t} =& \left(R_{\text{packet},t} - V_\text{packet}(s_t; \theta_\text{
 \subsection{Actor Network}
 \label{subsec:actor}
 
-The actor network outputs two parameters: The mean of a log-normal distribution $\mu_\text{log}$ and its standard deviation $\sigma_\text{log}$. 
+The actor network outputs two parameters: The mean of a normal distribution $\mu$ and its standard deviation $\sigma$. 
 
-We calculate the means and standard deviation of the underlying normal distribution as
+Each time an action $a_t$ is requested, a value $X$ is sampled from the current normal distribution defined by the parameters $\mu$ and $\sigma$: 
 \begin{align*}
-\sigma_\text{normal} &= \sqrt{\log \left( \frac{\sigma_\text{log}}{\mu_\text{log}} +1 \right)} \\
-\mu_\text{normal} &= \log\left(\mu_\text{log}\right) - \frac{{\sigma_\text{normal}}^2}{2}.
+X&\sim {\mathcal {N}}(\mu ,\sigma^{2})\\
 \end{align*}
 
-Each time an action $a_t$ is requested, a value $X$ is sampled from the current log-normal distribution defined by the parameters $\mu_\text{normal}$ and $\sigma_\text{normal}$: 
-\begin{align*}
-Z&\sim {\mathcal {N}}(\mu_\text{normal} ,{\sigma_{\text{normal}}}^{2})\\
-X&=\exp(Z)
-\end{align*}
-
-We can also equally write
-\begin{align*}
-X \sim \text{Lognormal}\left( \mu_\text{normal}, {\sigma_{\text{normal}}}^{2}\right).
-\end{align*}
-
-The sampled value $X$ is then discretized by rounding up, which also prevents window sizes smaller than one from occurring:
-\begin{align*}
-W = \left\lceil X \right\rceil
-\end{align*}
-
-$a_t$ is the sampled value $W$ at time $t$ and it is used as the window until the next time step $t+1$ begins (at the reception of the next acknowledgement). 
-
-%Let
-%\begin{align*}
-%\Sigma R_t = \sum_{i \in \left \{\text{packet}, \text{byte}, \text{delay}, \text{duration}\right \}} R_{i_t}
-%\end{align*}
-%and
-%\begin{align*}
-%\Sigma v_t = \sum_{i \in \left \{\text{packet}, \text{byte}, \text{delay}, \text{duration}\right \}} v_{i_t}.
-%\end{align*}
+$a_t$ is the sampled value $X$ at time $t$ and the window is incremented by $a_t$; however, the window can never be smaller than 1. At the beginning of a flow the window is 1 as well.
 
 With $H$ being the entropy, the actor network minimizes the loss
 \begin{align*}
-l_{\text{a},t} =& -\log \left( \pi_W\left( a_t-1 < W \leq a_t \given s_t; \theta_\text{a} \right)\right)\\
+l_{\text{a},t} =& -\log \left( \pi \left( a_t \given s_t ; \theta_\text{a} \right) \right)\\
 &\left( \left(\frac{R_{\text{byte},t}}{{R_{\text{duration},t}}} - \frac{v_{\text{byte},t}}{{v_{\text{duration},t}}}\right) - \left( \frac{R_{\text{delay},t}}{{R_{\text{packet},t}}}- \frac{v_{\text{delay},t}}{{v_{\text{packet},t}}} \right)\right)\\ 
 &+ \beta H\left( \pi\left( s_t; \theta_a \right)\right).
 \end{align*}
