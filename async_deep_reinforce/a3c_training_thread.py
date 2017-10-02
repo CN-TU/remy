@@ -19,7 +19,6 @@ from constants import DELAY_MULTIPLIER
 
 import logging
 
-logging.info(" ".join(map(str,("DELAY_MULTIPLIER", DELAY_MULTIPLIER))))
 logging.basicConfig(level=LOG_LEVEL)
 
 LOG_INTERVAL = 1
@@ -34,8 +33,11 @@ class A3CTrainingThread(object):
                max_global_time_step,
                device,
                training,
-               cooperative):
+               cooperative,
+               delay_delta):
 
+    self.delay_delta = delay_delta
+    logging.info(" ".join(map(str,("delay_delta", delay_delta))))
     self.training = training
     self.cooperative = cooperative
     self.thread_index = thread_index
@@ -43,7 +45,6 @@ class A3CTrainingThread(object):
     self.max_global_time_step = max_global_time_step
 
     self.local_network = GameACLSTMNetwork(thread_index, device)
-
     self.local_network.prepare_loss()
 
     with tf.device(device):
@@ -54,14 +55,9 @@ class A3CTrainingThread(object):
         aggregation_method=None,
         colocate_gradients_with_ops=False)
 
-      if self.cooperative:
-        self.apply_gradients = grad_applier.apply_gradients(
-          zip(self.gradients, global_network.get_vars())
-        )
-      else:
-        self.apply_gradients = grad_applier.apply_gradients(
-          zip(self.gradients, local_network.get_vars())
-        )
+      self.apply_gradients = grad_applier.apply_gradients(
+        zip(self.gradients, global_network.get_vars())
+      )
 
     self.sync = self.local_network.sync_from(global_network)
     self.episode_count = 0
@@ -110,8 +106,7 @@ class A3CTrainingThread(object):
         self.time_differences.append(None)
         self.windows.append(None)
         # Sync for the next iteration
-        if self.cooperative:
-          sess.run( self.sync )
+        sess.run( self.sync )
         self.start_lstm_states.append(self.local_network.lstm_state_out)
         self.variable_snapshots.append(sess.run(self.local_network.get_vars()))
 
@@ -253,7 +248,7 @@ class A3CTrainingThread(object):
       R_accumulated_delay = (ri[1] + GAMMA*R_accumulated_delay)
       # R_delay = R_accumulated_delay/R_packets
       # td_delay = -(np.log(R_accumulated_delay/R_packets/DELAY_MULTIPLIER) - np.log(Vi[1]/Vi[0]/DELAY_MULTIPLIER))
-      td -= DELAY_MULTIPLIER*(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+      td -= self.delay_delta*(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
       # td_delay = -(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
       batch_si.append(si)

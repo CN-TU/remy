@@ -114,6 +114,7 @@ message ConfigRangeUnicorn {
   optional Range stochastic_loss_rate = 78;
   optional uint32 num_threads = 79;
   optional bool cooperative = 80;
+  optional double delay_delta = 81;
 }
 
 message NetConfig {

@@ -92,7 +92,7 @@ UnicornEvaluator::Outcome UnicornEvaluator::score(
     printf("Running for %.f ticks\n", x.simulation_ticks);
     /* run once */
     Network<SenderGang<Unicorn, ByteSwitchedSender<Unicorn>>,
-      SenderGang<Unicorn, ByteSwitchedSender<Unicorn>>> network1( Unicorn(config_range.cooperative), run_prng, x );
+      SenderGang<Unicorn, ByteSwitchedSender<Unicorn>>> network1( Unicorn(config_range.cooperative, config_range.delay_delta), run_prng, x );
     network1.run_simulation( x.simulation_ticks );
 
     the_outcome.score += network1.senders().utility();

@@ -9,6 +9,14 @@
 
 using namespace std;
 
+Rainbow& Rainbow::getInstance() {
+	// FIXME: I guess one should check for a NULL pointer
+	const char* cooperative_string = getenv("cooperative");
+	const bool cooperative = (bool) strtoul(cooperative_string, NULL, 10L);
+	static Rainbow instance(cooperative);
+	return instance;
+}
+
 Rainbow& Rainbow::getInstance(const bool& cooperative) {
 	static Rainbow instance(cooperative);
 	return instance;
@@ -129,10 +137,10 @@ void Rainbow::put_reward(const long unsigned int thread_id, const double reward_
 	Py_DECREF(pReturnValue);
 }
 
-long unsigned int Rainbow::create_thread() {
+long unsigned int Rainbow::create_thread(const double& delay_delta) {
 	lock_guard<mutex> guard(global_lock);
 
-	PyObject* pArgs = Py_BuildValue("(O)", _training ? Py_True : Py_False);
+	PyObject* pArgs = Py_BuildValue("(Of)", _training ? Py_True : Py_False, delay_delta);
 	if (pArgs == NULL) {
 		PyErr_Print();
 	}

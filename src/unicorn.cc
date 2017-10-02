@@ -7,7 +7,7 @@
 
 using namespace std;
 
-Unicorn::Unicorn(const bool& cooperative)
+Unicorn::Unicorn(const bool& cooperative, const double& delay_delta)
   : _memory(),
     _packets_sent( 0 ),
     _packets_received( 0 ),
@@ -23,6 +23,7 @@ Unicorn::Unicorn(const bool& cooperative)
     _outstanding_rewards(),
     _start_tick(0.0),
     _training(true),
+    _delay_delta(delay_delta),
     _id_to_sent_during_action(),
     _id_to_sent_during_flow()
 {
@@ -34,11 +35,7 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
   assert(packets.size() == 1);
 
   // So this should only happen after a reset, when a packet arrives very late...
-  if (_largest_ack >= packets.at( packets.size() - 1 ).seq_num) {
-    // printf("%lu: returning because _largest ack >= packet.seq_num\n", _thread_id);
-    assert(false);
-    return;
-  }
+  assert (_largest_ack < packets.at( packets.size() - 1 ).seq_num);
 
   const int previous_largest_ack = _largest_ack;
 
@@ -151,7 +148,7 @@ void Unicorn::reset(const double & tickno)
   assert( _flow_id != 0 );
 
   if (_thread_id == 0) {
-    _thread_id = _rainbow.create_thread();
+    _thread_id = _rainbow.create_thread(_delay_delta);
     // printf("Assigned thread id %lu to Unicorn\n", _thread_id);
   }
   // printf("%lu: Starting\n", _thread_id);

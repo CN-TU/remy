@@ -147,16 +147,15 @@ int main( int argc, char *argv[] )
   }
   printf( "Number of threads is %u\n", options.config_range.num_threads );
   printf( "Training %s\n", options.config_range.cooperative ? "cooperatively" : "independently" );
+  printf("Delay delta is %f\n", options.config_range.delay_delta);
   cooperative = options.config_range.cooperative;
-
-  // printf( "Initial rules (use if=FILENAME to read from disk): %s\n", whiskers.str().c_str() );
   printf( "#######################\n" );
 
-  // if ( !output_filename.empty() ) {
-  //   printf( "Writing to \"%s.N\".\n", output_filename.c_str() );
-  // } else {
-  //   printf( "Not saving output. Use the of=FILENAME argument to save the results.\n" );
-  // }
+  // Allocates storage
+  char* number_of_threads_string = (char*) malloc(2048 * sizeof(char));
+  // Prints "Hello world!" on hello_world
+  sprintf(number_of_threads_string, "num_threads=%u", options.config_range.num_threads);
+  putenv(number_of_threads_string);
 
   const size_t iterations_per_thread = std::numeric_limits<size_t>::max();
   vector<thread> thread_array(options.config_range.num_threads);

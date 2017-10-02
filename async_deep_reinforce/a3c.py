@@ -33,6 +33,8 @@ from constants import USE_GPU
 from constants import PRECISION
 from constants import LOG_LEVEL
 
+from os import environ
+
 import logging
 logging.basicConfig(level=LOG_LEVEL)
 
@@ -52,6 +54,7 @@ def initialize_uninitialized(sess):
     is_not_initialized   = sess.run([tf.is_variable_initialized(var) for var in global_vars])
     not_initialized_vars = [v for (v, f) in zip(global_vars, is_not_initialized) if not f]
 
+    logging.info("initializing uninitialized variables")
     logging.debug(" ".join(map(str,("initializing uninitialized variables:", [str(i.name) for i in not_initialized_vars]))))  # only for testing
     if len(not_initialized_vars) > 0:
         sess.run(tf.variables_initializer(not_initialized_vars))
@@ -61,8 +64,15 @@ initial_learning_rate = log_uniform(INITIAL_ALPHA_LOW,
                                     INITIAL_ALPHA_LOG_RATE)
 
 global_t = 0
-stop_requested = False
-global_network = GameACLSTMNetwork(-1, device)
+
+if cooperative:
+  global_network = GameACLSTMNetwork(0, device)
+else:
+  num_threads = environ.get('num_threads')
+  assert(num_threads is not None)
+  global_network = []
+  for i in range(1, num_threads+1):
+    global_network.append(GameACLSTMNetwork(-i, device))
 
 learning_rate_input = tf.placeholder(PRECISION)
 
@@ -98,8 +108,9 @@ init = tf.global_variables_initializer()
 sess.run(init)
 
 # init or load checkpoint with saver
-saver = tf.train.Saver()
 checkpoint = tf.train.get_checkpoint_state(CHECKPOINT_DIR)
+
+saver = tf.train.Saver()
 if checkpoint and checkpoint.model_checkpoint_path:
   saver.restore(sess, checkpoint.model_checkpoint_path)
   print("checkpoint loaded:", checkpoint.model_checkpoint_path)
@@ -168,16 +179,24 @@ idle_threads = set()
 
 global training
 
-def create_training_thread(training):
+def create_training_thread(training, delay_delta):
   # print("Oh yeah, creating thraining thread!!!")
   logging.info(" ".join(map(str,("training", training))))
   global global_t, global_thread_index, wall_t, sess
   if len(idle_threads) == 0:
     logging.info(" ".join(map(str,("Creating new thread", global_thread_index))))
-    created_thread = A3CTrainingThread(global_thread_index, global_network, initial_learning_rate,
-                                        learning_rate_input,
-                                        grad_applier, MAX_TIME_STEP,
-                                        device, training, cooperative)
+    if cooperative:
+      created_thread = A3CTrainingThread(global_thread_index, global_network, initial_learning_rate,
+                                          learning_rate_input,
+                                          grad_applier, MAX_TIME_STEP,
+                                          device, training, cooperative,
+                                          delay_delta)
+    else:
+      created_thread = A3CTrainingThread(global_thread_index, global_network[global_thread_index], initial_learning_rate,
+                                          learning_rate_input,
+                                          grad_applier, MAX_TIME_STEP,
+                                          device, training, cooperative,
+                                          delay_delta)
     training_threads[global_thread_index] = created_thread
     return_index = global_thread_index
     global_thread_index += 1
@@ -206,8 +225,7 @@ def create_training_thread(training):
   created_thread.episode_reward_throughput = 0
   created_thread.episode_reward_delay = 0
   created_thread.local_network.reset_state()
-  if cooperative:
-    sess.run( created_thread.sync )
+  sess.run( created_thread.sync )
 
   return return_index
 

@@ -60,7 +60,8 @@ ConfigRangeUnicorn::ConfigRangeUnicorn( void ) :
   simulation_ticks( Range() ),
   stochastic_loss_rate( Range().set_low(0).set_high(0).set_incr(0) ),
   num_threads( 8 ),
-  cooperative( true )
+  cooperative( true ),
+  delay_delta(1)
 {
 }
 
@@ -74,7 +75,8 @@ ConfigRangeUnicorn::ConfigRangeUnicorn( RemyBuffers::ConfigRangeUnicorn input_co
   simulation_ticks( Range(input_config.simulation_ticks()) ),
   stochastic_loss_rate( Range( input_config.stochastic_loss_rate() ) ),
   num_threads( input_config.num_threads() ),
-  cooperative( input_config.cooperative())
+  cooperative( input_config.cooperative()),
+  delay_delta( input_config.delay_delta())
 {
 }
 
@@ -91,5 +93,6 @@ RemyBuffers::ConfigRangeUnicorn ConfigRangeUnicorn::DNA( void ) const
   ret.mutable_stochastic_loss_rate()->CopyFrom( pair_to_range( stochastic_loss_rate ) );
   ret.set_num_threads( num_threads );
   ret.set_cooperative( cooperative );
+  ret.set_delay_delta(delay_delta);
   return ret;
 }

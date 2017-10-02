@@ -46,6 +46,7 @@ protected:
   // std::unordered_map<uint32t_t, uint32_t> _packet_to_action;
   double _start_tick;
   bool _training;
+  double _delay_delta;
 
   std::map<unsigned int, long unsigned int> _id_to_sent_during_action;
   std::map<unsigned int, unsigned int> _id_to_sent_during_flow;
@@ -59,7 +60,7 @@ protected:
   // }
 
 public:
-  Unicorn(const bool& cooperative);
+  Unicorn(const bool& cooperative, const double& delay_delta);
   ~Unicorn();
 
   void packets_received( const std::vector< remy::Packet > & packets );

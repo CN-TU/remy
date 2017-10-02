@@ -63,6 +63,7 @@ public:
   Range stochastic_loss_rate;
   unsigned int num_threads;
   bool cooperative;
+  double delay_delta;
 
   ConfigRangeUnicorn( void );
   ConfigRangeUnicorn( RemyBuffers::ConfigRangeUnicorn configrange );
