@@ -13,7 +13,7 @@ RMSP_EPSILON = 0.1 # epsilon parameter for RMSProp
 ABSOLUTE_PATH = os.path.join(os.path.expanduser('~'),"repos/remy/")
 CHECKPOINT_DIR = ABSOLUTE_PATH+'checkpoints'
 LOG_FILE = ABSOLUTE_PATH+'tmp/a3c_log'
-LEARNING_RATE_MULTIPLIER = 1e-1
+LEARNING_RATE_MULTIPLIER = 0.5e-1
 INITIAL_ALPHA_LOW = 1e-4*LEARNING_RATE_MULTIPLIER    # log_uniform low limit for learning rate
 INITIAL_ALPHA_HIGH = 1e-2*LEARNING_RATE_MULTIPLIER   # log_uniform high limit for learning rate
 
@@ -33,7 +33,5 @@ HIDDEN_SIZE = 256
 # ACTION_SIZE = 1 # action size
 LAYER_NORMALIZATION = True
 
-DELAY_MULTIPLIER = 0.1
+DELAY_MULTIPLIER = 0.01
 LOG_LEVEL = logging.INFO
-# MINIMUM_STD = 1e-2
-# ACTOR_FACTOR = 1e-2
