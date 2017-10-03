@@ -9,6 +9,13 @@
 \usepackage{todonotes}
 \usepackage{svg}
 
+\def\xcolorversion{2.00}
+\def\xkeyvalversion{1.8}
+
+\usepackage{pgf}
+\usepackage{tikz}
+\usetikzlibrary{arrows,shapes,snakes,automata,backgrounds,petri}
+
 \newcommand*{\fullref}[1]{\hyperref[{#1}]{\autoref*{#1} (\nameref*{#1})}} % One single link
 
 % Adds a "given" symbol (vertical bar) that rescales in height (like \left and \right)
@@ -269,7 +276,39 @@ is the actor loss that we try to minimize.
 
 \section{Congestion Control specifics}
 
-The classical Reinforcement Learning assumes that a reward follows an action and vice-versa (see \autoref{fig:reinforcement}). However, in the case of congestion control, it is desirable to perform a new action without having received a reward for the previous action. For example, imagine that you receive two acknowledgements directly after each other. For each of these two acknowledgements an action has to be performed but it does not seem feasible for the second action to wait until the first action has received a reward. The Asynchronous Actor Critic framework as described by \cite{mnih_asynchronous_2016} cannot be applied to congestion control as it assumes that actions and rewards are synchronized and thus we use the proposed Partial Action Actor Critic Learning (see \autoref{sec:pal})
+\begin{figure}
+
+\begin{tikzpicture}[node distance=2cm,>=stealth',bend angle=45,auto]
+
+  \tikzstyle{place}=[circle,thick,draw=blue!75,fill=blue!20,minimum size=6mm]
+  \tikzstyle{red place}=[place,draw=red!75,fill=red!20]
+  \tikzstyle{transition}=[rectangle,thick,draw=black!75,
+  			  fill=black!20,minimum size=4mm]
+
+%  \tikzstyle{every label}=[blue!75]
+
+  \begin{scope}
+    \node [place,tokens=1] (s1) at (2,4) [label=Received feedback] {};
+    \node [place,tokens=1] (s2) at (2,0) [label={[align=center]below:Open\\congestion\\window}] {};
+      
+    \node [transition] (e2) at (0,2) [label=left:Take action] {}
+      edge [post,bend right] node {$a$}(s2)
+      edge [pre,bend left] node {1} (s1);      
+     
+    \node [transition] (e1) at (4,2) [label={[align=left]right:Send packet \& \\ receive ACK}] {}
+      edge [pre,bend left] node {1} (s2)
+      edge [post,bend right] node {1} (s2)
+      edge [post, bend right] node {1} (s1);
+
+  \end{scope}
+
+\end{tikzpicture}
+
+\caption{A petri net describing the congestion control mechanism. We start with one token in the state \textit{open congestion window}, which means that initially we can send one packet. We start with another token in the state \textit{Received feedback}, which means that we can take an action right in the beginning. The concept is the following: If there is at least one token in the \textit{open congestion window}, send a packet. The acknowledgement (or timeout if the packet gets lost) for the packet is received by the \textit{open congestion window}, meaning that when we get an ACK we can send another packet (The \textit{open congestion window} signifies the congestion window minus the packets that are currently unacknowledged.). Furthermore the state \textit{Received feedback} receives each ACK/timeout and takes an action. \textit{Take action} adds \textit{a} tokens to the \textit{open congestion window}, where $a$ is a real number (possibly also negative); thus in each state there can also be a real number of tokens (e.g.~ 2.34 tokens are possible in the \textit{open congestion window}). However, we define that the congestion window can never be smaller than 1.}
+\label{fig:petri}
+\end{figure}
+
+The classical Reinforcement Learning assumes that a reward follows an action and vice-versa (see \autoref{fig:reinforcement}). However, in the case of congestion control, it is desirable to perform a new action without having received a reward for the previous action. For example, imagine that you receive two acknowledgements directly after each other. For each of these two acknowledgements an action has to be performed but it does not seem feasible for the second action to wait until the first action has received a reward. The Asynchronous Actor Critic framework as described by \cite{mnih_asynchronous_2016} cannot be applied to congestion control as it assumes that actions and rewards are synchronized and thus we use the proposed Partial Action Actor Critic Learning (see \autoref{sec:pal}). We describe the concept of using reinforcement learning for congestion control with a petri net (see \autoref{fig:petri}).
 
 In the following a time step $t$ corresponds to the reception of an acknowledgement. The beginning of the flow, before any packet is sent, corresponds to time step $0$.
 
