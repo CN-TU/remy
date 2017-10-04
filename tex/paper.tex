@@ -288,11 +288,12 @@ is the actor loss that we try to minimize.
 %  \tikzstyle{every label}=[blue!75]
 
   \begin{scope}
-    \node [place,tokens=1] (s1) at (2,4) [label=Received feedback] {};
-    \node [place,tokens=1] (s2) at (2,0) [label={[align=center]below:Open\\congestion\\window}] {};
+    \node [place,tokens=1] (s1) [label=Received feedback] {};
+    \node [place] (s2) [below of=s1, label=Network] {};
+    \node [place,tokens=1] (s3) [below of=s2, label={[align=center]below:Open\\congestion\\window}] {};
       
-    \node [transition] (e2) at (0,2) [label=left:Take action] {}
-      edge [post,bend right] node {$a$}(s2)
+    \node [transition] (e2) [left of=s2, label=left:Take action] {}
+      edge [post,bend right] node {$a$}(s3)
       edge [pre,bend left] node {1} (s1);      
      
     \node [transition] (e1) at (4,2) [label={[align=left]right:Send packet \& \\ receive ACK}] {}

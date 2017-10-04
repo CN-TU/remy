@@ -201,7 +201,7 @@ void Unicorn::get_action(const double& tickno, const int& packets_sent_in_this_e
 
   // printf("%lu: window=%f, action=%f\n", _thread_id, _the_window, action);
   // _the_window = window(_the_window, action.window_increment, action.window_multiple);
-  _the_window = std::min(std::max(_the_window + action, MIN_WINDOW_UNICORN), MAX_WINDOW_UNICORN);
+  _the_window = std::max(_the_window + action, MIN_WINDOW_UNICORN);
   // if (!_training) printf("%lu: window: %d\n", _thread_id, _the_window);
   // printf("%lu: after update: window=%f, action=%f\n", _thread_id, _the_window, action);
   for (auto it=_outstanding_rewards.begin(); it!=_outstanding_rewards.end(); it++) {

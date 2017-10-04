@@ -247,7 +247,7 @@ def call_process_reward(thread_id, reward_throughput, reward_delay, duration):
   diff_global_t = training_threads[thread_id].reward_step(sess, global_t, summary_writer, summary_op, summary_inputs, reward_throughput, reward_delay, duration)
   global_t += diff_global_t
   if global_t >= MAX_TIME_STEP:
-    print("Reached maximum time step, saving and terminating...")
+    logging.info("Reached maximum time step, saving and terminating...")
     save_session()
     sys.exit()
 
@@ -257,7 +257,7 @@ def call_process_finished(thread_id, actions_to_remove, time_difference, window)
   training_threads[thread_id].final_step(sess, global_t, summary_writer, summary_op, summary_inputs, actions_to_remove, time_difference, window)
 
 def save_session():
-  logging.debug("save_session")
+  # logging.debug("save_session")
   global global_t, sess, CHECKPOINT_DIR
   if not os.path.exists(CHECKPOINT_DIR):
     os.mkdir(CHECKPOINT_DIR)

@@ -48,8 +48,8 @@ protected:
   bool _training;
   double _delay_delta;
 
-  std::map<unsigned int, long unsigned int> _id_to_sent_during_action;
-  std::map<unsigned int, unsigned int> _id_to_sent_during_flow;
+  std::map<long unsigned int, long unsigned int> _id_to_sent_during_action;
+  std::map<long unsigned int, unsigned int> _id_to_sent_during_flow;
 
   // static double soft_ceil(const double x) {
   //   return MAX_WINDOW-log(1+exp(MAX_WINDOW-x));

@@ -25,7 +25,7 @@ void Aimd::packets_received( const vector< Packet > & packets ) {
     loss_detected = ( not loss_detected ) ?
                     ( packet.seq_num > _largest_ack + 1 ): /* At least lost one packet */
                     ( true ); /* Bypass seq_num check if you saw a loss already */
-    _largest_ack = max( _largest_ack, packet.seq_num );
+    _largest_ack = max( _largest_ack, (int) packet.seq_num );
 
     _packets_received++;
     if ( packet.flow_id != _flow_id ) {

@@ -23,7 +23,7 @@ void Rat::packets_received( const vector< Packet > & packets ) {
   _packets_received += packets.size();
   /* Assumption: There is no reordering */
   _memory.packets_received( packets, _flow_id, _largest_ack );
-  _largest_ack = max( packets.at( packets.size() - 1 ).seq_num, _largest_ack );
+  _largest_ack = max( (int) packets.at( packets.size() - 1 ).seq_num, _largest_ack );
 
   const Whisker & current_whisker( _whiskers.use_whisker( _memory, _track ) );
 
