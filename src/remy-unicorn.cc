@@ -154,7 +154,7 @@ int main( int argc, char *argv[] )
   // Allocates storage
   char* number_of_threads_string = (char*) malloc(2048 * sizeof(char));
   // Prints "Hello world!" on hello_world
-  sprintf(number_of_threads_string, "num_threads=%u", options.config_range.num_threads);
+  sprintf(number_of_threads_string, "num_threads=%u", options.config_range.num_threads*(uint32_t) options.config_range.num_senders.high);
   putenv(number_of_threads_string);
 
   const size_t iterations_per_thread = std::numeric_limits<size_t>::max();
