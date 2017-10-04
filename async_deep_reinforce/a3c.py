@@ -71,7 +71,7 @@ else:
   num_threads = environ.get('num_threads')
   assert(num_threads is not None)
   global_network = []
-  for i in range(1, num_threads+1):
+  for i in range(1, int(num_threads)+1):
     global_network.append(GameACLSTMNetwork(-i, device))
 
 learning_rate_input = tf.placeholder(PRECISION)

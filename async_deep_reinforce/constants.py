@@ -25,12 +25,12 @@ PRECISION = tf.float32
 
 INITIAL_ALPHA_LOG_RATE = 0.4226 # log_uniform interpolate rate for learning rate (around 7 * 10^-4)
 GAMMA = 0.99 # discount factor for rewards
-ENTROPY_BETA = 1e-6
-STD_BIAS_OFFSET = -3
-MAX_TIME_STEP = 10**7
+ENTROPY_BETA = 1e-5
+STD_BIAS_OFFSET = -2
+MAX_TIME_STEP = 0.5e7
 # GRAD_NORM_CLIP = 40.0 # gradient norm clipping
 USE_GPU = False # To use GPU, set True
-N_LSTM_LAYERS = 3
+N_LSTM_LAYERS = 1
 
 STATE_SIZE = 11
 HIDDEN_SIZE = 256

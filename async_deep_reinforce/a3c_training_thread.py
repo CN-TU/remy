@@ -21,7 +21,7 @@ import logging
 
 logging.basicConfig(level=LOG_LEVEL)
 
-LOG_INTERVAL = 1
+LOG_INTERVAL = 5
 
 class A3CTrainingThread(object):
   def __init__(self,
