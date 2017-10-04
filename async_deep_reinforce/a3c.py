@@ -68,7 +68,9 @@ global_t = 0
 if cooperative:
   global_network = GameACLSTMNetwork(0, device)
 else:
-  num_threads = environ.get('num_threads')
+  num_threads = int(environ.get('num_threads'))
+  logging.info(" ".join(map(str,("num_threads", num_threads))))
+
   assert(num_threads is not None)
   global_network = []
   for i in range(1, int(num_threads)+1):
@@ -192,7 +194,7 @@ def create_training_thread(training, delay_delta):
                                           device, training, cooperative,
                                           delay_delta)
     else:
-      created_thread = A3CTrainingThread(global_thread_index, global_network[global_thread_index], initial_learning_rate,
+      created_thread = A3CTrainingThread(global_thread_index, global_network[-global_thread_index], initial_learning_rate,
                                           learning_rate_input,
                                           grad_applier, MAX_TIME_STEP,
                                           device, training, cooperative,
