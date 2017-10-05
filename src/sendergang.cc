@@ -1,3 +1,4 @@
+#include <cstdio>
 #include <algorithm>
 
 #include "sendergang.hh"
@@ -24,32 +25,13 @@ SenderGang<SenderType, SwitcherType>::SenderGang( const double mean_on_duration,
 }
 
 template <class SenderType, class SwitcherType>
-SenderGang<SenderType, SwitcherType>::SenderGang( const double mean_on_duration,
-						  const double mean_off_duration,
-						  const unsigned int num_senders,
-						  // const SenderType & exemplar,
-						  PRNG & prng,
-						  const unsigned int id_range_begin )
-  : _gang(),
-    _prng( prng ),
-    _start_distribution( 1.0 / mean_off_duration ),
-    _stop_distribution( 1.0 / mean_on_duration )
-{
-  printf("Creating %u unicorns\n", num_senders);
-  for ( unsigned int i = 0; i < num_senders; i++ ) {
-    _gang.emplace_back( i + id_range_begin,
-			_start_distribution.sample( _prng ));
-  }
-  puts("Created unicorns");   
-}
-
-template <class SenderType, class SwitcherType>
 SenderGang<SenderType, SwitcherType>::SenderGang()
   : _gang(),
     _prng( global_PRNG() ),
     _start_distribution( 1.0 ),
     _stop_distribution( 1.0 )
 {
+  // assert(false);
 }
 
 template <class SenderType, class SwitcherType>
@@ -142,7 +124,13 @@ void ByteSwitchedSender<SenderType>::switcher( const double & tickno,
     SwitchedSender<SenderType>::next_switch_tick = numeric_limits<double>::max();
 
     /* set length of flow */
-    unsigned int new_flow_length = lrint( ceil( stop_distribution.sample( prng ) ) );
+    unsigned int new_flow_length = 0;
+    if (stop_distribution.rate > 0) {
+      new_flow_length = lrint( ceil( stop_distribution.sample( prng ) ) );
+    } else {
+      new_flow_length = (unsigned int) numeric_limits<int>::max();
+      puts("Using (almost) infinite flows...");
+    }
     assert( new_flow_length > 0 );
     packets_sent_cap_ += new_flow_length;
   }
@@ -153,7 +141,6 @@ void SwitchedSender<SenderType>::switch_on( const double & tickno )
 {
   assert( !sending );
   sending = true;
-  // puts("Resetting in sendergang");
   sender.reset( tickno );
 
   /* Advance internal_tick without accumulating sending time */

@@ -101,7 +101,7 @@ Rainbow::Rainbow(const bool& cooperative) :
 	pSaveFunc = PyObject_GetAttrString(pModule, pSaveFuncName);
 }
 
-double Rainbow::get_action(const long unsigned int thread_id, const vector<double> state) {
+double Rainbow::get_action(const long unsigned int thread_id, const vector<double> state, const double& tickno, const double& window) {
 	lock_guard<mutex> guard(global_lock);
 
 	PyObject* pState = PyTuple_New(state.size());
@@ -109,7 +109,7 @@ double Rainbow::get_action(const long unsigned int thread_id, const vector<doubl
 		PyTuple_SetItem(pState, i, PyFloat_FromDouble(state[i]));
 	}
 
-	PyObject* pArgs = Py_BuildValue("(iO)", (long) thread_id, pState);
+	PyObject* pArgs = Py_BuildValue("(iOff)", (long) thread_id, pState, tickno, window);
 
 	PyObject* pActionReturnValue = PyObject_CallObject(pActionFunc, pArgs);
 	if (pActionReturnValue == NULL) {

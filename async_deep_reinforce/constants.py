@@ -3,7 +3,7 @@ import tensorflow as tf
 import logging
 import os
 
-LOCAL_T_MAX = 20 # repeat step size
+LOCAL_T_MAX = 40 # repeat step size
 RMSP_ALPHA = 0.99 # decay parameter for RMSProp
 RMSP_EPSILON = 0.1 # epsilon parameter for RMSProp
 # CHECKPOINT_DIR = 'checkpoints'
@@ -17,16 +17,16 @@ if environ.get('checkpoints') is not None:
 else:
 	CHECKPOINT_DIR = ABSOLUTE_PATH+'checkpoints'
 LOG_FILE = ABSOLUTE_PATH+'tmp/a3c_log'
-LEARNING_RATE_MULTIPLIER = 1e-2
-INITIAL_ALPHA_LOW = 1e-4*LEARNING_RATE_MULTIPLIER    # log_uniform low limit for learning rate
-INITIAL_ALPHA_HIGH = 1e-2*LEARNING_RATE_MULTIPLIER   # log_uniform high limit for learning rate
+LEARNING_RATE_MULTIPLIER = 1e-5
+INITIAL_ALPHA_LOW = 1e-2*LEARNING_RATE_MULTIPLIER    # log_uniform low limit for learning rate
+INITIAL_ALPHA_HIGH = 1.0*LEARNING_RATE_MULTIPLIER   # log_uniform high limit for learning rate
 
 PRECISION = tf.float32
 
 INITIAL_ALPHA_LOG_RATE = 0.4226 # log_uniform interpolate rate for learning rate (around 7 * 10^-4)
 GAMMA = 0.99 # discount factor for rewards
-ENTROPY_BETA = 1e-5
-STD_BIAS_OFFSET = -2
+ENTROPY_BETA = 1e-6
+STD_BIAS_OFFSET = -3
 MAX_TIME_STEP = 1e7
 # GRAD_NORM_CLIP = 40.0 # gradient norm clipping
 USE_GPU = False # To use GPU, set True

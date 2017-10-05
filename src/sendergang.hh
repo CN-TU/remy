@@ -49,16 +49,6 @@ public:
       id( s_id )
   {}
 
-  // SwitchedSender( const unsigned int s_id,
-	// 	  const double & start_tick )
-  //   : internal_tick( 0 ),
-  //     next_switch_tick( start_tick ),
-  //     sender( SenderType() ),
-  //     utility(),
-  //     sending( false ),
-  //     id( s_id )
-  // {}
-
   virtual ~SwitchedSender() {}
 };
 
@@ -121,7 +111,7 @@ public:
     SwitchedSender<SenderType>::next_switch_tick = std::numeric_limits<double>::max();
   } /* don't switch */
 
-  using SwitchedSender<SenderType>::SwitchedSender;    
+  using SwitchedSender<SenderType>::SwitchedSender;
 };
 
 template <class SenderType, class SwitcherType>

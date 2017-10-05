@@ -11,13 +11,14 @@ private:
   std::exponential_distribution<> distribution;
 
 public:
-  Exponential( const double & rate ) : distribution( rate ) {}
+  const double rate;
+  Exponential( const double & s_rate ) : distribution( s_rate ), rate(s_rate) {}
 
-  void set_lambda( const double & rate ) 
+  void set_lambda( const double & rate )
   {
   	distribution = std::exponential_distribution<> ( rate );
   }
-  
+
   double sample( PRNG & prng ) { return distribution( prng ); }
 };
 

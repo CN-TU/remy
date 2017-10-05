@@ -21,7 +21,7 @@ import logging
 
 logging.basicConfig(level=LOG_LEVEL)
 
-LOG_INTERVAL = 5
+LOG_INTERVAL = 200
 
 class A3CTrainingThread(object):
   def __init__(self,
@@ -89,23 +89,21 @@ class A3CTrainingThread(object):
       summary_inputs["window"]: things["window"],
       summary_inputs["window_increase"]: things["window_increase"],
       summary_inputs["std"]: things["std"],
-      summary_inputs["speed"]: things["speed"]
+      # summary_inputs["speed"]: things["speed"]
     })
     summary_writer.add_summary(summary_str, global_t)
     summary_writer.flush()
 
-  def action_step(self, sess, state):
+  def action_step(self, sess, state, tickno, window):
     # Run this still with the old weights, before syncing them
     # print("state", state)
 
     # print(self.thread_index, "state", state)
-
     if self.training:
       self.estimated_values.append(self.local_network.run_value(sess, state))
 
       if len(self.actions) % LOCAL_T_MAX == 0:
         self.time_differences.append(None)
-        self.windows.append(None)
         # Sync for the next iteration
         sess.run( self.sync )
         self.start_lstm_states.append(self.local_network.lstm_state_out)
@@ -117,6 +115,8 @@ class A3CTrainingThread(object):
 
     if self.training:
       self.states.append(state)
+      self.ticknos.append(tickno)
+      self.windows.append(window)
       self.actions.append(action)
       self.values.append(value_)
     # if self.local_t % LOG_INTERVAL == 0:
@@ -136,7 +136,8 @@ class A3CTrainingThread(object):
       assert(len(self.rewards) <= LOCAL_T_MAX)
       # print(len([item for item in self.actions[:LOCAL_T_MAX] if item is not None]), len(self.rewards[:LOCAL_T_MAX]))
       assert(len([item for item in self.actions[:LOCAL_T_MAX] if item is not None]) == len(self.rewards[:LOCAL_T_MAX]))
-      return self.process(sess, global_t, summary_writer, summary_op, summary_inputs, self.time_differences[0])
+      result = self.process(sess, global_t, summary_writer, summary_op, summary_inputs, self.time_differences[0])
+      return result
     else:
       return  0
 
@@ -159,8 +160,8 @@ class A3CTrainingThread(object):
       if len(self.actions) > 0:
         self.time_differences = self.time_differences[:-1]
         self.time_differences.append(time_difference)
-        self.windows = self.windows[:-1]
-        self.windows.append(window)
+        # self.windows = self.windows[:-1]
+        # self.windows.append(window)
 
         nones_to_add = [None] * ((LOCAL_T_MAX - (len(self.actions) % LOCAL_T_MAX)) % LOCAL_T_MAX)
         self.actions += nones_to_add
@@ -202,6 +203,8 @@ class A3CTrainingThread(object):
     # logging.debug(" ".join(map(str,(self.thread_index, "In process: len(rewards)", len(self.rewards), "len(durations)", len(self.durations), "len(states)", len(self.states), "len(actions)", len(self.actions), "len(values)", len(self.values)))))
 
     actions = [item for item in self.actions[:LOCAL_T_MAX] if item is not None]
+    ticknos = [item for item in self.ticknos[:LOCAL_T_MAX] if item is not None]
+    windows = [item for item in self.windows[:LOCAL_T_MAX] if item is not None]
     states = [item for item in self.states[:LOCAL_T_MAX] if item is not None]
     rewards = [item for item in self.rewards[:LOCAL_T_MAX] if item is not None]
     durations = [item for item in self.durations[:LOCAL_T_MAX] if item is not None]
@@ -302,26 +305,30 @@ class A3CTrainingThread(object):
     sess.run( self.apply_gradients,
               feed_dict = feed_dict )
 
-    if final:
-      if self.episode_count % LOG_INTERVAL == 0 and time_difference > 0:
-        normalized_final_score_throughput = self.episode_reward_throughput/time_difference
+    # print(self.thread_index, "processing")
+    if final or self.local_t % LOG_INTERVAL == 0:
+      if ticknos[-1]-ticknos[0] > 0 and self.episode_reward_throughput > 0:
+        # print(ticknos)
+        # print(self.episode_reward_throughput, ticknos[0], ticknos[-1])
+        normalized_final_score_throughput = self.episode_reward_throughput/(ticknos[-1]-ticknos[0])
         # logging.info("{}: self.episode_reward_throughput={}, time_difference={}".format(self.thread_index, self.episode_reward_throughput, time_difference))
         normalized_final_score_delay = self.episode_reward_delay/self.episode_reward_throughput
-        # logging.debug("{}: score_throughput={}, score_delay={}".format(self.thread_index, normalized_final_score_throughput, normalized_final_score_delay))
+        # print(self.windows)
+        logging.info("{}: score_throughput={}, score_delay={}".format(self.thread_index, normalized_final_score_throughput, normalized_final_score_delay))
 
         # time_difference > 0 because of a bug in Unicorn.cc that makes it possible for time_difference to be smaller than 0.
 
-        elapsed_time = time.time() - self.start_time
-        steps_per_sec = self.local_t / elapsed_time
-        logging.info("### {}: Performance: {} STEPS in {:.0f} sec. {:.0f} STEPS/sec. {:.2f}M STEPS/hour".format(self.thread_index, self.local_t, elapsed_time, steps_per_sec, steps_per_sec * 3600 / 1000000.))
+        # elapsed_time = time.time() - self.start_time
+        # steps_per_sec = self.local_t / elapsed_time
+        # logging.info("### {}: Performance: {} STEPS in {:.0f} sec. {:.0f} STEPS/sec. {:.2f}M STEPS/hour".format(self.thread_index, self.local_t, elapsed_time, steps_per_sec, steps_per_sec * 3600 / 1000000.))
 
         feed_dict = {
-          self.local_network.s: [batch_si[0]],
-          self.local_network.a: [batch_ai[0]],
-          self.local_network.td: [batch_td[0]],
-          self.local_network.r_duration: [batch_R_duration[0]],
-          self.local_network.r_packets: [batch_R_packets[0]],
-          self.local_network.r_accumulated_delay: [batch_R_accumulated_delay[0]],
+          self.local_network.s: [batch_si[-1]],
+          self.local_network.a: [batch_ai[-1]],
+          self.local_network.td: [batch_td[-1]],
+          self.local_network.r_duration: [batch_R_duration[-1]],
+          self.local_network.r_packets: [batch_R_packets[-1]],
+          self.local_network.r_accumulated_delay: [batch_R_accumulated_delay[-1]],
           self.local_network.initial_lstm_state: self.start_lstm_states[0],
           self.local_network.step_size : [1],
         }
@@ -336,27 +343,30 @@ class A3CTrainingThread(object):
           "entropy": entropy.item(),
           "total_loss": total_loss,
           "window_increase": window_increase.item(),
-          "window": self.windows[0],
+          "window": windows[-1],
           "std": std.item(),
-          "speed": steps_per_sec}
+          # "speed": steps_per_sec
+          }
         # logging.debug(" ".join(map(str,("things", things))))
         self._record_score(sess, summary_writer, summary_op, summary_inputs, things, global_t)
 
-      self.episode_count += 1
-      self.local_t = 0
+      if final:
+        self.episode_count += 1
+      # self.local_t = 0
       self.episode_reward_throughput = 0
       self.episode_reward_delay = 0
-    else:
-      self.restore_backup()
+
+    self.restore_backup()
 
     self.actions = self.actions[LOCAL_T_MAX:]
+    self.ticknos = self.ticknos[LOCAL_T_MAX:]
+    self.windows = self.windows[LOCAL_T_MAX:]
     self.states = self.states[LOCAL_T_MAX:]
     self.values = self.values[LOCAL_T_MAX:]
     self.rewards = self.rewards[LOCAL_T_MAX:]
     self.durations = self.durations[LOCAL_T_MAX:]
     self.estimated_values = self.estimated_values[LOCAL_T_MAX:]
     self.time_differences = self.time_differences[1:]
-    self.windows = self.windows[1:]
     self.start_lstm_states = self.start_lstm_states[1:]
     self.variable_snapshots = self.variable_snapshots[1:]
 

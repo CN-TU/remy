@@ -333,7 +333,11 @@ class GameACLSTMNetwork(GameACNetwork):
 
 	def run_loss(self, sess, feed_dict):
 		# We don't have to roll back the LSTM state here as it is restored in the "process" function of a3c_training_thread.py anyway and because run_loss is only called there.
- 		return sess.run( [self.entropy, self.actor_loss, self.value_loss, self.total_loss, self.distribution_mean, self.distribution_std], feed_dict = feed_dict )
+		prev_lstm_state_out = self.lstm_state_out
+		result = sess.run( [self.entropy, self.actor_loss, self.value_loss, self.total_loss, self.distribution_mean, self.distribution_std], feed_dict = feed_dict )
+		# roll back lstm state
+		self.lstm_state_out = prev_lstm_state_out
+		return result
 
 	def get_vars(self):
 		return [self.W_state_to_hidden_fc, self.b_state_to_hidden_fc,

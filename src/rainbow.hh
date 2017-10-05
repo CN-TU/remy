@@ -27,7 +27,7 @@ public:
 	static Rainbow& getInstance();
 	static Rainbow& getInstance(const bool& cooperative);
 	long unsigned int create_thread(const double& delay_delta);
-	double get_action(const long unsigned int thread_id, const std::vector<double> state);
+	double get_action(const long unsigned int thread_id, const std::vector<double> state, const double& tickno, const double& window);
 	void put_reward(const long unsigned int thread_id, const double reward_throughput, const double reward_delay, const double duration);
 	void finish(const long unsigned int thread_id, size_t actions_to_remove, const double time_difference, const double window);
 	void delete_thread(const long unsigned int thread_id);

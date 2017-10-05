@@ -192,7 +192,9 @@ void Unicorn::get_action(const double& tickno, const int& packets_sent_in_this_e
       (double) packets_sent_in_this_episode,
       (double) tickno - _last_send_time
       // (tickno - _memory._last_tick_received)/LAST_SENT_TIME_NORMALIZER,
-    }
+    },
+    tickno,
+    _the_window
   );
   // action.intersend /= 100.0;
   // printf("%lu: action is: %f, %f, %f\n", _thread_id, action.window_increment, action.window_multiple, action.intersend);

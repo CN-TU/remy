@@ -144,7 +144,7 @@ with tf.device(device):
   window = tf.placeholder(PRECISION)
   window_increase = tf.placeholder(PRECISION)
   std = tf.placeholder(PRECISION)
-  speed = tf.placeholder(PRECISION)
+  # speed = tf.placeholder(PRECISION)
   tf.summary.scalar("score_throughput", score_throughput)
   tf.summary.scalar("score_delay", score_delay)
   tf.summary.scalar("entropy", entropy)
@@ -154,7 +154,7 @@ with tf.device(device):
   tf.summary.scalar("window", window)
   tf.summary.scalar("window_increase", window_increase)
   tf.summary.scalar("std", std)
-  tf.summary.scalar("speed", speed)
+  # tf.summary.scalar("speed", speed)
   summary_inputs = {
     "score_throughput": score_throughput,
     "score_delay": score_delay,
@@ -165,7 +165,7 @@ with tf.device(device):
     "window": window,
     "window_increase": window_increase,
     "std": std,
-    "speed": speed
+    # "speed": speed
   }
 
   summary_op = tf.summary.merge_all()
@@ -217,6 +217,7 @@ def create_training_thread(training, delay_delta):
   created_thread.windows = []
   created_thread.states = []
   created_thread.actions = []
+  created_thread.ticknos = []
   created_thread.rewards = []
   created_thread.durations = []
   created_thread.values = []
@@ -232,19 +233,19 @@ def create_training_thread(training, delay_delta):
   return return_index
 
 def delete_training_thread(thread_id):
-  logging.info(" ".join(map(str,("Deleting thread with id", thread_id))))
+  # logging.info(" ".join(map(str,("Deleting thread with id", thread_id))))
   global sess, global_t, summary_writer, summary_op, summary_inputs
   idle_threads.add(thread_id)
   # del training_threads[thread_id]
 
-def call_process_action(thread_id, state):
-  logging.debug(" ".join(map(str,("call_process_action", thread_id, state))))
+def call_process_action(thread_id, state, tickno, window):
+  # logging.debug(" ".join(map(str,("call_process_action", thread_id, state, tickno))))
   global sess, global_t, summary_writer, summary_op, summary_inputs
-  chosen_action = training_threads[thread_id].action_step(sess, state)
+  chosen_action = training_threads[thread_id].action_step(sess, state, tickno, window)
   return chosen_action
 
 def call_process_reward(thread_id, reward_throughput, reward_delay, duration):
-  logging.debug(" ".join(map(str,("call_process_reward", thread_id, reward_throughput, reward_delay, duration))))
+  # logging.debug(" ".join(map(str,("call_process_reward", thread_id, reward_throughput, reward_delay, duration))))
   global sess, global_t, summary_writer, summary_op, summary_inputs
   diff_global_t = training_threads[thread_id].reward_step(sess, global_t, summary_writer, summary_op, summary_inputs, reward_throughput, reward_delay, duration)
   global_t += diff_global_t
@@ -254,7 +255,7 @@ def call_process_reward(thread_id, reward_throughput, reward_delay, duration):
     sys.exit()
 
 def call_process_finished(thread_id, actions_to_remove, time_difference, window):
-  logging.debug(" ".join(map(str,("call_process_finished", thread_id, time_difference))))
+  # logging.debug(" ".join(map(str,("call_process_finished", thread_id, time_difference))))
   global sess, global_t, summary_writer, summary_op, summary_inputs
   training_threads[thread_id].final_step(sess, global_t, summary_writer, summary_op, summary_inputs, actions_to_remove, time_difference, window)
 
