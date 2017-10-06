@@ -17,15 +17,17 @@ if environ.get('checkpoints') is not None:
 else:
 	CHECKPOINT_DIR = ABSOLUTE_PATH+'checkpoints'
 LOG_FILE = ABSOLUTE_PATH+'tmp/a3c_log'
-LEARNING_RATE_MULTIPLIER = 1e-3
-INITIAL_ALPHA_LOW = 1e-2*LEARNING_RATE_MULTIPLIER    # log_uniform low limit for learning rate
-INITIAL_ALPHA_HIGH = 1.0*LEARNING_RATE_MULTIPLIER   # log_uniform high limit for learning rate
+ACTOR_FACTOR = 1e-6
+VALUE_FACTOR = 1e0
+GENERAL_FACTOR = 1e0
+INITIAL_ALPHA_LOW = 1e-2*GENERAL_FACTOR   # log_uniform low limit for learning rate
+INITIAL_ALPHA_HIGH = 1e0*GENERAL_FACTOR   # log_uniform high limit for learning rate
 
 PRECISION = tf.float32
 
 INITIAL_ALPHA_LOG_RATE = 0.4226 # log_uniform interpolate rate for learning rate (around 7 * 10^-4)
 GAMMA = 0.99 # discount factor for rewards
-ENTROPY_BETA = 1e-5
+ENTROPY_BETA = 1e-4
 STD_BIAS_OFFSET = -2
 MAX_TIME_STEP = 1e9
 # GRAD_NORM_CLIP = 40.0 # gradient norm clipping
@@ -39,3 +41,5 @@ LAYER_NORMALIZATION = True
 
 DELAY_MULTIPLIER = 0.01
 LOG_LEVEL = logging.INFO
+
+SECONDS_NORMALIZER = 1e-2

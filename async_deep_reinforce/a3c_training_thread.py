@@ -16,6 +16,7 @@ from constants import GAMMA
 from constants import LOCAL_T_MAX
 from constants import LOG_LEVEL
 from constants import DELAY_MULTIPLIER
+from constants import SECONDS_NORMALIZER
 
 import logging
 
@@ -216,11 +217,11 @@ class A3CTrainingThread(object):
     # assert((not len(self.estimated_values) <= len(rewards)) or final)
     # print("self.estimated_values", self.estimated_values)
     # print("Spam and eggs")
-    # print(self.thread_index, "actions", self.actions, "rewards", self.rewards, "estimated_values", self.estimated_values)
     R_packets, R_accumulated_delay, R_duration = self.estimated_values[len(rewards)] if self.estimated_values[len(rewards)] is not None else self.estimated_values[len(rewards)-1]
-    # logging.info("final:"+str(final)+", "+" ".join(map(str,("R_packets", R_packets, "R_accumulated_delay", R_accumulated_delay, "R_duration", R_duration))))
 
-    # R_packets, R_accumulated_delay, R_duration = (R_packets)/(1-GAMMA), (R_accumulated_delay)/(1-GAMMA), (R_duration)/(1-GAMMA)
+    R_packets_initial, R_accumulated_delay_initial, R_duration_initial = R_packets, R_accumulated_delay, R_duration
+
+    R_packets, R_accumulated_delay, R_duration = (R_packets)/(1-GAMMA), (R_accumulated_delay)/(1-GAMMA), (R_duration)/(1-GAMMA)
     # logging.debug(" ".join(map(str,("exp(R_packets)", R_packets, "exp(R_accumulated_delay)", R_accumulated_delay, "exp(R_duration)", R_duration))))
     assert(np.isfinite(R_duration))
     assert(np.isfinite(R_packets))
@@ -243,26 +244,26 @@ class A3CTrainingThread(object):
     # compute and accmulate gradients
     for(ai, ri, di, si, Vi) in zip(actions, rewards, durations, states, values):
 
-      R_duration = (di + GAMMA*R_duration)
+      R_duration = (di*SECONDS_NORMALIZER + GAMMA*R_duration)
 
       R_packets = (ri[0] + GAMMA*R_packets)
       # TODO: In theory it should be np.log(R_bytes/R_duration) but remy doesn't have bytes
-      td = (np.log(R_packets/R_duration) - np.log(Vi[0]/Vi[2]))
+      td = (np.log(R_packets/R_duration*SECONDS_NORMALIZER) - np.log(Vi[0]/Vi[2]*SECONDS_NORMALIZER))
 
-      R_accumulated_delay = (ri[1] + GAMMA*R_accumulated_delay)
+      R_accumulated_delay = (ri[1]*SECONDS_NORMALIZER + GAMMA*R_accumulated_delay)
       # R_delay = R_accumulated_delay/R_packets
       # td_delay = -(np.log(R_accumulated_delay/R_packets/DELAY_MULTIPLIER) - np.log(Vi[1]/Vi[0]/DELAY_MULTIPLIER))
-      td -= self.delay_delta*(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+      td -= self.delay_delta*(R_accumulated_delay/R_packets/SECONDS_NORMALIZER - Vi[1]/Vi[0]/SECONDS_NORMALIZER)
       # td_delay = -(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
       batch_si.append(si)
       batch_ai.append(ai)
       batch_td.append(td)
-      batch_R_duration.append(R_duration)
+      batch_R_duration.append(R_duration*(1-GAMMA))
       # batch_R_duration.append(np.log(R_duration))
-      batch_R_packets.append(R_packets)
+      batch_R_packets.append(R_packets*(1-GAMMA))
       # batch_R_packets.append(np.log(R_packets))
-      batch_R_accumulated_delay.append(R_accumulated_delay)
+      batch_R_accumulated_delay.append(R_accumulated_delay*(1-GAMMA))
       # batch_R_accumulated_delay.append(np.log(R_accumulated_delay))
 
       # logging.debug(" ".join(map(str,("batch_td_throughput[-1]", batch_td_throughput[-1], "batch_td_delay[-1]", batch_td_delay[-1], "batch_R_packets[-1]", batch_R_packets[-1], "batch_R_accumulated_delay[-1]", batch_R_accumulated_delay[-1], "batch_R_duration[-1]", batch_R_duration[-1]))))
@@ -271,6 +272,10 @@ class A3CTrainingThread(object):
       self.episode_reward_delay += ri[1]
 
     self.local_t += len(rewards)
+
+    # if final or self.local_t % LOG_INTERVAL == 0:
+    #   print(self.thread_index, "actions", len(self.actions), "rewards", len(self.rewards), "values", len(self.values), "estimated_values", len(self.estimated_values))
+    #   print(self.thread_index, "actions", self.actions, "rewards", self.rewards, "values", self.values, "estimated_values", self.estimated_values)
 
     # return advanced local step size
     diff_local_t = self.local_t - start_local_t
@@ -315,7 +320,8 @@ class A3CTrainingThread(object):
         normalized_final_score_delay = self.episode_reward_delay/self.episode_reward_throughput
         # print(self.windows)
 
-        logging.info("{}: score_throughput={}, score_delay={}, measured throughput beginning={}, measured delay beginning={}, measured throughput end={}, measured delay end={}".format(self.thread_index, normalized_final_score_throughput, normalized_final_score_delay, batch_R_packets[0]/batch_R_duration[0], batch_R_accumulated_delay[0]/batch_R_packets[0], batch_R_packets[-1]/batch_R_duration[-1], batch_R_accumulated_delay[-1]/batch_R_packets[-1]))
+        logging.info("final:"+str(final)+", "+" ".join(map(str,("R_packets", R_packets_initial, "R_accumulated_delay", R_accumulated_delay_initial/SECONDS_NORMALIZER, "R_duration", R_duration_initial/SECONDS_NORMALIZER))))
+        logging.info("{}: score_throughput={}, score_delay={}, measured throughput beginning={}, measured delay beginning={}, measured throughput end={}, measured delay end={}".format(self.thread_index, normalized_final_score_throughput, normalized_final_score_delay, batch_R_packets[0]/batch_R_duration[0]*SECONDS_NORMALIZER, batch_R_accumulated_delay[0]/batch_R_packets[0]/SECONDS_NORMALIZER, batch_R_packets[-1]/batch_R_duration[-1]*SECONDS_NORMALIZER, batch_R_accumulated_delay[-1]/batch_R_packets[-1]/SECONDS_NORMALIZER))
 
         # time_difference > 0 because of a bug in Unicorn.cc that makes it possible for time_difference to be smaller than 0.
 

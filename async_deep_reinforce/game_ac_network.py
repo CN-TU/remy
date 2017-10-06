@@ -10,6 +10,8 @@ from constants import PRECISION
 from constants import LAYER_NORMALIZATION
 from constants import ENTROPY_BETA
 from constants import STD_BIAS_OFFSET
+from constants import ACTOR_FACTOR
+from constants import VALUE_FACTOR
 
 # tiny = np.finfo(np.float32).tiny
 tiny = 1e-20
@@ -71,7 +73,7 @@ class GameACNetwork(object):
 			# policy entropy
 			# self.entropy = ENTROPY_BETA * tf.reduce_sum(self.distribution.distribution.mean() + 0.5 * tf.log(2.0*math.pi*math.e*self.distribution.distribution.variance()), axis=1)
 			self.entropy = ENTROPY_BETA * tf.reduce_sum(0.5 * tf.log(2.0*math.pi*math.e*self.pi[1]*self.pi[1]), axis=1)
-			self.actor_loss = tf.reduce_sum(self.distribution.log_prob(self.a), axis=1) * (self.td)
+			self.actor_loss = ACTOR_FACTOR * tf.reduce_sum(self.distribution.log_prob(self.a), axis=1) * (self.td)
 			# self.actor_loss = tf.reduce_sum(tf.log(self.distribution.cdf(self.a) - self.distribution.cdf(tf.clip_by_value(self.a - 1.0, tiny, float("inf")))), axis=1) * (self.td_throughput + self.td_delay)
 
 			self.policy_loss = - tf.reduce_sum(self.actor_loss + self.entropy)
@@ -85,7 +87,7 @@ class GameACNetwork(object):
 			# (Learning rate for Critic is half of Actor's, so multiply by 0.5)
 			# TODO: Why is the learning rate half of the Actor's? Sources?
 			# self.value_loss = 0.5 * (tf.nn.l2_loss(self.r_packets - self.v_packets) + tf.nn.l2_loss(self.r_accumulated_delay - self.v_accumulated_delay) + tf.nn.l2_loss(self.r_duration - self.v_duration))
-			self.value_loss = (tf.nn.l2_loss(self.r_packets - self.v_packets) + tf.nn.l2_loss(self.r_accumulated_delay - self.v_accumulated_delay) + tf.nn.l2_loss(self.r_duration - self.v_duration))
+			self.value_loss = VALUE_FACTOR * (tf.nn.l2_loss(self.r_packets - self.v_packets) + tf.nn.l2_loss(self.r_accumulated_delay - self.v_accumulated_delay) + tf.nn.l2_loss(self.r_duration - self.v_duration))
 
 			# gradient of policy and value are summed up
 			self.total_loss = self.policy_loss + self.value_loss
@@ -222,7 +224,7 @@ class GameACLSTMNetwork(GameACNetwork):
 			self.lstm = tf.contrib.rnn.MultiRNNCell([GameACLSTMNetwork.create_cell(HIDDEN_SIZE, LAYER_NORMALIZATION) for i in range(N_LSTM_LAYERS)], state_is_tuple=True)
 
 			# weight for policy output layer
-			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=0.01, bias_offset=0, bias_range=(0, 0))
+			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=0.01, bias_range=(0, 0))
 			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=1.0, bias_offset=STD_BIAS_OFFSET)
 
 			# weight for value output layer
