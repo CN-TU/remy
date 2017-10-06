@@ -161,14 +161,14 @@ class GameACNetwork(object):
 
 	# weight initialization based on muupan's code
 	# https://github.com/muupan/async-rl/blob/master/a3c_ale.py
-	def _fc_variable(self, weight_shape, factor=1.0, bias_offset=0):
+	def _fc_variable(self, weight_shape, factor=1.0, bias_offset=0, bias_range=(-float("inf"), float("inf"))):
 		input_channels  = weight_shape[0]
 		output_channels = weight_shape[1]
 		d = 1.0 / np.sqrt(input_channels)
 		d *= factor
 		bias_shape = [output_channels]
 		weight = tf.Variable(tf.random_uniform(weight_shape, minval=-d, maxval=d, dtype=PRECISION))
-		bias   = tf.Variable(tf.random_uniform(bias_shape, minval=-d+bias_offset, maxval=d+bias_offset, dtype=PRECISION))
+		bias   = tf.Variable(tf.random_uniform(bias_shape, minval=max(-d+bias_offset, bias_range[0]), maxval=min(d+bias_offset, bias_range[1]), dtype=PRECISION))
 		return weight, bias
 
 def lstm_state_tuple(use_np=False):
@@ -222,7 +222,7 @@ class GameACLSTMNetwork(GameACNetwork):
 			self.lstm = tf.contrib.rnn.MultiRNNCell([GameACLSTMNetwork.create_cell(HIDDEN_SIZE, LAYER_NORMALIZATION) for i in range(N_LSTM_LAYERS)], state_is_tuple=True)
 
 			# weight for policy output layer
-			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=0.01)
+			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=0.01, bias_offset=0, bias_range=(0, 0))
 			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=1.0, bias_offset=STD_BIAS_OFFSET)
 
 			# weight for value output layer

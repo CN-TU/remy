@@ -218,9 +218,9 @@ class A3CTrainingThread(object):
     # print("Spam and eggs")
     # print(self.thread_index, "actions", self.actions, "rewards", self.rewards, "estimated_values", self.estimated_values)
     R_packets, R_accumulated_delay, R_duration = self.estimated_values[len(rewards)] if self.estimated_values[len(rewards)] is not None else self.estimated_values[len(rewards)-1]
-    # logging.debug("final:"+str(final)+", "+" ".join(map(str,("R_packets", R_packets, "R_accumulated_delay", R_accumulated_delay, "R_duration", R_duration))))
+    # logging.info("final:"+str(final)+", "+" ".join(map(str,("R_packets", R_packets, "R_accumulated_delay", R_accumulated_delay, "R_duration", R_duration))))
 
-    R_packets, R_accumulated_delay, R_duration = (R_packets)/(1-GAMMA), (R_accumulated_delay)/(1-GAMMA), (R_duration)/(1-GAMMA)
+    # R_packets, R_accumulated_delay, R_duration = (R_packets)/(1-GAMMA), (R_accumulated_delay)/(1-GAMMA), (R_duration)/(1-GAMMA)
     # logging.debug(" ".join(map(str,("exp(R_packets)", R_packets, "exp(R_accumulated_delay)", R_accumulated_delay, "exp(R_duration)", R_duration))))
     assert(np.isfinite(R_duration))
     assert(np.isfinite(R_packets))
@@ -258,11 +258,11 @@ class A3CTrainingThread(object):
       batch_si.append(si)
       batch_ai.append(ai)
       batch_td.append(td)
-      batch_R_duration.append(R_duration*(1-GAMMA))
+      batch_R_duration.append(R_duration)
       # batch_R_duration.append(np.log(R_duration))
-      batch_R_packets.append(R_packets*(1-GAMMA))
+      batch_R_packets.append(R_packets)
       # batch_R_packets.append(np.log(R_packets))
-      batch_R_accumulated_delay.append(R_accumulated_delay*(1-GAMMA))
+      batch_R_accumulated_delay.append(R_accumulated_delay)
       # batch_R_accumulated_delay.append(np.log(R_accumulated_delay))
 
       # logging.debug(" ".join(map(str,("batch_td_throughput[-1]", batch_td_throughput[-1], "batch_td_delay[-1]", batch_td_delay[-1], "batch_R_packets[-1]", batch_R_packets[-1], "batch_R_accumulated_delay[-1]", batch_R_accumulated_delay[-1], "batch_R_duration[-1]", batch_R_duration[-1]))))
@@ -277,7 +277,7 @@ class A3CTrainingThread(object):
 
     cur_learning_rate = self._anneal_learning_rate(global_t)
 
-    # logging.debug(" ".join(map(str,("All the batch stuff", "batch_si", batch_si, "batch_ai", batch_ai, "batch_td_throughput", batch_td_throughput, "batch_td_delay", batch_td_delay,"batch_R_packets", batch_R_packets, "batch_R_accumulated_delay", batch_R_accumulated_delay, "batch_R_duration", batch_R_duration))))
+    # logging.debug(" ".join(map(str,("All the batch stuff", "batch_si", batch_si, "batch_ai", batch_ai,"batch_R_packets", batch_R_packets, "batch_R_accumulated_delay", batch_R_accumulated_delay, "batch_R_duration", batch_R_duration))))
 
     self.backup_vars()
 
@@ -314,7 +314,8 @@ class A3CTrainingThread(object):
         # logging.info("{}: self.episode_reward_throughput={}, time_difference={}".format(self.thread_index, self.episode_reward_throughput, time_difference))
         normalized_final_score_delay = self.episode_reward_delay/self.episode_reward_throughput
         # print(self.windows)
-        logging.info("{}: score_throughput={}, score_delay={}".format(self.thread_index, normalized_final_score_throughput, normalized_final_score_delay))
+
+        logging.info("{}: score_throughput={}, score_delay={}, measured throughput beginning={}, measured delay beginning={}, measured throughput end={}, measured delay end={}".format(self.thread_index, normalized_final_score_throughput, normalized_final_score_delay, batch_R_packets[0]/batch_R_duration[0], batch_R_accumulated_delay[0]/batch_R_packets[0], batch_R_packets[-1]/batch_R_duration[-1], batch_R_accumulated_delay[-1]/batch_R_packets[-1]))
 
         # time_difference > 0 because of a bug in Unicorn.cc that makes it possible for time_difference to be smaller than 0.
 
