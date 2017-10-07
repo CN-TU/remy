@@ -170,7 +170,7 @@ class GameACNetwork(object):
 		d *= factor
 		bias_shape = [output_channels]
 		weight = tf.Variable(tf.random_uniform(weight_shape, minval=-d, maxval=d, dtype=PRECISION))
-		bias   = tf.Variable(tf.random_uniform(bias_shape, minval=max(-d+bias_offset, bias_range[0]), maxval=min(d+bias_offset, bias_range[1]), dtype=PRECISION))
+		bias   = tf.Variable(tf.random_uniform(bias_shape, minval=max(-d, bias_range[0])+bias_offset, maxval=min(d, bias_range[1])+bias_offset, dtype=PRECISION))
 		return weight, bias
 
 def lstm_state_tuple(use_np=False):
@@ -224,7 +224,7 @@ class GameACLSTMNetwork(GameACNetwork):
 			self.lstm = tf.contrib.rnn.MultiRNNCell([GameACLSTMNetwork.create_cell(HIDDEN_SIZE, LAYER_NORMALIZATION) for i in range(N_LSTM_LAYERS)], state_is_tuple=True)
 
 			# weight for policy output layer
-			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=1e-4, bias_range=(0, 0))
+			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=1e-4, bias_range=(0, 0), bias_offset=1e-3)
 			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=1.0, bias_offset=STD_BIAS_OFFSET)
 
 			# weight for value output layer
