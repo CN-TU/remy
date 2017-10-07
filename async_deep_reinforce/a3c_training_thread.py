@@ -15,7 +15,6 @@ from constants import GAMMA
 # gamma_current, gamma_future = 1./(1+GAMMA), GAMMA/(1.+GAMMA)
 from constants import LOCAL_T_MAX
 from constants import LOG_LEVEL
-from constants import DELAY_MULTIPLIER
 from constants import SECONDS_NORMALIZER
 
 import logging
