@@ -19,7 +19,7 @@ else:
 LOG_FILE = ABSOLUTE_PATH+'tmp/a3c_log'
 ACTOR_FACTOR = 1e-2
 VALUE_FACTOR = 1e0
-GENERAL_FACTOR = 1e-2
+GENERAL_FACTOR = 1e-3
 INITIAL_ALPHA_LOW = 1e-2*GENERAL_FACTOR   # log_uniform low limit for learning rate
 INITIAL_ALPHA_HIGH = 1e0*GENERAL_FACTOR   # log_uniform high limit for learning rate
 
