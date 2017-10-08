@@ -210,6 +210,17 @@ class A3CTrainingThread(object):
     durations = [item for item in self.durations[:LOCAL_T_MAX] if item is not None]
     values = [item for item in self.values[:LOCAL_T_MAX] if item is not None]
 
+    assert(len(actions) > 0)
+    assert(len(ticknos) > 0)
+    assert(len(windows) > 0)
+    assert(len(states) > 0)
+    assert(len(rewards) > 0)
+    assert(len(durations) > 0)
+    assert(len(values) > 0)
+    if not (len(actions) == len(ticknos) == len(windows) == len(states) == len(rewards) == len(durations) == len(values)):
+      print(actions, ticknos, windows, states, rewards, durations, values)
+    assert(len(actions) == len(ticknos) == len(windows) == len(states) == len(rewards) == len(durations) == len(values))
+
     # logging.debug(" ".join(map(str,(self.thread_index, "In process: rewards", rewards, "durations", durations, "states", states, "actions", actions, "values", values))))
 
     # get estimated value of step n+1
@@ -309,7 +320,8 @@ class A3CTrainingThread(object):
     sess.run( self.apply_gradients,
               feed_dict = feed_dict )
 
-    # print(self.thread_index, "processing")
+    # if len(ticknos) == 0:
+    #   print(self.thread_index, "actions", self.actions, "rewards", self.rewards, "values", self.values, "estimated_values", self.estimated_values, "ticknos", self.ticknos)
     if final or self.local_t % LOG_INTERVAL == 0:
       if ticknos[-1]-ticknos[0] > 0 and self.episode_reward_throughput > 0:
         # print(ticknos)
