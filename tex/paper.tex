@@ -156,7 +156,7 @@ Partial Action Actor Critic Learning (PAL) is a modification of the Asynchronous
 \subsection{Algorithm}
 \label{subsec:alg}
 
-In \autoref{alg:pal} we show the code that runs in one of the learning threads. As proposed in literature, we use several concurrent thread to improve training performance. A major difference to previous approaches to reinforcement learning is the fact that we allow more actions to be taken before the previous actions' rewards have been received. In classical reinforcement learning, an action is always followed by a reward and a reward is always followed by a action. In our proposed concept, however, it is possible to take new actions while the previous action hasn't received its reward yet.
+In \autoref{alg:pal} we show the code that runs in one of the learning threads. As proposed in literature, we use several concurrent threads to improve training performance. A major difference to previous approaches to reinforcement learning is the fact that we allow more actions to be taken before the previous actions' rewards have been received. In classical reinforcement learning, an action is always followed by a reward and a reward is always followed by a action. In our proposed concept, however, it is possible to take new actions while the previous action hasn't received its reward yet.
 
 \begin{figure}
 \begin{minipage}{\columnwidth}
@@ -166,7 +166,7 @@ In \autoref{alg:pal} we show the code that runs in one of the learning threads. 
 \end{minipage}
 \end{figure}
 
-Another major difference in PAL is that one action generates a number of partial actions ($\geq 1$) (see \autoref{fig:pal}). Each partial action generates feedback upon interacting with the environment. Upon receiving feedback for a partial action, the agent determines the current state and triggers a new action. When all partial rewards of one action were received, the agent combines them to form the reward and updates the value and actor networks (see \autoref{alg:grad}).
+Another major difference in PAL is that one action generates a number of partial actions ($\geq 0$) (see \autoref{fig:pal}). Each partial action generates feedback upon interacting with the environment. Upon receiving feedback for a partial action, the agent determines the current state and triggers a new action. When all partial rewards of one action were received, the agent combines them to form the reward and updates the value and actor networks (see \autoref{alg:grad}).
 
 \begin{figure}
 \begin{minipage}{\columnwidth}
@@ -333,7 +333,7 @@ In the following a time step $t$ corresponds to the reception of an acknowledgem
 
 \begin{description}
 \item[$\textit{s}_\text{t}$] The state  describes the current ``congestion state''. Various features that indicate congestion are included in it. Each time an acknowledgement is received, the state is updated and the actor network is asked for the next action. 
-\item[$\textit{a}_\text{t}$] Based on a given state and the history of previous states, the actor network returns an action $a_t$, which is an integer ($\geq 1$) that stands for the congestion window to be used until the next acknowledgement is received. 
+\item[$\textit{a}_\text{t}$] Based on a given state and the history of previous states, the actor network returns an action $a_t$, which is a real number ($\geq 1$) that stands for the congestion window to be used until the next acknowledgement is received. 
 \item[$\textit{r}_\text{t}$] The reward is a tuple of at least one reward metric. These are discussed in more detail in \autoref{subsec:value}
 \item[$\textit{v}_\text{t}$] The value is a tuple of the expected average reward estimated by the value network (see \autoref{subsec:value}) for each of the reward metrics. 
 \end{description}
@@ -392,7 +392,7 @@ l_{\text{a},t} =& -\log \left( \pi \left( a_t \given s_t ; \theta_\text{a} \righ
 \item Sample an increase for the congestion window from the Actor Network (e.g. $0.24$) and add it to the current congestion window.
 \item 
 \begin{enumerate}
-\item If this was the last ACK, which completes a previous action (e.g. a previous action resulted in $3$ packets being sent; so if this is the ACK for the third (and last) packet of this previous action we got all the ACKs to compute the reward. )
+\item If this was the last ACK, which completes a previous action (e.g. a previous action resulted in $3$ packets being sent; so if this is the ACK for the third (and last) packet of this previous action we got all the ACKs to compute the reward.)
 \item If we now have $t_{max}$ rewards (set to 20) then we also update the neural network. 
 \end{enumerate}
 
