@@ -17,9 +17,9 @@ if environ.get('checkpoints') is not None:
 else:
 	CHECKPOINT_DIR = ABSOLUTE_PATH+'checkpoints'
 LOG_FILE = ABSOLUTE_PATH+'tmp/a3c_log'
-ACTOR_FACTOR = 1e0
+ACTOR_FACTOR = 1e-1
 VALUE_FACTOR = 1e0
-GENERAL_FACTOR = 1e-6
+GENERAL_FACTOR = 1e-4
 INITIAL_ALPHA_LOW = 1e-2*GENERAL_FACTOR   # log_uniform low limit for learning rate
 INITIAL_ALPHA_HIGH = 1e0*GENERAL_FACTOR   # log_uniform high limit for learning rate
 
@@ -33,6 +33,11 @@ MAX_TIME_STEP = 1e9
 # GRAD_NORM_CLIP = 40.0 # gradient norm clipping
 USE_GPU = False # To use GPU, set True
 N_LSTM_LAYERS = 3
+
+DELAY = 150*SECONDS_NORMALIZER
+PACKETS_BIAS_OFFSET = 1
+DELAY_BIAS_OFFSET = DELAY
+INTER_PACKET_ARRIVAL_TIME_OFFSET = 1.0/DELAY
 
 STATE_SIZE = 11
 HIDDEN_SIZE = 256
