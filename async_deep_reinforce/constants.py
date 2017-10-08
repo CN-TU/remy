@@ -41,7 +41,8 @@ def inverse_softplus(x):
 SECONDS_NORMALIZER = 1e-2
 
 DELAY = 150*SECONDS_NORMALIZER
-PACKETS_inverse_softplus(BIAS_OFFSET = 1)
+BIAS_OFFSET = 1
+PACKETS_BIAS_OFFSET = inverse_softplus(BIAS_OFFSET)
 DELAY_BIAS_OFFSET = inverse_softplus(DELAY)
 INTER_PACKET_ARRIVAL_TIME_OFFSET = inverse_softplus(1.0/DELAY)
 
