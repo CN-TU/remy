@@ -21,7 +21,7 @@ import logging
 
 logging.basicConfig(level=LOG_LEVEL)
 
-LOG_INTERVAL = 200
+LOG_INTERVAL = 100
 
 class A3CTrainingThread(object):
   def __init__(self,
@@ -168,6 +168,8 @@ class A3CTrainingThread(object):
         self.states += nones_to_add
         self.values += nones_to_add
         self.estimated_values += nones_to_add
+        self.windows += nones_to_add
+        self.ticknos += nones_to_add
       # TODO: Is this useful? I guess only the `local_t' is actually needed...
       elif len(self.actions) <= 0:
         self.episode_count += 1
@@ -218,8 +220,15 @@ class A3CTrainingThread(object):
     assert(len(durations) > 0)
     assert(len(values) > 0)
     if not (len(actions) == len(ticknos) == len(windows) == len(states) == len(rewards) == len(durations) == len(values)):
+      print(len(self.actions), len(self.ticknos), len(self.windows), len(self.states), len(self.rewards), len(self.durations), len(self.values))
+      print(len(actions), len(ticknos), len(windows), len(states), len(rewards), len(durations), len(values))
+      print(self.actions, self.ticknos, self.windows, self.states, self.rewards, self.durations, self.values)
       print(actions, ticknos, windows, states, rewards, durations, values)
     assert(len(actions) == len(ticknos) == len(windows) == len(states) == len(rewards) == len(durations) == len(values))
+
+    assert(len(self.actions) == len(self.ticknos) == len(self.windows) == len(self.states) == len(self.values) == len(self.estimated_values))
+    assert(len(self.rewards) == len(self.durations))
+    assert(len(self.time_differences) == len(self.start_lstm_states) == len(self.variable_snapshots))
 
     # logging.debug(" ".join(map(str,(self.thread_index, "In process: rewards", rewards, "durations", durations, "states", states, "actions", actions, "values", values))))
 
