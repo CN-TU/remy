@@ -289,7 +289,7 @@ is the actor loss that we try to minimize.
 
   \begin{scope}
     \node [place,tokens=1] (s1) [label=Received feedback] {};
-    \node [place] (s2) [below of=s1, label=Network] {};
+    \node [place, (s2) [below of=s1, label=Network] {};
     \node [place,tokens=1] (s3) [below of=s2, label={[align=center]below:Open\\congestion\\window}] {};
       
     \node [transition] (e2) [left of=s2, label=left:Take action] {}

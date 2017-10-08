@@ -231,9 +231,9 @@ class GameACLSTMNetwork(GameACNetwork):
 			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=1.0, bias_offset=STD_BIAS_OFFSET)
 
 			# weight for value output layer
-			self.W_hidden_to_value_packets_fc, self.b_hidden_to_value_packets_fc = self._fc_variable([HIDDEN_SIZE, 1], bias_range=(0, 0), bias_offset=PACKETS_BIAS_OFFSET)
-			self.W_hidden_to_value_delay_fc, self.b_hidden_to_value_delay_fc = self._fc_variable([HIDDEN_SIZE, 1], bias_range=(0, 0), bias_offset=DELAY_BIAS_OFFSET)
-			self.W_hidden_to_value_duration_fc, self.b_hidden_to_value_duration_fc = self._fc_variable([HIDDEN_SIZE, 1], bias_range=(0, 0), bias_offset=INTER_PACKET_ARRIVAL_TIME_OFFSET)
+			self.W_hidden_to_value_packets_fc, self.b_hidden_to_value_packets_fc = self._fc_variable([HIDDEN_SIZE, 1], bias_offset=PACKETS_BIAS_OFFSET)
+			self.W_hidden_to_value_delay_fc, self.b_hidden_to_value_delay_fc = self._fc_variable([HIDDEN_SIZE, 1], bias_offset=DELAY_BIAS_OFFSET)
+			self.W_hidden_to_value_duration_fc, self.b_hidden_to_value_duration_fc = self._fc_variable([HIDDEN_SIZE, 1], bias_offset=INTER_PACKET_ARRIVAL_TIME_OFFSET)
 
 			# state (input)
 			self.s = tf.placeholder(PRECISION, [None, STATE_SIZE])
