@@ -2,6 +2,7 @@
 import tensorflow as tf
 import logging
 import os
+import math
 
 LOCAL_T_MAX = 20 # repeat step size
 RMSP_ALPHA = 0.99 # decay parameter for RMSProp
@@ -34,10 +35,15 @@ MAX_TIME_STEP = 1e9
 USE_GPU = False # To use GPU, set True
 N_LSTM_LAYERS = 3
 
+def inverse_softplus(x):
+	return math.log(math.exp(x) - 1)
+
+SECONDS_NORMALIZER = 1e-2
+
 DELAY = 150*SECONDS_NORMALIZER
-PACKETS_BIAS_OFFSET = 1
-DELAY_BIAS_OFFSET = DELAY
-INTER_PACKET_ARRIVAL_TIME_OFFSET = 1.0/DELAY
+PACKETS_inverse_softplus(BIAS_OFFSET = 1)
+DELAY_BIAS_OFFSET = inverse_softplus(DELAY)
+INTER_PACKET_ARRIVAL_TIME_OFFSET = inverse_softplus(1.0/DELAY)
 
 STATE_SIZE = 11
 HIDDEN_SIZE = 256
@@ -45,5 +51,3 @@ HIDDEN_SIZE = 256
 LAYER_NORMALIZATION = True
 
 LOG_LEVEL = logging.INFO
-
-SECONDS_NORMALIZER = 1e-2
