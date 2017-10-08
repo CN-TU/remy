@@ -38,7 +38,7 @@ N_LSTM_LAYERS = 3
 def inverse_softplus(x):
 	return math.log(math.exp(x) - 1)
 
-SECONDS_NORMALIZER = 1e-2
+SECONDS_NORMALIZER = 1
 
 DELAY = 150*SECONDS_NORMALIZER
 BIAS_OFFSET = 1
