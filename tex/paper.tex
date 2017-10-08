@@ -6,7 +6,7 @@
 \usepackage{algpseudocode}
 \usepackage{algorithm}
 
-\usepackage{todonotes}
+%\usepackage{todonotes}
 \usepackage{svg}
 
 \def\xcolorversion{2.00}
@@ -15,6 +15,9 @@
 \usepackage{pgf}
 \usepackage{tikz}
 \usetikzlibrary{arrows,shapes,snakes,automata,backgrounds,petri}
+
+\newcommand\note[2]{{\color{#1}#2}}
+\newcommand\todo[1]{{\note{red}{TODO: #1}}}
 
 \newcommand*{\fullref}[1]{\hyperref[{#1}]{\autoref*{#1} (\nameref*{#1})}} % One single link
 
@@ -174,7 +177,7 @@ Another major difference in PAL is that one action generates a number of partial
 \end{figure}
 
 \begin{algorithm}
-\caption{Partial Action Actor Critic Learning -- pseudocode for each learning thread. Only $\theta_{\text{a},\text{g}}$ and $\theta_{\text{v},\text{g}}$ are shared between the threads. They are initialized randomly in the beginning.}
+\caption{Partial Action Actor Critic Learning -- pseudocode for each learning thread. Only $\theta_{\text{a},\text{g}}$ and $\theta_{\text{v},\text{g}}$ are shared between the threads. They are initialized randomly in the beginning. \todo{Update algorithm}}
 \label{alg:pal}
 \begin{algorithmic}[1]
 \Loop
@@ -278,7 +281,10 @@ is the actor loss that we try to minimize.
 
 \begin{figure}
 
-\begin{tikzpicture}[node distance=2cm,>=stealth',bend angle=45,auto]
+\newcommand{\nodedistance}{2}
+\newcommand{\nd}[1]{\numexpr #1 * \nodedistance \relax}
+
+\begin{tikzpicture}[node distance=\nodedistance,>=stealth',bend angle=45,auto]
 
   \tikzstyle{place}=[circle,thick,draw=blue!75,fill=blue!20,minimum size=6mm]
   \tikzstyle{red place}=[place,draw=red!75,fill=red!20]
@@ -288,24 +294,36 @@ is the actor loss that we try to minimize.
 %  \tikzstyle{every label}=[blue!75]
 
   \begin{scope}
-    \node [place,tokens=1] (s1) [label=Received feedback] {};
-    \node [place, (s2) [below of=s1, label=Network] {};
-    \node [place,tokens=1] (s3) [below of=s2, label={[align=center]below:Open\\congestion\\window}] {};
-      
-    \node [transition] (e2) [left of=s2, label=left:Take action] {}
-      edge [post,bend right] node {$a$}(s3)
-      edge [pre,bend left] node {1} (s1);      
+    \node [place,tokens=1] (s1) at (\nd{1}, \nd{3}) [label=Received feedback] {};
+    \node [place] (s2) at (\nd{1}, \nd{2}) [label={[align=center]left:Received\\ACKs}] {};
+    \node [place] (s3) at (\nd{3}, \nd{2}) [label={[align=center]above:Packets\\in the\\network}] {};
+    \node [place,tokens=1] (s4) at (\nd{1}, \nd{0}) [label={[align=center]below:Open\\congestion\\window\\(cwnd)}] {};      
+
+    \node [transition] (e1) at (\nd{0}, \nd{1}) [label=left:Take action] {}
+      edge [post,bend right] node {$a$}(s4)
+      edge [pre,bend left] node {1} (s1);    
      
-    \node [transition] (e1) at (4,2) [label={[align=left]right:Send packet \& \\ receive ACK}] {}
-      edge [pre,bend left] node {1} (s2)
-      edge [post,bend right] node {1} (s2)
-      edge [post, bend right] node {1} (s1);
+    \node [transition] (e2) at (\nd{2}, \nd{1}) [label=Send packet] {}
+      edge [pre,bend left] node {1} (s4)
+      edge [post,bend right] node {1} (s3);
+
+    \node [transition] (e3) at (\nd{2}, \nd{2}) [label=below:Receive ACK] {}
+      edge [pre] node {1} (s3)
+      edge [post] node {1} (s2);
+
+    \node [transition] (e4) at (\nd{1}, \nd{1}) [label={[align=center]left:Update\\open\\cwnd}] {}
+      edge [pre] node {1} (s2)
+      edge [post] node {1} (s4);
+      
+    \node [transition] (e5) at (\nd{2}, \nd{3}) [label={[align=center]right:Receive feedback}] {}
+      edge [pre, bend left] node {1} (s2)
+      edge [post] node {1} (s1);
 
   \end{scope}
 
 \end{tikzpicture}
 
-\caption{A petri net describing the congestion control mechanism. We start with one token in the state \textit{open congestion window}, which means that initially we can send one packet. We start with another token in the state \textit{Received feedback}, which means that we can take an action right in the beginning. The concept is the following: If there is at least one token in the \textit{open congestion window}, send a packet. The acknowledgement (or timeout if the packet gets lost) for the packet is received by the \textit{open congestion window}, meaning that when we get an ACK we can send another packet (The \textit{open congestion window} signifies the congestion window minus the packets that are currently unacknowledged.). Furthermore the state \textit{Received feedback} receives each ACK/timeout and takes an action. \textit{Take action} adds \textit{a} tokens to the \textit{open congestion window}, where $a$ is a real number (possibly also negative); thus in each state there can also be a real number of tokens (e.g.~ 2.34 tokens are possible in the \textit{open congestion window}). However, we define that the congestion window can never be smaller than 1.}
+\caption{A petri net describing the congestion control mechanism. We start with one token in the state \textit{Open congestion window}, which means that initially we can send one packet. We start with another token in the state \textit{Received feedback}, which means that we can take an action right in the beginning. The concept is the following: If there is at least one token in the \textit{Open congestion window}, send a packet. The acknowledgement (or timeout if the packet gets lost) for the packet is received by the \textit{Open congestion window}, meaning that when we get an ACK we can send another packet (The \textit{Open congestion window} signifies the congestion window minus the packets that are currently unacknowledged.). Furthermore the state \textit{Received feedback} receives each ACK/timeout and takes an action. \textit{Take action} adds \textit{a} tokens to the \textit{Open congestion window}, where $a$ is a real number (possibly also negative); thus in each state there can also be a real number of tokens (e.g.~ 2.34 tokens are possible in the \textit{Open congestion window}). However, we define that the congestion window can never be smaller than 1. \todo{Draw as 3 times 3 square}}
 \label{fig:petri}
 \end{figure}
 
@@ -362,9 +380,27 @@ $a_t$ is the sampled value $X$ at time $t$ and the window is incremented by $a_t
 With $H$ being the entropy, the actor network minimizes the loss
 \begin{align*}
 l_{\text{a},t} =& -\log \left( \pi \left( a_t \given s_t ; \theta_\text{a} \right) \right)\\
-&\left( \left(\frac{R_{\text{byte},t}}{{R_{\text{duration},t}}} - \frac{v_{\text{byte},t}}{{v_{\text{duration},t}}}\right) - \left( \frac{R_{\text{delay},t}}{{R_{\text{packet},t}}}- \frac{v_{\text{delay},t}}{{v_{\text{packet},t}}} \right)\right)\\ 
+&\left( \left(\log\left(\frac{R_{\text{byte},t}}{{R_{\text{duration},t}}}\right) - \log\left(\frac{v_{\text{byte},t}}{{v_{\text{duration},t}}}\right)\right) - \left( \frac{R_{\text{delay},t}}{{R_{\text{packet},t}}}- \frac{v_{\text{delay},t}}{{v_{\text{packet},t}}} \right)\right)\\ 
 &+ \beta H\left( \pi\left( s_t; \theta_a \right)\right).
 \end{align*}
+ 
+\subsection{Example}
+
+\begin{enumerate}
+\item Receive an ACK
+\item Update the internal state to reflect the information that this ACK provides (for example, the state consists of the round trip time experienced by this packet, the time since we receive the last ACK etc.)
+\item Sample an increase for the congestion window from the Actor Network (e.g. $0.24$) and add it to the current congestion window.
+\item 
+\begin{enumerate}
+\item If this was the last ACK, which completes a previous action (e.g. a previous action resulted in $3$ packets being sent; so if this is the ACK for the third (and last) packet of this previous action we got all the ACKs to compute the reward. )
+\item If we now have $t_{max}$ rewards (set to 20) then we also update the neural network. 
+\end{enumerate}
+
+\end{enumerate}
+
+\subsection{Convergence}
+
+\todo{Add formulas which ensures convergence.}
  
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{congestion}
