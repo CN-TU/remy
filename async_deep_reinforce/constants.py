@@ -4,6 +4,9 @@ import logging
 import os
 import math
 
+def inverse_softplus(x):
+	return math.log(math.exp(x) - 1)
+
 LOCAL_T_MAX = 20 # repeat step size
 RMSP_ALPHA = 0.99 # decay parameter for RMSProp
 RMSP_EPSILON = 0.1 # epsilon parameter for RMSProp
@@ -29,22 +32,23 @@ PRECISION = tf.float32
 INITIAL_ALPHA_LOG_RATE = 0.4226 # log_uniform interpolate rate for learning rate (around 7 * 10^-4)
 GAMMA = 0.99 # discount factor for rewards
 ENTROPY_BETA = 1e-4
-STD_BIAS_OFFSET = -1
-MAX_TIME_STEP = 1e7
+STD_BIAS_OFFSET = inverse_softplus(0.3)
+MAX_TIME_STEP = 1e6
 # GRAD_NORM_CLIP = 40.0 # gradient norm clipping
 USE_GPU = False # To use GPU, set True
 N_LSTM_LAYERS = 3
 
-def inverse_softplus(x):
-	return math.log(math.exp(x) - 1)
-
 SECONDS_NORMALIZER = 1e-2
 
-DELAY = 150*SECONDS_NORMALIZER
+DELAY = 100*SECONDS_NORMALIZER
 BIAS_OFFSET = 1
 PACKETS_BIAS_OFFSET = inverse_softplus(BIAS_OFFSET)
 DELAY_BIAS_OFFSET = inverse_softplus(DELAY)
 INTER_PACKET_ARRIVAL_TIME_OFFSET = inverse_softplus(1.0/DELAY)
+
+PACKETS_BIAS_OFFSET = 0
+DELAY_BIAS_OFFSET = 0
+INTER_PACKET_ARRIVAL_TIME_OFFSET = 0
 
 STATE_SIZE = 11
 HIDDEN_SIZE = 256

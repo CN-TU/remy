@@ -400,7 +400,52 @@ l_{\text{a},t} =& -\log \left( \pi \left( a_t \given s_t ; \theta_\text{a} \righ
 
 \subsection{Convergence}
 
-\todo{Add formulas which ensures convergence.}
+We use 
+
+\begin{align*}
+\text{Reward} = \log(\text{throughput}) - \delta\text{delay}
+\end{align*}
+
+as our metric of reward, where $\delta$ is a parameter that allows us to change the importance of the throughput vs.~the delay. We take the logarithm of the throughput to ensure that flows which have small throughput have a higher incentive to increase it as flows which already have a large one (because the derivative of the logarithm decreases with increasing value). We take minus the delay to punish inducing delay. We do not take the logarithm because we think that it is equally bad if a sender behind a satellite connection with a minimum RTT of $500\,$ms adds $1\,$ms of delay as if a sender connected using Ethernet with a minimum RTT of $10\,$ms adds $1\,$ms of delay. 
+
+There are two conditions that we have to take into account to ensure convergence:
+\begin{enumerate}
+\item \begin{align*}
+\left(\frac{\partial}{\partial w}\text{throughput}\right)\left(1\right) > \left(\frac{\partial}{\partial w}\delta\text{delay}\right)\left(1\right)
+\end{align*}
+\item \begin{align*}
+\frac{\partial}{\partial w}\left(\delta\right)
+\end{align*}
+\end{enumerate}
+
+\todo{Finish second constraint for convergence.}
+
+\todo{Add figure to visually explain that}
+ 
+\section{Results}
+
+We train on the following scenario:
+ 
+\begin{table}[h]
+\centering
+\begin{tabular}{rll}
+\toprule
+Parameter & Value & Distribution \\
+\midrule
+Two-way propagation delay & $100\,$ms & constant \\
+Bottleneck bandwidth & $3\,$Mbit/s & constant \\
+Number of senders & $2$ & constant \\
+Flow length & $\infty$ & constant \\
+Simulation duration & $50\,$s--$150\,$s & uniform \\
+Buffer size & $\infty$ & constant \\
+Stochastic loss prob. & $0\%$ & constant \\
+\bottomrule
+\end{tabular}
+\caption{The parameters of our very first simple experiment}
+\label{tab:smallexperiment}
+\end{table}
+
+\todo{Insert results when comparing to regular TCP}
  
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{congestion}
