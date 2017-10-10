@@ -115,11 +115,11 @@ checkpoint = tf.train.get_checkpoint_state(CHECKPOINT_DIR)
 saver = tf.train.Saver()
 if checkpoint and checkpoint.model_checkpoint_path:
   saver.restore(sess, checkpoint.model_checkpoint_path)
-  print("checkpoint loaded:", checkpoint.model_checkpoint_path)
+  logging.info("checkpoint loaded:", checkpoint.model_checkpoint_path)
   tokens = checkpoint.model_checkpoint_path.split("-")
   # set global step
   global_t = int(tokens[-1])
-  print(">>> global step set:", global_t)
+  logging.info(">>> global step set:", global_t)
   # set wall time
   wall_t_fname = CHECKPOINT_DIR + '/' + 'wall_t.' + str(global_t)
   with open(wall_t_fname, 'r') as f:
@@ -128,7 +128,7 @@ if checkpoint and checkpoint.model_checkpoint_path:
   with open(current_datetime_fname, 'r') as f:
     current_datetime = f.read()
 else:
-  print("Could not find old checkpoint")
+  logging.info("Could not find old checkpoint")
   # set wall time
   wall_t = 0.0
   current_datetime = datetime.datetime.now().isoformat()[:-7]

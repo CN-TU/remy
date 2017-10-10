@@ -294,9 +294,9 @@ is the actor loss that we try to minimize.
 %  \tikzstyle{every label}=[blue!75]
 
   \begin{scope}
-    \node [place,tokens=1] (s1) at (\nd{1}, \nd{3}) [label=Received feedback] {};
+    \node [place,tokens=1] (s1) at (\nd{0}, \nd{1}) [label=Received feedback] {};
     \node [place] (s2) at (\nd{1}, \nd{2}) [label={[align=center]left:Received\\ACKs}] {};
-    \node [place] (s3) at (\nd{3}, \nd{2}) [label={[align=center]above:Packets\\in the\\network}] {};
+    \node [place] (s3) at (\nd{2}, \nd{1}) [label={[align=center]above:Packets\\in the\\network}] {};
     \node [place,tokens=1] (s4) at (\nd{1}, \nd{0}) [label={[align=center]below:Open\\congestion\\window\\(cwnd)}] {};      
 
     \node [transition] (e1) at (\nd{0}, \nd{1}) [label=left:Take action] {}
