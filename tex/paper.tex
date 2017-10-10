@@ -294,20 +294,20 @@ is the actor loss that we try to minimize.
 %  \tikzstyle{every label}=[blue!75]
 
   \begin{scope}
-    \node [place,tokens=1] (s1) at (\nd{0}, \nd{1}) [label=Received feedback] {};
-    \node [place] (s2) at (\nd{1}, \nd{2}) [label={[align=center]left:Received\\ACKs}] {};
-    \node [place] (s3) at (\nd{2}, \nd{1}) [label={[align=center]above:Packets\\in the\\network}] {};
-    \node [place,tokens=1] (s4) at (\nd{1}, \nd{0}) [label={[align=center]below:Open\\congestion\\window\\(cwnd)}] {};      
+    \node [place,tokens=1] (s1) at (\nd{0}, \nd{1}) [label={[align=center]left:Receive\\ feedback}] {};
+    \node [place] (s2) at (\nd{1}, \nd{2}) [label={[align=center]above:Received\\ ACKs}] {};
+    \node [place] (s3) at (\nd{2}, \nd{1}) [label={[align=center]right:Packets\\ in the\\ network}] {};
+    \node [place,tokens=1] (s4) at (\nd{1}, \nd{0}) [label={[align=center]below:Open congestion\\ window (cwnd)}] {};      
 
-    \node [transition] (e1) at (\nd{0}, \nd{1}) [label=left:Take action] {}
-      edge [post,bend right] node {$a$}(s4)
-      edge [pre,bend left] node {1} (s1);    
+    \node [transition] (e1) at (\nd{0}, \nd{0}) [label=left:Take action] {}
+      edge [post] node {$a$}(s4)
+      edge [pre] node {1} (s1);    
      
-    \node [transition] (e2) at (\nd{2}, \nd{1}) [label=Send packet] {}
-      edge [pre,bend left] node {1} (s4)
-      edge [post,bend right] node {1} (s3);
+    \node [transition] (e2) at (\nd{2}, \nd{0}) [label={[align=center]right:Send\\ packet}] {}
+      edge [pre] node {1} (s4)
+      edge [post] node {1} (s3);
 
-    \node [transition] (e3) at (\nd{2}, \nd{2}) [label=below:Receive ACK] {}
+    \node [transition] (e3) at (\nd{2}, \nd{2}) [label={[align=center]right:Receive\\ ACK}] {}
       edge [pre] node {1} (s3)
       edge [post] node {1} (s2);
 
@@ -315,8 +315,8 @@ is the actor loss that we try to minimize.
       edge [pre] node {1} (s2)
       edge [post] node {1} (s4);
       
-    \node [transition] (e5) at (\nd{2}, \nd{3}) [label={[align=center]right:Receive feedback}] {}
-      edge [pre, bend left] node {1} (s2)
+    \node [transition] (e5) at (\nd{0}, \nd{2}) [label={[align=center]left:Received\\ feedback}] {}
+      edge [pre] node {1} (s2)
       edge [post] node {1} (s1);
 
   \end{scope}
