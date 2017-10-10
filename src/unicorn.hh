@@ -60,7 +60,7 @@ protected:
   // }
 
 public:
-  Unicorn(const bool& cooperative, const double& delay_delta);
+  Unicorn(const bool& cooperative, const double& delay_delta = 1);
   ~Unicorn();
 
   void packets_received( const std::vector< remy::Packet > & packets );

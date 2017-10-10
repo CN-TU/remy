@@ -15,6 +15,8 @@ from constants import VALUE_FACTOR
 from constants import PACKETS_BIAS_OFFSET
 from constants import DELAY_BIAS_OFFSET
 from constants import INTER_PACKET_ARRIVAL_TIME_OFFSET
+from constants import INITIAL_WINDOW_INCREASE_BIAS_OFFSET
+from constants import INITIAL_WINDOW_INCREASE_WEIGHT_FACTOR
 
 # tiny = np.finfo(np.float32).tiny
 tiny = 1e-20
@@ -227,7 +229,7 @@ class GameACLSTMNetwork(GameACNetwork):
 			self.lstm = tf.contrib.rnn.MultiRNNCell([GameACLSTMNetwork.create_cell(HIDDEN_SIZE, LAYER_NORMALIZATION) for i in range(N_LSTM_LAYERS)], state_is_tuple=True)
 
 			# weight for policy output layer
-			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=1e-4, bias_offset=1e-4)
+			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=INITIAL_WINDOW_INCREASE_WEIGHT_FACTOR, bias_offset=INITIAL_WINDOW_INCREASE_BIAS_OFFSET)
 			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=1.0, bias_offset=STD_BIAS_OFFSET)
 
 			# weight for value output layer
