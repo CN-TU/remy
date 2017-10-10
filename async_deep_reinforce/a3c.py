@@ -118,7 +118,7 @@ if checkpoint and checkpoint.model_checkpoint_path:
   print("checkpoint loaded:", checkpoint.model_checkpoint_path)
   tokens = checkpoint.model_checkpoint_path.split("-")
   # set global step
-  global_t = int(tokens[1])
+  global_t = int(tokens[-1])
   print(">>> global step set:", global_t)
   # set wall time
   wall_t_fname = CHECKPOINT_DIR + '/' + 'wall_t.' + str(global_t)
@@ -277,4 +277,4 @@ def save_session():
   with open(current_datetime_fname, 'w') as f:
     f.write(str(current_datetime))
 
-  saver.save(sess, CHECKPOINT_DIR + '/' + 'checkpoint', global_step = global_t)
+  saver.save(sess, CHECKPOINT_DIR + '/' + 'checkpoint' + "-" + current_datetime, global_step = global_t)
