@@ -239,7 +239,7 @@ def delete_training_thread(thread_id):
   # del training_threads[thread_id]
 
 def call_process_action(thread_id, state, tickno, window):
-  print("state", state)
+  # print("state", state)
   # logging.debug(" ".join(map(str,("call_process_action", thread_id, state, tickno))))
   global sess, global_t, summary_writer, summary_op, summary_inputs
   chosen_action = training_threads[thread_id].action_step(sess, state, tickno, window)
