@@ -110,7 +110,7 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
 
 void Unicorn::reset(const double & tickno)
 {
-  // printf("%lu: Fucking resetting\n", _thread_id);
+  printf("%lu: Fucking resetting\n", _thread_id);
   _rainbow._training = _training;
   // assert(false);
   // printf("%lu: Resetting\n", _thread_id);

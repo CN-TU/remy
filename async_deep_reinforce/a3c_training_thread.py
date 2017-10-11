@@ -109,7 +109,10 @@ class A3CTrainingThread(object):
         self.start_lstm_states.append(self.local_network.lstm_state_out)
         self.variable_snapshots.append(sess.run(self.local_network.get_vars()))
 
-    pi_, action, value_ = self.local_network.run_policy_action_and_value(sess, state)
+    if self.training:
+      action, value_ = self.local_network.run_action_and_value(sess, state)
+    else:
+      action = self.local_network.run_action(sess, state)
 
     # logging.debug(" ".join(map(str,(self.thread_index,"pi_values:",pi_))))
 
@@ -331,7 +334,8 @@ class A3CTrainingThread(object):
 
     # if len(ticknos) == 0:
     #   print(self.thread_index, "actions", self.actions, "rewards", self.rewards, "values", self.values, "estimated_values", self.estimated_values, "ticknos", self.ticknos)
-    if final or self.local_t % LOG_INTERVAL == 0:
+    # if final or self.local_t % LOG_INTERVAL == 0:
+    if final:
       if ticknos[-1]-ticknos[0] > 0 and self.episode_reward_throughput > 0:
         # print(ticknos)
         # print(self.episode_reward_throughput, ticknos[0], ticknos[-1])

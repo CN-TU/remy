@@ -309,17 +309,30 @@ class GameACLSTMNetwork(GameACNetwork):
 	# 	# pi_out: (1,3), v_out: (1)
 	# 	return ((pi_out[0][0], pi_out[1][0]), (v_packets_out[0], v_accumulated_delay_out[0], v_duration_out[0]))
 
-	def run_policy_action_and_value(self, sess, s_t):
+	def run_action_and_value(self, sess, s_t):
 		# This run_policy_and_value() is used when forward propagating.
 		# so the step size is 1.
-		pi_out, action_out, v_packets_out, v_accumulated_delay_out, v_duration_out, self.lstm_state_out = sess.run(
-			[self.pi, self.chosen_action, self.v_packets, self.v_accumulated_delay, self.v_duration, self.lstm_state],
+		action_out, v_packets_out, v_accumulated_delay_out, v_duration_out, self.lstm_state_out = sess.run(
+			[self.chosen_action, self.v_packets, self.v_accumulated_delay, self.v_duration, self.lstm_state],
 			feed_dict = {self.s : [s_t],
 			self.initial_lstm_state : self.lstm_state_out,
 			self.step_size : [1]}
 		)
 		# pi_out: (1,3), v_out: (1)
-		return ((pi_out[0][0], pi_out[1][0]), action_out[0],(v_packets_out[0], v_accumulated_delay_out[0], v_duration_out[0]))
+		return (action_out[0],(v_packets_out[0], v_accumulated_delay_out[0], v_duration_out[0]))
+
+	# Misleading name: Actually returns the mean of the distribution returned by the actor.
+	def run_action(self, sess, s_t):
+		# This run_policy_and_value() is used when forward propagating.
+		# so the step size is 1.
+		pi_out, self.lstm_state_out = sess.run(
+			[self.pi, self.lstm_state],
+			feed_dict = {self.s : [s_t],
+			self.initial_lstm_state : self.lstm_state_out,
+			self.step_size : [1]}
+		)
+		# pi_out: (1,3), v_out: (1)
+		return pi_out[0][0]
 
 	def run_value(self, sess, s_t):
 		# This run_value() is used for calculating V for bootstrapping at the

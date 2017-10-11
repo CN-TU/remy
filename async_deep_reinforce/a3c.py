@@ -115,11 +115,11 @@ checkpoint = tf.train.get_checkpoint_state(CHECKPOINT_DIR)
 saver = tf.train.Saver()
 if checkpoint and checkpoint.model_checkpoint_path:
   saver.restore(sess, checkpoint.model_checkpoint_path)
-  logging.info("checkpoint loaded:", checkpoint.model_checkpoint_path)
+  logging.info(" ".join(map(str,("checkpoint loaded:", checkpoint.model_checkpoint_path))))
   tokens = checkpoint.model_checkpoint_path.split("-")
   # set global step
   global_t = int(tokens[-1])
-  logging.info(">>> global step set:", global_t)
+  logging.info(" ".join(map(str,(">>> global step set:", global_t))))
   # set wall time
   wall_t_fname = CHECKPOINT_DIR + '/' + 'wall_t.' + str(global_t)
   with open(wall_t_fname, 'r') as f:
@@ -239,6 +239,7 @@ def delete_training_thread(thread_id):
   # del training_threads[thread_id]
 
 def call_process_action(thread_id, state, tickno, window):
+  print("state", state)
   # logging.debug(" ".join(map(str,("call_process_action", thread_id, state, tickno))))
   global sess, global_t, summary_writer, summary_op, summary_inputs
   chosen_action = training_threads[thread_id].action_step(sess, state, tickno, window)

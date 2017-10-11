@@ -20,6 +20,10 @@ Makefile.in
 *.synctex.gz
 /tex/svg-inkscape/
 /stats/
+*.nav
+*.snm
+*.toc
+*checkpoints*
 
 /.vscode
 
