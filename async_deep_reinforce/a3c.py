@@ -21,9 +21,10 @@ from a3c_training_thread import A3CTrainingThread
 # from rmsprop_applier import RMSPropApplier
 
 # from constants import ACTION_SIZE
-from constants import INITIAL_ALPHA_LOW
-from constants import INITIAL_ALPHA_HIGH
-from constants import INITIAL_ALPHA_LOG_RATE
+# from constants import INITIAL_ALPHA_LOW
+# from constants import INITIAL_ALPHA_HIGH
+# from constants import INITIAL_ALPHA_LOG_RATE
+from constants import INITIAL_RATE
 from constants import MAX_TIME_STEP
 from constants import CHECKPOINT_DIR
 from constants import LOG_FILE
@@ -59,9 +60,11 @@ def initialize_uninitialized(sess):
     if len(not_initialized_vars) > 0:
         sess.run(tf.variables_initializer(not_initialized_vars))
 
-initial_learning_rate = log_uniform(INITIAL_ALPHA_LOW,
-                                    INITIAL_ALPHA_HIGH,
-                                    INITIAL_ALPHA_LOG_RATE)
+# initial_learning_rate = log_uniform(INITIAL_ALPHA_LOW,
+#                                     INITIAL_ALPHA_HIGH,
+#                                     INITIAL_ALPHA_LOG_RATE)
+
+initial_learning_rate = INITIAL_RATE
 
 global_t = 0
 
