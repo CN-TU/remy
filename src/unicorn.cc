@@ -13,7 +13,6 @@ Unicorn::Unicorn(const bool& cooperative, const double& delay_delta)
     _packets_received( 0 ),
     _last_send_time( 0 ),
     _the_window( MIN_WINDOW_UNICORN ), // Start with the possibility to send at least one packet
-    _intersend_time( 0 ),
     _flow_id( 0 ),
     _largest_ack( -1 ),
     _thread_id(0),
@@ -110,7 +109,7 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
 
 void Unicorn::reset(const double & tickno)
 {
-  // printf("%lu: Fucking resetting\n", _thread_id);
+  printf("%lu: Fucking resetting\n", _thread_id);
   _rainbow._training = _training;
   // assert(false);
   // printf("%lu: Resetting\n", _thread_id);
@@ -136,7 +135,6 @@ void Unicorn::reset(const double & tickno)
   _memory.reset();
   _last_send_time = 0;
   _the_window = MIN_WINDOW_UNICORN; // Reset the window to 1
-  _intersend_time = 0;
   _flow_id += 1;
   // _largest_ack = _packets_sent - 1; /* Assume everything's been delivered */
   // _put_actions = 0;

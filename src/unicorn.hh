@@ -26,7 +26,6 @@ protected:
   long unsigned int _packets_sent, _packets_received;
   double _last_send_time;
   double _the_window;
-  double _intersend_time;
 
   unsigned int _flow_id;
   long int _largest_ack;
