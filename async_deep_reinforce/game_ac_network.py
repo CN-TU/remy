@@ -18,14 +18,6 @@ from constants import INTER_PACKET_ARRIVAL_TIME_OFFSET
 from constants import INITIAL_WINDOW_INCREASE_BIAS_OFFSET
 from constants import INITIAL_WINDOW_INCREASE_WEIGHT_FACTOR
 
-# tiny = np.finfo(np.float32).tiny
-tiny = 1e-20
-log_smallest = np.log(np.finfo(np.float32).tiny) if PRECISION==tf.float32 else np.log(np.finfo(np.float64).tiny)
-quite_tiny = 1e-10
-not_that_tiny = 1e-5
-not_tiny_at_all = 1e-1
-one = 1
-
 import math
 import numpy as np
 import numpy.random
@@ -111,12 +103,15 @@ class GameACNetwork(object):
 
 	def backup_vars(self, name=None):
 		def backup_vars_inner_function():
-			self.backup_lstm_state = self.lstm_state
+			self.backup_lstm_state_action = self.lstm_state_action
+			self.backup_lstm_state_value = self.lstm_state_value
 		return backup_vars_inner_function
 
 	def restore_backup(self, name=None):
 		def restore_backup_inner_function():
-			self.lstm_state = self.backup_lstm_state
+			self.lstm_state_action = self.backup_lstm_state_action
+			self.lstm_state_value = self.backup_lstm_state_value
+
 		return restore_backup_inner_function
 
 	# def backup_vars(self, name=None):
@@ -222,11 +217,14 @@ class GameACLSTMNetwork(GameACNetwork):
 		scope_name = "net_" + str(self._thread_index)
 		with tf.device(self._device), tf.variable_scope(scope_name) as scope:
 
-			self.W_state_to_hidden_fc, self.b_state_to_hidden_fc = self._fc_variable([STATE_SIZE, HIDDEN_SIZE])
+			self.W_state_to_hidden_fc_action, self.b_state_to_hidden_fc_action = self._fc_variable([STATE_SIZE, HIDDEN_SIZE])
+			self.W_state_to_hidden_fc_value, self.b_state_to_hidden_fc_value = self._fc_variable([STATE_SIZE, HIDDEN_SIZE])
 
 			# lstm
-			# self.lstm = tf.contrib.rnn.BasicLSTMCell(HIDDEN_SIZE, state_is_tuple=True)
-			self.lstm = tf.contrib.rnn.MultiRNNCell([GameACLSTMNetwork.create_cell(HIDDEN_SIZE, LAYER_NORMALIZATION) for i in range(N_LSTM_LAYERS)], state_is_tuple=True)
+			with tf.variable_scope("lstm_cell_0") as inner_scope_action:
+				self.lstm_action = tf.contrib.rnn.MultiRNNCell([GameACLSTMNetwork.create_cell(HIDDEN_SIZE, LAYER_NORMALIZATION) for i in range(N_LSTM_LAYERS)], state_is_tuple=True)
+			with tf.variable_scope("lstm_cell_1") as inner_scope_value:
+				self.lstm_value = tf.contrib.rnn.MultiRNNCell([GameACLSTMNetwork.create_cell(HIDDEN_SIZE, LAYER_NORMALIZATION) for i in range(N_LSTM_LAYERS)], state_is_tuple=True)
 
 			# weight for policy output layer
 			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=INITIAL_WINDOW_INCREASE_WEIGHT_FACTOR, bias_offset=INITIAL_WINDOW_INCREASE_BIAS_OFFSET)
@@ -243,7 +241,8 @@ class GameACLSTMNetwork(GameACNetwork):
 			# place holder for LSTM unrolling time step size.
 			self.step_size = tf.placeholder(PRECISION, [1])
 
-			self.initial_lstm_state = lstm_state_tuple()
+			self.initial_lstm_state_action = lstm_state_tuple()
+			self.initial_lstm_state_value = lstm_state_tuple()
 
 			# Unrolling LSTM up to LOCAL_T_MAX time steps. (= 5time steps.)
 			# When episode terminates unrolling time steps becomes less than LOCAL_TIME_STEP.
@@ -251,22 +250,36 @@ class GameACLSTMNetwork(GameACNetwork):
 			# When forward propagating, step_size is 1.
 			# (time_major = False, so output shape is [batch_size, max_time, cell.output_size])
 
-			h_fc = tf.matmul(self.s, self.W_state_to_hidden_fc) + self.b_state_to_hidden_fc
-			h_fc_reshaped = tf.reshape(h_fc, [1,-1,HIDDEN_SIZE])
+			h_fc_action = tf.matmul(self.s, self.W_state_to_hidden_fc_action) + self.b_state_to_hidden_fc_action
+			h_fc_reshaped_action = tf.reshape(h_fc_action, [1,-1,HIDDEN_SIZE])
 
-			lstm_outputs, self.lstm_state = tf.nn.dynamic_rnn(
-															self.lstm,
-															h_fc_reshaped,
-															initial_state = self.initial_lstm_state,
+			h_fc_value = tf.matmul(self.s, self.W_state_to_hidden_fc_value) + self.b_state_to_hidden_fc_value
+			h_fc_reshaped_value = tf.reshape(h_fc_value, [1,-1,HIDDEN_SIZE])
+
+			lstm_outputs_action, self.lstm_state_action = tf.nn.dynamic_rnn(
+															self.lstm_action,
+															h_fc_reshaped_action,
+															initial_state = self.initial_lstm_state_action,
 															sequence_length = self.step_size,
 															time_major = False,
-															scope = scope,
+															scope = inner_scope_action,
 															dtype = PRECISION)
 
-			lstm_outputs = tf.reshape(lstm_outputs, [-1,HIDDEN_SIZE])
+			lstm_outputs_action = tf.reshape(lstm_outputs_action, [-1,HIDDEN_SIZE])
 
-			raw_pi_mean = tf.matmul(lstm_outputs, self.W_hidden_to_action_mean_fc) + self.b_hidden_to_action_mean_fc
-			raw_pi_std = tf.matmul(lstm_outputs, self.W_hidden_to_action_std_fc) + self.b_hidden_to_action_std_fc
+			lstm_outputs_value, self.lstm_state_value = tf.nn.dynamic_rnn(
+															self.lstm_value,
+															h_fc_reshaped_value,
+															initial_state = self.initial_lstm_state_value,
+															sequence_length = self.step_size,
+															time_major = False,
+															scope = inner_scope_value,
+															dtype = PRECISION)
+
+			lstm_outputs_value = tf.reshape(lstm_outputs_value, [-1,HIDDEN_SIZE])
+
+			raw_pi_mean = tf.matmul(lstm_outputs_action, self.W_hidden_to_action_mean_fc) + self.b_hidden_to_action_mean_fc
+			raw_pi_std = tf.matmul(lstm_outputs_action, self.W_hidden_to_action_std_fc) + self.b_hidden_to_action_std_fc
 			# policy (output)
 			self.pi = (
 				raw_pi_mean,
@@ -277,25 +290,26 @@ class GameACLSTMNetwork(GameACNetwork):
 			)
 
 			# value (output)
-			v_packets_ = tf.nn.softplus(tf.matmul(lstm_outputs, self.W_hidden_to_value_packets_fc) + self.b_hidden_to_value_packets_fc)
+			v_packets_ = tf.nn.softplus(tf.matmul(lstm_outputs_value, self.W_hidden_to_value_packets_fc) + self.b_hidden_to_value_packets_fc)
 			self.v_packets = tf.reshape( v_packets_, [-1] )
 
-			v_accumulated_delay_ = tf.nn.softplus(tf.matmul(lstm_outputs, self.W_hidden_to_value_delay_fc) + self.b_hidden_to_value_delay_fc)
+			v_accumulated_delay_ = tf.nn.softplus(tf.matmul(lstm_outputs_value, self.W_hidden_to_value_delay_fc) + self.b_hidden_to_value_delay_fc)
 			self.v_accumulated_delay = tf.reshape( v_accumulated_delay_, [-1] )
 
-			v_duration_ = tf.nn.softplus(tf.matmul(lstm_outputs, self.W_hidden_to_value_duration_fc) + self.b_hidden_to_value_duration_fc)
+			v_duration_ = tf.nn.softplus(tf.matmul(lstm_outputs_value, self.W_hidden_to_value_duration_fc) + self.b_hidden_to_value_duration_fc)
 			self.v_duration = tf.reshape( v_duration_, [-1] )
 
 			scope.reuse_variables()
 
-			all_weight_names = ["multi_rnn_cell/cell_"+str(index)+item for index, item in itertools.product(range(N_LSTM_LAYERS), GameACLSTMNetwork.get_weight_names(LAYER_NORMALIZATION))]
+			all_weight_names = ["lstm_cell_"+str(network_index)+"/multi_rnn_cell/cell_"+str(index)+item for network_index, index, item in itertools.product((0,1), range(N_LSTM_LAYERS), GameACLSTMNetwork.get_weight_names(LAYER_NORMALIZATION))]
 
 			self.LSTM_variables = [tf.get_variable(weight_name, dtype=PRECISION) for weight_name in all_weight_names]
 
 			self.reset_state()
 
 	def reset_state(self):
-		self.lstm_state_out = lstm_state_tuple(use_np=True)
+		self.lstm_state_out_action = lstm_state_tuple(use_np=True)
+		self.lstm_state_out_value = lstm_state_tuple(use_np=True)
 
 	# def run_policy_and_value(self, sess, s_t):
 	# 	# This run_policy_and_value() is used when forward propagating.
@@ -312,10 +326,11 @@ class GameACLSTMNetwork(GameACNetwork):
 	def run_action_and_value(self, sess, s_t):
 		# This run_policy_and_value() is used when forward propagating.
 		# so the step size is 1.
-		action_out, v_packets_out, v_accumulated_delay_out, v_duration_out, self.lstm_state_out = sess.run(
-			[self.chosen_action, self.v_packets, self.v_accumulated_delay, self.v_duration, self.lstm_state],
+		action_out, v_packets_out, v_accumulated_delay_out, v_duration_out, self.lstm_state_out_action, self.lstm_state_out_value = sess.run(
+			[self.chosen_action, self.v_packets, self.v_accumulated_delay, self.v_duration, self.lstm_state_action, self.lstm_state_value],
 			feed_dict = {self.s : [s_t],
-			self.initial_lstm_state : self.lstm_state_out,
+			self.initial_lstm_state_action : self.lstm_state_out_action,
+			self.initial_lstm_state_value : self.lstm_state_out_value,
 			self.step_size : [1]}
 		)
 		# pi_out: (1,3), v_out: (1)
@@ -325,10 +340,10 @@ class GameACLSTMNetwork(GameACNetwork):
 	def run_action(self, sess, s_t):
 		# This run_policy_and_value() is used when forward propagating.
 		# so the step size is 1.
-		pi_out, self.lstm_state_out = sess.run(
+		pi_out, self.lstm_state_out_action = sess.run(
 			[self.pi, self.lstm_state],
 			feed_dict = {self.s : [s_t],
-			self.initial_lstm_state : self.lstm_state_out,
+			self.initial_lstm_state_action : self.lstm_state_out_action,
 			self.step_size : [1]}
 		)
 		# pi_out: (1,3), v_out: (1)
@@ -339,28 +354,33 @@ class GameACLSTMNetwork(GameACNetwork):
 		# end of LOCAL_T_MAX time step sequence.
 		# When next sequence starts, V will be calculated again with the same state using updated network weights,
 		# so we don't update LSTM state here.
-		prev_lstm_state_out = self.lstm_state_out
-		v_packets_out, v_accumulated_delay_out, v_duration_out, _ = sess.run( [self.v_packets, self.v_accumulated_delay, self.v_duration, self.lstm_state],
+		prev_lstm_state_out_action = self.lstm_state_out_action
+		prev_lstm_state_out_value = self.lstm_state_out_value
+		v_packets_out, v_accumulated_delay_out, v_duration_out, _ = sess.run( [self.v_packets, self.v_accumulated_delay, self.v_duration, self.lstm_state_value],
 								feed_dict = {self.s : [s_t],
-								self.initial_lstm_state : self.lstm_state_out,
+								self.initial_lstm_state_value : self.lstm_state_out_value,
 								# self.initial_lstm_state0 : self.lstm_state_out[0],
 								# self.initial_lstm_state1 : self.lstm_state_out[1],
 								self.step_size : [1]} )
 
 		# roll back lstm state
-		self.lstm_state_out = prev_lstm_state_out
+		self.lstm_state_out_action = prev_lstm_state_out_action
+		self.lstm_state_out_value = prev_lstm_state_out_value
 		return (v_packets_out[0], v_accumulated_delay_out[0], v_duration_out[0])
 
 	def run_loss(self, sess, feed_dict):
 		# We don't have to roll back the LSTM state here as it is restored in the "process" function of a3c_training_thread.py anyway and because run_loss is only called there.
-		prev_lstm_state_out = self.lstm_state_out
+		prev_lstm_state_out_action = self.lstm_state_out_action
+		prev_lstm_state_out_value = self.lstm_state_out_value
 		result = sess.run( [self.entropy, self.actor_loss, self.value_loss, self.total_loss, self.distribution_mean, self.distribution_std], feed_dict = feed_dict )
 		# roll back lstm state
-		self.lstm_state_out = prev_lstm_state_out
+		self.lstm_state_out_action = prev_lstm_state_out_action
+		self.lstm_state_out_value = prev_lstm_state_out_value
 		return result
 
 	def get_vars(self):
-		return [self.W_state_to_hidden_fc, self.b_state_to_hidden_fc,
+		return [self.W_state_to_hidden_fc_action, self.b_state_to_hidden_fc_action,
+						self.W_state_to_hidden_fc_value, self.b_state_to_hidden_fc_value,
 						self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc,
 						self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc,
 						self.W_hidden_to_value_packets_fc, self.b_hidden_to_value_packets_fc,
