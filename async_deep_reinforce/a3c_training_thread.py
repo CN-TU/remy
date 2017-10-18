@@ -9,7 +9,7 @@ import time
 import sys
 import math
 
-from game_ac_network import GameACLSTMNetwork
+from game_ac_network import GameACLSTMNetwork, tiny#, GameACFFNetwork
 
 from constants import GAMMA
 # gamma_current, gamma_future = 1./(1+GAMMA), GAMMA/(1.+GAMMA)
@@ -106,7 +106,7 @@ class A3CTrainingThread(object):
         self.time_differences.append(None)
         # Sync for the next iteration
         sess.run( self.sync )
-        self.start_lstm_states.append((self.local_network.lstm_state_out_action, self.local_network.lstm_state_out_value))
+        self.start_lstm_states.append(self.local_network.lstm_state_out)
         self.variable_snapshots.append(sess.run(self.local_network.get_vars()))
 
     if self.training:
@@ -322,8 +322,7 @@ class A3CTrainingThread(object):
       self.local_network.r_duration: batch_R_duration,
       self.local_network.r_packets: batch_R_packets,
       self.local_network.r_accumulated_delay: batch_R_accumulated_delay,
-      self.local_network.initial_lstm_state_action: self.start_lstm_states[0][0],
-      self.local_network.initial_lstm_state_value: self.start_lstm_states[0][1],
+      self.local_network.initial_lstm_state: self.start_lstm_states[0],
       self.local_network.step_size : [len(batch_ai)],
       self.learning_rate_input: cur_learning_rate
     }
@@ -362,9 +361,8 @@ class A3CTrainingThread(object):
           self.local_network.r_duration: [batch_R_duration[-1]],
           self.local_network.r_packets: [batch_R_packets[-1]],
           self.local_network.r_accumulated_delay: [batch_R_accumulated_delay[-1]],
-          self.local_network.initial_lstm_state_action: self.start_lstm_states[0][0],
-          self.local_network.initial_lstm_state_value: self.start_lstm_states[0][1],
-          self.local_network.step_size : [1]
+          self.local_network.initial_lstm_state: self.start_lstm_states[0],
+          self.local_network.step_size : [1],
         }
         feed_dict.update(var_dict)
 

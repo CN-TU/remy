@@ -43,9 +43,9 @@ MAX_TIME_STEP = 1e7
 USE_GPU = False # To use GPU, set True
 N_LSTM_LAYERS = 1
 
-# TODO: Don't know if this normalization stuff makes sense. Better disable it when possible...
-SECONDS_NORMALIZER = 1e-2
-# SECONDS_NORMALIZER = 1
+# Don't know if this normalization stuff makes sense. Better disable it when possible...
+# SECONDS_NORMALIZER = 1e-2
+SECONDS_NORMALIZER = 1
 
 DELAY = 150*SECONDS_NORMALIZER
 BIAS_OFFSET = 1
