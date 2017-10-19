@@ -341,7 +341,7 @@ class GameACLSTMNetwork(GameACNetwork):
 		# This run_policy_and_value() is used when forward propagating.
 		# so the step size is 1.
 		pi_out, self.lstm_state_out_action = sess.run(
-			[self.pi, self.lstm_state],
+			[self.pi, self.lstm_state_action],
 			feed_dict = {self.s : [s_t],
 			self.initial_lstm_state_action : self.lstm_state_out_action,
 			self.step_size : [1]}
