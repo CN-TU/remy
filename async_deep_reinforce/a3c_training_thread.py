@@ -9,7 +9,7 @@ import time
 import sys
 import math
 
-from game_ac_network import GameACLSTMNetwork, tiny#, GameACFFNetwork
+from game_ac_network import GameACLSTMNetwork
 
 from constants import GAMMA
 # gamma_current, gamma_future = 1./(1+GAMMA), GAMMA/(1.+GAMMA)

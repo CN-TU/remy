@@ -18,14 +18,6 @@ from constants import INTER_PACKET_ARRIVAL_TIME_OFFSET
 from constants import INITIAL_WINDOW_INCREASE_BIAS_OFFSET
 from constants import INITIAL_WINDOW_INCREASE_WEIGHT_FACTOR
 
-# tiny = np.finfo(np.float32).tiny
-tiny = 1e-20
-log_smallest = np.log(np.finfo(np.float32).tiny) if PRECISION==tf.float32 else np.log(np.finfo(np.float64).tiny)
-quite_tiny = 1e-10
-not_that_tiny = 1e-5
-not_tiny_at_all = 1e-1
-one = 1
-
 import math
 import numpy as np
 import numpy.random
