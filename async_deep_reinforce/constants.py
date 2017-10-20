@@ -37,15 +37,16 @@ PRECISION = tf.float32
 INITIAL_ALPHA_LOG_RATE = 0.4226 # log_uniform interpolate rate for learning rate (around 7 * 10^-4)
 GAMMA = 0.99 # discount factor for rewards
 ENTROPY_BETA = 1e-4
-STD_BIAS_OFFSET = inverse_softplus(0.3)
+# STD_BIAS_OFFSET = inverse_softplus(0.3)
+STD_BIAS_OFFSET = 0
 MAX_TIME_STEP = 5e6
 # GRAD_NORM_CLIP = 40.0 # gradient norm clipping
 USE_GPU = False # To use GPU, set True
-N_LSTM_LAYERS = 1
+N_LSTM_LAYERS = 2
 
 # Don't know if this normalization stuff makes sense. Better disable it when possible...
-# SECONDS_NORMALIZER = 1e-2
-SECONDS_NORMALIZER = 1
+SECONDS_NORMALIZER = 1e-2
+# SECONDS_NORMALIZER = 1
 
 DELAY = 150*SECONDS_NORMALIZER
 BIAS_OFFSET = 1
