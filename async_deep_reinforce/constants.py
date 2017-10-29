@@ -42,7 +42,7 @@ STD_BIAS_OFFSET = 0
 MAX_TIME_STEP = 5e6
 # GRAD_NORM_CLIP = 40.0 # gradient norm clipping
 USE_GPU = False # To use GPU, set True
-N_LSTM_LAYERS = 1
+N_LSTM_LAYERS = 3
 
 # Don't know if this normalization stuff makes sense. Better disable it when possible...
 SECONDS_NORMALIZER = 1e-2
@@ -62,6 +62,6 @@ INITIAL_WINDOW_INCREASE_BIAS_OFFSET = 1e-2
 INITIAL_WINDOW_INCREASE_WEIGHT_FACTOR = 1e-4
 
 STATE_SIZE = 11
-HIDDEN_SIZE = 256
+HIDDEN_SIZE = 16
 # ACTION_SIZE = 1 # action size
 LAYER_NORMALIZATION = True
