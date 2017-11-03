@@ -171,6 +171,8 @@ double Unicorn::next_event_time( const double & tickno ) const
 
 void Unicorn::get_action(const double& tickno, const int& packets_sent_in_this_episode) {
 
+  // FIXME: HACK!!!
+  (void) packets_sent_in_this_episode;
   const double action = _rainbow.get_action(
     _thread_id,
     {
