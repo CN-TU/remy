@@ -42,7 +42,7 @@ STD_BIAS_OFFSET = 0
 MAX_TIME_STEP = 5e6
 # GRAD_NORM_CLIP = 40.0 # gradient norm clipping
 USE_GPU = False # To use GPU, set True
-N_LSTM_LAYERS = 1
+N_LSTM_LAYERS = int(environ.get('layers')) if environ.get('layers') is not None else 1
 
 # Don't know if this normalization stuff makes sense. Better disable it when possible...
 SECONDS_NORMALIZER = 1e-2
