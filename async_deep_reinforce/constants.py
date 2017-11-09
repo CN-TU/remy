@@ -42,7 +42,7 @@ STD_BIAS_OFFSET = 0
 MAX_TIME_STEP = 5e6
 # GRAD_NORM_CLIP = 40.0 # gradient norm clipping
 USE_GPU = False # To use GPU, set True
-N_LSTM_LAYERS = 2
+N_LSTM_LAYERS = 1
 
 # Don't know if this normalization stuff makes sense. Better disable it when possible...
 SECONDS_NORMALIZER = 1e-2
@@ -61,7 +61,7 @@ INTER_PACKET_ARRIVAL_TIME_OFFSET = inverse_softplus(DELAY)
 INITIAL_WINDOW_INCREASE_BIAS_OFFSET = 0
 INITIAL_WINDOW_INCREASE_WEIGHT_FACTOR = 1
 
-STATE_SIZE = 9
+STATE_SIZE = 5
 HIDDEN_SIZE = 16
 # ACTION_SIZE = 1 # action size
 LAYER_NORMALIZATION = False
