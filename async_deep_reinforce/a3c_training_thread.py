@@ -79,18 +79,10 @@ class A3CTrainingThread(object):
 
   def _record_score(self, sess, summary_writer, summary_op, summary_inputs, things, global_t):
     # print("window in _record_score", self.windows, self.time_differences)
-    summary_str = sess.run(summary_op, feed_dict={
-      summary_inputs["score_throughput"]: things["score_throughput"],
-      summary_inputs["score_delay"]: things["score_delay"],
-      summary_inputs["entropy"]: things["entropy"],
-      summary_inputs["actor_loss"]: things["actor_loss"],
-      summary_inputs["value_loss"]: things["value_loss"],
-      summary_inputs["total_loss"]: things["total_loss"],
-      summary_inputs["window"]: things["window"],
-      summary_inputs["window_increase"]: things["window_increase"],
-      summary_inputs["std"]: things["std"],
-      # summary_inputs["speed"]: things["speed"]
-    })
+    feed_dict = {}
+    for key in things.keys():
+      feed_dict[summary_inputs[key]] = things[key]
+    summary_str = sess.run(summary_op, feed_dict=feed_dict)
     summary_writer.add_summary(summary_str, global_t)
     summary_writer.flush()
 
@@ -159,6 +151,8 @@ class A3CTrainingThread(object):
     # self.states = self.states[:-actions_to_remove]
     # self.values = self.values[:-actions_to_remove]
     # self.estimated_values = self.estimated_values[:-actions_to_remove+1]
+    # print("Final step is called")
+
     if self.training:
       if len(self.actions) > 0:
         self.time_differences = self.time_differences[:-1]
@@ -340,7 +334,7 @@ class A3CTrainingThread(object):
       if ticknos[-1]-ticknos[0] > 0 and self.episode_reward_throughput > 0:
         # print(ticknos)
         # print(self.episode_reward_throughput, ticknos[0], ticknos[-1])
-        normalized_final_score_throughput = self.episode_reward_throughput/(ticknos[-1]-ticknos[0])
+        # normalized_final_score_throughput = self.episode_reward_throughput/(ticknos[-1]-ticknos[0])
         # logging.info("{}: self.episode_reward_throughput={}, time_difference={}".format(self.thread_index, self.episode_reward_throughput, time_difference))
         normalized_final_score_delay = self.episode_reward_delay/self.episode_reward_throughput
         # print(self.windows)
@@ -356,12 +350,12 @@ class A3CTrainingThread(object):
         # logging.info("### {}: Performance: {} STEPS in {:.0f} sec. {:.0f} STEPS/sec. {:.2f}M STEPS/hour".format(self.thread_index, self.local_t, elapsed_time, steps_per_sec, steps_per_sec * 3600 / 1000000.))
 
         feed_dict = {
-          self.local_network.s: [batch_si[-1]],
-          self.local_network.a: [batch_ai[-1]],
-          self.local_network.td: [batch_td[-1]],
-          self.local_network.r_duration: [batch_R_duration[-1]],
-          self.local_network.r_packets: [batch_R_packets[-1]],
-          self.local_network.r_accumulated_delay: [batch_R_accumulated_delay[-1]],
+          self.local_network.s: [batch_si[0]],
+          self.local_network.a: [batch_ai[0]],
+          self.local_network.td: [batch_td[0]],
+          self.local_network.r_duration: [batch_R_duration[0]],
+          self.local_network.r_packets: [batch_R_packets[0]],
+          self.local_network.r_accumulated_delay: [batch_R_accumulated_delay[0]],
           self.local_network.initial_lstm_state_action: self.start_lstm_states[0][0],
           self.local_network.initial_lstm_state_value: self.start_lstm_states[0][1],
           self.local_network.step_size : [1]
@@ -370,7 +364,11 @@ class A3CTrainingThread(object):
 
         entropy, actor_loss, value_loss, total_loss, window_increase, std = self.local_network.run_loss(sess, feed_dict)
 
-        things = {"score_throughput": normalized_final_score_throughput,
+        things = {
+          # "score_throughput": normalized_final_score_throughput,
+          "R_duration": batch_R_duration[0],
+          "R_packets": batch_R_packets[0],
+          "R_accumulated_delay": batch_R_accumulated_delay[0],
           "score_delay": normalized_final_score_delay,
           "actor_loss": actor_loss.item(),
           "value_loss": value_loss,

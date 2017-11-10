@@ -176,17 +176,17 @@ void Unicorn::get_action(const double& tickno, const int& packets_sent_in_this_e
   const double action = _rainbow.get_action(
     _thread_id,
     {
-      _memory.field(0),
-      _memory.field(1),
-      _memory.field(2),
-      _memory.field(3),
-      _memory.field(6), // loss rate
+      // _memory.field(0),
+      // _memory.field(1),
+      // _memory.field(2),
+      // _memory.field(3),
+      // _memory.field(6), // loss rate
       // (double) tickno - _memory._last_tick_sent, // time since last send
       // (double) tickno - _memory._last_tick_received, // time since last receive
       // (double) _memory._lost_since_last_time, // losses since last receive
-      // _memory._send, // FIXME: Is this gone because it is redundant?
-      // _memory._rec,
-      // _memory._last_tick_received - _memory._last_tick_sent,
+      _memory._send, // FIXME: Is this gone because it is redundant?
+      _memory._rec,
+      _memory._last_tick_received - _memory._last_tick_sent,
       // (double) _the_window,
       // (double) packets_sent_in_this_episode,
       // (double) tickno - _last_send_time
