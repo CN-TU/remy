@@ -103,14 +103,14 @@ class GameACNetwork(object):
 
 	def backup_vars(self, name=None):
 		def backup_vars_inner_function():
-			self.backup_lstm_state_action = self.lstm_state_action
-			self.backup_lstm_state_value = self.lstm_state_value
+			self.backup_lstm_state_action = self.lstm_state_out_action
+			self.backup_lstm_state_value = self.lstm_state_out_value
 		return backup_vars_inner_function
 
 	def restore_backup(self, name=None):
 		def restore_backup_inner_function():
-			self.lstm_state_action = self.backup_lstm_state_action
-			self.lstm_state_value = self.backup_lstm_state_value
+			self.lstm_state_out_action = self.backup_lstm_state_action
+			self.lstm_state_out_value = self.backup_lstm_state_value
 
 		return restore_backup_inner_function
 
