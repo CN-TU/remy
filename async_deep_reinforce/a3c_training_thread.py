@@ -71,11 +71,11 @@ class A3CTrainingThread(object):
     return self.local_network.get_vars()
 
   def _anneal_learning_rate(self, global_time_step):
-    learning_rate = self.initial_learning_rate * (self.max_global_time_step - global_time_step) / self.max_global_time_step
-    if learning_rate < 0.0:
-      learning_rate = 0.0
-    return learning_rate
-    # return self.initial_learning_rate
+    # learning_rate = self.initial_learning_rate * (self.max_global_time_step - global_time_step) / self.max_global_time_step
+    # if learning_rate < 0.0:
+    #   learning_rate = 0.0
+    # return learning_rate
+    return self.initial_learning_rate
 
   def _record_score(self, sess, summary_writer, summary_op, summary_inputs, things, global_t):
     # print("window in _record_score", self.windows, self.time_differences)
