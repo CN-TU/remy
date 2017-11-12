@@ -24,6 +24,7 @@ Makefile.in
 *.snm
 *.toc
 *checkpoints*
+core
 
 /.vscode
 
