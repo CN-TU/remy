@@ -89,11 +89,8 @@ learning_rate_input = tf.placeholder(PRECISION)
 #                               device = device)
 
 with tf.device(device):
-  grad_applier = tf.train.RMSPropOptimizer(
-    learning_rate = learning_rate_input,
-    decay = RMSP_ALPHA,
-    momentum = 0.0,
-    epsilon = RMSP_EPSILON
+  grad_applier = tf.train.GradientDescentOptimizer(
+    learning_rate = learning_rate_input
   )
 
 # grad_applier = tf.train.GradientDescentOptimizer(learning_rate = learning_rate_input)
