@@ -43,50 +43,54 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
     //   continue;
     // }
 
-    const int packets_sent_in_this_episode = (int) _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["sent"];
-
-    const double delay = packet.tick_received - packet.tick_sent;
-    const unsigned int lost_since_last_time = (unsigned int) packet.seq_num-_largest_ack-1;
     if (_id_to_sent_during_flow[packet.seq_num] == _flow_id) {
+      const unsigned int lost_since_last_time = (unsigned int) packet.seq_num-_largest_ack-1;
       _memory.lost(lost_since_last_time);
     }
 
-    for (auto it=_id_to_sent_during_action.begin(); it!=_id_to_sent_during_action.lower_bound(packet.seq_num);) {
-      _id_to_sent_during_action.erase(it->first);
-      _id_to_sent_during_flow.erase(it->first);
-    }
+    int packets_sent_in_this_episode = 1;
+    if (!packet.first) {
+      packets_sent_in_this_episode = (int) _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["sent"];
 
-    for (auto it=_outstanding_rewards.begin(); it!=_outstanding_rewards.lower_bound(_id_to_sent_during_action[packet.seq_num]);) {
-      const double throughput_final = it->second["received"];
-      const double delay_final = it->second["delay_acc"];
-      // const double duration = it->second["end_time"] - it->second["start_time"];
-      // const double duration = it->second["intersend_duration_acc"];
-      const double duration = it->second["interreceive_duration_acc"];
-      if (_training) {
-        _rainbow.put_reward(_thread_id, throughput_final, delay_final, duration);
+      const double delay = packet.tick_received - packet.tick_sent;
+
+      for (auto it=_id_to_sent_during_action.begin(); it!=_id_to_sent_during_action.lower_bound(packet.seq_num);) {
+        _id_to_sent_during_action.erase(it->first);
+        _id_to_sent_during_flow.erase(it->first);
       }
-      _put_rewards += 1;
-      it = _outstanding_rewards.erase(it);
-    }
 
-    _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["received"] += 1;
-    _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["delay_acc"] += delay;
-    // FIXME: It doesn't really matter but conceptually it's wrong. It should be the time since the start of the simulation, for example
-    if (_memory._last_tick_received != 0) {
-      _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["interreceive_duration_acc"] += packet.tick_received - _memory._last_tick_received;
-    } else {
-      _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["interreceive_duration_acc"] += packet.tick_received - _start_tick;
+      for (auto it=_outstanding_rewards.begin(); it!=_outstanding_rewards.lower_bound(_id_to_sent_during_action[packet.seq_num]);) {
+        const double throughput_final = it->second["received"];
+        const double delay_final = it->second["delay_acc"];
+        // const double duration = it->second["end_time"] - it->second["start_time"];
+        // const double duration = it->second["intersend_duration_acc"];
+        const double duration = it->second["interreceive_duration_acc"];
+        if (_training) {
+          _rainbow.put_reward(_thread_id, throughput_final, delay_final, duration);
+        }
+        _put_rewards += 1;
+        it = _outstanding_rewards.erase(it);
+      }
+
+      _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["received"] += 1;
+      _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["delay_acc"] += delay;
+      // FIXME: It doesn't really matter but conceptually it's wrong. It should be the time since the start of the simulation, for example
+      if (_memory._last_tick_received != 0) {
+        _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["interreceive_duration_acc"] += packet.tick_received - _memory._last_tick_received;
+      } else {
+        _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["interreceive_duration_acc"] += packet.tick_received - _start_tick;
+      }
+      // _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["end_time"] = packet.tick_received;
     }
-    // _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["end_time"] = packet.tick_received;
 
     _packets_received += 1;
-    vector<remy::Packet> packet_for_memory_update;
-    packet_for_memory_update.push_back(packet);
 
     // printf("%lu: %u, %u\n", _thread_id, _id_to_sent_during_flow[packet.seq_num], _flow_id);
     if (_id_to_sent_during_flow[packet.seq_num] == _flow_id) {
       // printf("%lu: Got packet flow of packet=%u, flow of Unicorn=%u, sent=%f, received=%f, seq_num=%d\n", _thread_id, _id_to_sent_during_flow[packet.seq_num], _flow_id, packet.tick_sent, packet.tick_received, packet.seq_num);
-      _memory.packets_received( packet_for_memory_update, _flow_id, _largest_ack );
+      vector<remy::Packet> packet_for_memory_update;
+      packet_for_memory_update.push_back(packet);
+      _memory.packets_received(packet_for_memory_update, _flow_id, _largest_ack );
     }
 
     _largest_ack = packet.seq_num;
@@ -97,7 +101,9 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
     }
 
     _id_to_sent_during_action.erase(packet.seq_num);
-    _id_to_sent_during_flow.erase(packet.seq_num);
+    if (!packet.first) {
+      _id_to_sent_during_flow.erase(packet.seq_num);
+    }
   }
 
   // _largest_ack = max( packets.at( packets.size() - 1 ).seq_num, _largest_ack );
@@ -150,7 +156,7 @@ void Unicorn::reset(const double & tickno)
     // printf("Assigned thread id %lu to Unicorn\n", _thread_id);
   }
   // printf("%lu: Starting\n", _thread_id);
-  get_action(tickno);
+  // get_action(tickno);
 
   /* initial window and intersend time */
   // const Whisker & current_whisker( _whiskers.use_whisker( _memory, _track ) );
@@ -187,6 +193,8 @@ void Unicorn::get_action(const double& tickno, const int& packets_sent_in_this_e
       _memory._send,
       _memory._rec,
       (_memory._last_tick_received - _memory._last_tick_sent),
+      _memory.field(2),
+      _memory.field(4),
       // (double) _the_window,
       // (double) packets_sent_in_this_episode,
       // (double) tickno - _last_send_time
