@@ -264,12 +264,12 @@ class A3CTrainingThread(object):
 
       R_packets = (ri[0] + GAMMA*R_packets)
       # TODO: In theory it should be np.log(R_bytes/R_duration) but remy doesn't have bytes
-      td = (np.log(R_packets/R_duration*SECONDS_NORMALIZER) - np.log(Vi[0]/Vi[2]*SECONDS_NORMALIZER))
+      td = (np.log(R_packets/R_duration) - np.log(Vi[0]/Vi[2]))
 
       R_accumulated_delay = (ri[1]*SECONDS_NORMALIZER + GAMMA*R_accumulated_delay)
       # R_delay = R_accumulated_delay/R_packets
       # td_delay = -(np.log(R_accumulated_delay/R_packets/DELAY_MULTIPLIER) - np.log(Vi[1]/Vi[0]/DELAY_MULTIPLIER))
-      td -= self.delay_delta*(R_accumulated_delay/R_packets/SECONDS_NORMALIZER - Vi[1]/Vi[0]/SECONDS_NORMALIZER)
+      td -= self.delay_delta/SECONDS_NORMALIZER*(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
       # td_delay = -(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
       batch_si.append(si)
