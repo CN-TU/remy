@@ -8,6 +8,7 @@ using namespace std;
 
 static const double alpha = 1.0 / 8.0;
 static const double slow_alpha = 1.0 / 256.0;
+// static const double middle_alpha = 1.0 / 32.0;
 
 void Memory::lost(const int lost) {
   // printf("lost: %d\n", lost);
@@ -40,7 +41,9 @@ void Memory::packets_received( const vector< remy::Packet > & packets, const uns
       _rec = (x.tick_received - _last_tick_received);
       _rec_send_ewma = (1 - alpha) * _rec_send_ewma + alpha * (x.tick_sent - _last_tick_sent);
       _rec_rec_ewma = (1 - alpha) * _rec_rec_ewma + alpha * (x.tick_received - _last_tick_received);
+
       _slow_rec_rec_ewma = (1 - slow_alpha) * _slow_rec_rec_ewma + slow_alpha * (x.tick_received - _last_tick_received);
+      _slow_rec_send_ewma = (1 - slow_alpha) * _slow_rec_send_ewma + slow_alpha * (x.tick_sent - _last_tick_sent);
 
       _last_tick_sent = x.tick_sent;
       _last_tick_received = x.tick_received;

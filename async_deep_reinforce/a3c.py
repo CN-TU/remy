@@ -89,9 +89,17 @@ learning_rate_input = tf.placeholder(PRECISION)
 #                               device = device)
 
 with tf.device(device):
-  grad_applier = tf.train.GradientDescentOptimizer(
-    learning_rate = learning_rate_input
+  grad_applier = tf.train.RMSPropOptimizer(
+    learning_rate = learning_rate_input,
+    decay = RMSP_ALPHA,
+    momentum = 0.0,
+    epsilon = RMSP_EPSILON
   )
+
+# with tf.device(device):
+#   grad_applier = tf.train.GradientDescentOptimizer(
+#     learning_rate = learning_rate_input
+#   )
 
 # grad_applier = tf.train.GradientDescentOptimizer(learning_rate = learning_rate_input)
 
@@ -147,6 +155,8 @@ with tf.device(device):
   R_duration = tf.placeholder(PRECISION)
   R_packets = tf.placeholder(PRECISION)
   R_accumulated_delay = tf.placeholder(PRECISION)
+  estimated_throughput = tf.placeholder(PRECISION)
+  estimated_delay = tf.placeholder(PRECISION)
   # speed = tf.placeholder(PRECISION)
   # tf.summary.scalar("score_throughput", score_throughput)
   tf.summary.scalar("score_delay", score_delay)
@@ -160,6 +170,11 @@ with tf.device(device):
   tf.summary.scalar("R_duration", R_duration)
   tf.summary.scalar("R_packets", R_packets)
   tf.summary.scalar("R_accumulated_delay", R_accumulated_delay)
+  tf.summary.scalar("estimated_throughput", estimated_throughput)
+  tf.summary.scalar("estimated_delay", estimated_delay)
+  tf.summary.scalar("value_throughput", value_throughput)
+  tf.summary.scalar("value_delay", value_delay)
+
   # tf.summary.scalar("speed", speed)
   summary_inputs = {
     # "score_throughput": score_throughput,
@@ -173,7 +188,11 @@ with tf.device(device):
     "std": std,
     "R_duration": R_duration,
     "R_packets": R_packets,
-    "R_accumulated_delay": R_accumulated_delay
+    "R_accumulated_delay": R_accumulated_delay,
+    "estimated_throughput": estimated_throughput,
+    "estimated_delay": estimated_delay,
+    "value_throughput": value_throughput,
+    "value_delay": value_delay
     # "speed": speed
   }
 

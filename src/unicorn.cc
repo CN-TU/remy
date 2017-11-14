@@ -175,6 +175,8 @@ double Unicorn::next_event_time( const double & tickno ) const
   }
 }
 
+const double NORMALIZER = 1e-1;
+
 void Unicorn::get_action(const double& tickno, const int& packets_sent_in_this_episode) {
 
   // FIXME: HACK!!!
@@ -182,19 +184,22 @@ void Unicorn::get_action(const double& tickno, const int& packets_sent_in_this_e
   const double action = _rainbow.get_action(
     _thread_id,
     {
-      // _memory.field(0),
-      // _memory.field(1),
-      // _memory.field(2),
-      // _memory.field(3),
+      _memory.field(0)*NORMALIZER,
+      _memory.field(1)*NORMALIZER,
+      _memory.field(2),
+      _memory.field(3)*NORMALIZER,
+      _memory.field(4)*NORMALIZER,
+      _memory.field(6)*NORMALIZER,
+      (_memory._last_tick_received - _memory._last_tick_sent)*NORMALIZER,
+      (double) _the_window,
       // _memory.field(6), // loss rate
       // (double) tickno - _memory._last_tick_sent, // time since last send
       // (double) tickno - _memory._last_tick_received, // time since last receive
       // (double) _memory._lost_since_last_time, // losses since last receive
-      _memory._send,
-      _memory._rec,
-      (_memory._last_tick_received - _memory._last_tick_sent),
-      _memory.field(2),
-      _memory.field(4),
+      _memory._send*NORMALIZER,
+      _memory._rec*NORMALIZER,
+      // _memory.field(2),
+      // _memory.field(4),
       // (double) _the_window,
       // (double) packets_sent_in_this_episode,
       // (double) tickno - _last_send_time

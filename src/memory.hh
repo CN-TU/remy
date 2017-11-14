@@ -18,6 +18,7 @@ private:
   DataType _slow_rec_rec_ewma;
   DataType _rtt_diff;
   DataType _queueing_delay;
+  DataType _slow_rec_send_ewma;
   DataType _loss;
 
 public:
@@ -35,6 +36,7 @@ public:
       _slow_rec_rec_ewma( s_data.at( 3 ) ),
       _rtt_diff( s_data.at(4) ),
       _queueing_delay( s_data.at(5) ),
+      _slow_rec_send_ewma( s_data.at(6) ),
       _loss( 0 ),
       _last_tick_sent( 0 ),
       _last_tick_received( 0 ),
@@ -51,6 +53,7 @@ public:
       _slow_rec_rec_ewma( 0 ),
       _rtt_diff( 0 ),
       _queueing_delay( 0 ),
+      _slow_rec_send_ewma( 0 ),
       _loss( 0 ),
       _last_tick_sent( 0 ),
       _last_tick_received( 0 ),
@@ -60,12 +63,12 @@ public:
       _lost_since_last_time(0)
   {}
 
-  void reset( void ) { _rec_send_ewma = _rec_rec_ewma = _rtt_ratio = _slow_rec_rec_ewma = _rtt_diff = _queueing_delay = _last_tick_sent = _last_tick_received = _min_rtt = _loss = _send = _rec = _lost_since_last_time = 0; }
+  void reset( void ) { _rec_send_ewma = _rec_rec_ewma = _rtt_ratio = _slow_rec_rec_ewma = _slow_rec_send_ewma = _rtt_diff = _queueing_delay = _last_tick_sent = _last_tick_received = _min_rtt = _loss = _send = _rec = _lost_since_last_time = 0; }
 
   static const unsigned int datasize = 6;
 
-  const DataType & field( unsigned int num ) const { return num == 0 ? _rec_send_ewma : num == 1 ? _rec_rec_ewma : num == 2 ? _rtt_ratio : num == 3 ? _slow_rec_rec_ewma : num == 4 ? _rtt_diff : num == 5 ? _queueing_delay : _loss ; }
-  DataType & mutable_field( unsigned int num )     { return num == 0 ? _rec_send_ewma : num == 1 ? _rec_rec_ewma : num == 2 ? _rtt_ratio : num == 3 ? _slow_rec_rec_ewma : num == 4 ? _rtt_diff : num == 5 ? _queueing_delay : _loss ; }
+  const DataType & field( unsigned int num ) const { return num == 0 ? _rec_send_ewma : num == 1 ? _rec_rec_ewma : num == 2 ? _rtt_ratio : num == 3 ? _slow_rec_rec_ewma : num == 4 ? _rtt_diff : num == 5 ? _queueing_delay : num == 6 ? _slow_rec_send_ewma : _loss ; }
+  DataType & mutable_field( unsigned int num )     { return num == 0 ? _rec_send_ewma : num == 1 ? _rec_rec_ewma : num == 2 ? _rtt_ratio : num == 3 ? _slow_rec_rec_ewma : num == 4 ? _rtt_diff : num == 5 ? _queueing_delay : num == 6 ? _slow_rec_send_ewma : _loss ; }
 
   void packet_sent( const remy::Packet & packet __attribute((unused)) ) {}
   void packets_received( const std::vector< remy::Packet > & packets, const unsigned int flow_id, const int largest_ack );
