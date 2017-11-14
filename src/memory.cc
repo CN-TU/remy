@@ -121,6 +121,7 @@ Memory::Memory( const bool is_lower_limit, const RemyBuffers::Memory & dna )
     _slow_rec_rec_ewma( get_val_or_default( dna, slow_rec_rec_ewma, is_lower_limit ) ),
     _rtt_diff( get_val_or_default( dna, rtt_diff, is_lower_limit ) ),
     _queueing_delay( get_val_or_default( dna, queueing_delay, is_lower_limit ) ),
+    _slow_rec_send_ewma( 0 ),
     _loss(0), //FIXME: Should change "DNA" at some point
     _last_tick_sent( 0 ),
     _last_tick_received( 0 ),
