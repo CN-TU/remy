@@ -172,8 +172,6 @@ with tf.device(device):
   tf.summary.scalar("R_accumulated_delay", R_accumulated_delay)
   tf.summary.scalar("estimated_throughput", estimated_throughput)
   tf.summary.scalar("estimated_delay", estimated_delay)
-  tf.summary.scalar("value_throughput", value_throughput)
-  tf.summary.scalar("value_delay", value_delay)
 
   # tf.summary.scalar("speed", speed)
   summary_inputs = {
@@ -190,9 +188,7 @@ with tf.device(device):
     "R_packets": R_packets,
     "R_accumulated_delay": R_accumulated_delay,
     "estimated_throughput": estimated_throughput,
-    "estimated_delay": estimated_delay,
-    "value_throughput": value_throughput,
-    "value_delay": value_delay
+    "estimated_delay": estimated_delay
     # "speed": speed
   }
 

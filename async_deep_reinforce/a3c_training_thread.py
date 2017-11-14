@@ -367,8 +367,6 @@ class A3CTrainingThread(object):
           # "score_throughput": normalized_final_score_throughput,
           "estimated_throughput": batch_R_packets[0]/batch_R_duration[0]*SECONDS_NORMALIZER,
           "estimated_delay": batch_R_accumulated_delay[0]/batch_R_packets[0]/SECONDS_NORMALIZER,
-          "value_throughput": values[0][0]/values[0][2]*SECONDS_NORMALIZER,
-          "value_delay": values[0][1]/values[0][0]/SECONDS_NORMALIZER,
           "R_duration": batch_R_duration[0]/SECONDS_NORMALIZER,
           "R_packets": batch_R_packets[0],
           "R_accumulated_delay": batch_R_accumulated_delay[0]/SECONDS_NORMALIZER,
