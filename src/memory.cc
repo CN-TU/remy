@@ -32,11 +32,16 @@ void Memory::packets_received( const vector< remy::Packet > & packets, const uns
     if ( x.seq_num > largest_ack ) {
       pkt_outstanding = x.seq_num - largest_ack;
     }
-    if ( _last_tick_sent == 0 || _last_tick_received == 0 ) {
-      _last_tick_sent = x.tick_sent;
-      _last_tick_received = x.tick_received;
-      _min_rtt = rtt;
-    } else {
+    if (_min_rtt <= 0) {
+      _min_rtt = x.tick_received - x.tick_sent;
+    }
+    assert(_last_tick_received != 0 and _last_tick_sent != 0);
+    // if ( _last_tick_sent == 0 || _last_tick_received == 0 ) {
+    //   assert(false);
+    //   // _last_tick_sent = x.tick_sent;
+    //   // _last_tick_received = x.tick_received;
+    //   // _min_rtt = rtt;
+    // } else {
       _send = (x.tick_sent - _last_tick_sent);
       _rec = (x.tick_received - _last_tick_received);
       _rec_send_ewma = (1 - alpha) * _rec_send_ewma + alpha * (x.tick_sent - _last_tick_sent);
@@ -55,7 +60,7 @@ void Memory::packets_received( const vector< remy::Packet > & packets, const uns
       assert( _rtt_diff >= 0 );
       _queueing_delay = _rec_rec_ewma * pkt_outstanding;
       _loss = (1 - alpha) * _loss + alpha * 0;
-    }
+    // }
   }
 }
 
