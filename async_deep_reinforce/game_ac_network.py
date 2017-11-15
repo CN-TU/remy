@@ -62,8 +62,6 @@ class GameACNetwork(object):
 			# 		bijector=ds.bijectors.Exp(),
 			# 		name="LogNormalTransformedDistribution")
 
-			self.distribution_mean = self.pi[0]
-			self.distribution_std = self.pi[1]
 			# self.chosen_action = tf.ceil(self.distribution.sample())
 			self.chosen_action = self.distribution.sample()
 
@@ -372,7 +370,7 @@ class GameACLSTMNetwork(GameACNetwork):
 		# We don't have to roll back the LSTM state here as it is restored in the "process" function of a3c_training_thread.py anyway and because run_loss is only called there.
 		prev_lstm_state_out_action = self.lstm_state_out_action
 		prev_lstm_state_out_value = self.lstm_state_out_value
-		result = sess.run( [self.entropy, self.actor_loss, self.value_loss, self.total_loss, self.distribution_mean, self.distribution_std], feed_dict = feed_dict )
+		result = sess.run( [self.entropy, self.actor_loss, self.value_loss, self.total_loss, self.pi[0], self.pi[1]], feed_dict = feed_dict )
 		# roll back lstm state
 		self.lstm_state_out_action = prev_lstm_state_out_action
 		self.lstm_state_out_value = prev_lstm_state_out_value
