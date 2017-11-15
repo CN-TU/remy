@@ -45,7 +45,7 @@ USE_GPU = False # To use GPU, set True
 N_LSTM_LAYERS = int(environ.get('layers')) if environ.get('layers') is not None else 1
 
 # Don't know if this normalization stuff makes sense. Better disable it when possible...
-SECONDS_NORMALIZER = 1e-1
+SECONDS_NORMALIZER = 1e-2
 # SECONDS_NORMALIZER = 1
 
 DELAY = 150*SECONDS_NORMALIZER
@@ -61,7 +61,7 @@ INTER_PACKET_ARRIVAL_TIME_OFFSET = inverse_softplus(DELAY)
 INITIAL_WINDOW_INCREASE_BIAS_OFFSET = 0
 INITIAL_WINDOW_INCREASE_WEIGHT_FACTOR = 1
 
-STATE_SIZE = int(environ.get('state_size')) if environ.get('state_size') is not None else 10
+STATE_SIZE = int(environ.get('state_size')) if environ.get('state_size') is not None else 8
 HIDDEN_SIZE = int(environ.get('hidden_size')) if environ.get('hidden_size') is not None else 32
 # ACTION_SIZE = 1 # action size
 LAYER_NORMALIZATION = False
