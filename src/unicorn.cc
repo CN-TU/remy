@@ -92,7 +92,7 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
       // printf("%lu: Got packet flow of packet=%u, flow of Unicorn=%u, sent=%f, received=%f, seq_num=%d\n", _thread_id, _id_to_sent_during_flow[packet.seq_num], _flow_id, packet.tick_sent, packet.tick_received, packet.seq_num);
       vector<remy::Packet> packet_for_memory_update;
       packet_for_memory_update.push_back(packet);
-      _memory.packets_received(packet_for_memory_update, _flow_id, _largest_ack );
+      _memory.packets_received(packet_for_memory_update, _flow_id, _largest_ack);
     }
 
     _largest_ack = max( packet.seq_num, _largest_ack );
