@@ -175,7 +175,7 @@ double Unicorn::next_event_time( const double & tickno ) const
   }
 }
 
-const double NORMALIZER = 1e-1;
+const double NORMALIZER = 1e-2;
 
 void Unicorn::get_action(const double& tickno, const int& packets_sent_in_this_episode) {
 
@@ -196,8 +196,8 @@ void Unicorn::get_action(const double& tickno, const int& packets_sent_in_this_e
       // (double) tickno - _memory._last_tick_sent, // time since last send
       // (double) tickno - _memory._last_tick_received, // time since last receive
       // (double) _memory._lost_since_last_time, // losses since last receive
-      _memory._send*NORMALIZER,
-      _memory._rec*NORMALIZER,
+      // _memory._send*NORMALIZER,
+      // _memory._rec*NORMALIZER,
       // _memory.field(2),
       // _memory.field(4),
       // (double) _the_window,
