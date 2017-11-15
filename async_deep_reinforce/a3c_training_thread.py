@@ -87,6 +87,7 @@ class A3CTrainingThread(object):
     summary_writer.flush()
 
   def action_step(self, sess, state, tickno, window):
+    assert(state[-1] > 0)
     # Run this still with the old weights, before syncing them
     # print("state", state)
 

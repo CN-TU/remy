@@ -61,7 +61,7 @@ INTER_PACKET_ARRIVAL_TIME_OFFSET = inverse_softplus(DELAY)
 INITIAL_WINDOW_INCREASE_BIAS_OFFSET = 0
 INITIAL_WINDOW_INCREASE_WEIGHT_FACTOR = 1
 
-STATE_SIZE = int(environ.get('state_size')) if environ.get('state_size') is not None else 8
+STATE_SIZE = int(environ.get('state_size')) if environ.get('state_size') is not None else 10
 HIDDEN_SIZE = int(environ.get('hidden_size')) if environ.get('hidden_size') is not None else 32
 # ACTION_SIZE = 1 # action size
 LAYER_NORMALIZATION = False
