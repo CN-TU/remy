@@ -272,7 +272,7 @@ class A3CTrainingThread(object):
       # td -= self.delay_delta/SECONDS_NORMALIZER*(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
       # td_delay = -(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
-      td = R_packets/R_duration/(R_delay+self.delay_delta) - Vi[0]/Vi[2]/(Vi[1]+self.delay_delta)
+      td = R_packets/R_duration/(R_accumulated_delay+self.delay_delta) - Vi[0]/Vi[2]/(Vi[1]+self.delay_delta)
 
       batch_si.append(si)
       batch_ai.append(ai)
