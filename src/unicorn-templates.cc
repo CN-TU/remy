@@ -21,6 +21,9 @@ void Unicorn::send( const unsigned int id, NextHop & next, const double & tickno
     remy::Packet p( id, _flow_id, tickno, _packets_sent );
     _id_to_sent_during_flow[_packets_sent] = _flow_id;
 
+    if (_packets_sent == packets_sent_cap-1) {
+      p.last = true;
+    }
     if (_last_send_time != 0) {
       _id_to_sent_during_action[_packets_sent] = _put_actions;
       _outstanding_rewards[_put_actions]["sent"] += 1;

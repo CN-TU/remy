@@ -24,7 +24,8 @@ Unicorn::Unicorn(const bool& cooperative, const double& delay_delta)
     _training(true),
     _delay_delta(delay_delta),
     _id_to_sent_during_action(),
-    _id_to_sent_during_flow()
+    _id_to_sent_during_flow(),
+    _flow_to_last_received()
 {
   // puts("Creating a Unicorn");
 }
@@ -77,7 +78,7 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
       _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["delay_acc"] += delay;
       // FIXME: It doesn't really matter but conceptually it's wrong. It should be the time since the start of the simulation, for example
       // if (_memory._last_tick_received != 0) {
-        _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["interreceive_duration_acc"] += packet.tick_received - _memory._last_tick_received;
+        _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["interreceive_duration_acc"] += packet.tick_received - _flow_to_last_received[_id_to_sent_during_flow[packet.seq_num]];
       // } else {
       //   _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["interreceive_duration_acc"] += packet.tick_received - _start_tick;
       // }
@@ -99,6 +100,12 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
     if (_id_to_sent_during_flow[packet.seq_num] == _flow_id) {
       // printf("%lu: Yeah, getting action after receiving a packet...\n", _thread_id);
       get_action(packet.tick_received, packets_sent_in_this_episode);
+    }
+
+    _flow_to_last_received[_id_to_sent_during_flow[packet.seq_num]] = packet.tick_received;
+
+    if (packet.last) {
+      _flow_to_last_received.erase(_id_to_sent_during_flow.erase(packet.seq_num));
     }
 
     _id_to_sent_during_flow.erase(packet.seq_num);
