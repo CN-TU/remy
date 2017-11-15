@@ -34,19 +34,20 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
   assert(packets.size() == 1);
 
   // So this should only happen after a reset, when a packet arrives very late...
-  assert (_largest_ack < packets.at( packets.size() - 1 ).seq_num);
+  // assert (_largest_ack < packets.at( packets.size() - 1 ).seq_num);
+  // const int previous_largest_ack = _largest_ack;
 
-  const int previous_largest_ack = _largest_ack;
+  // _largest_ack = max( (int) packets.at( packets.size() - 1 ).seq_num, _largest_ack );
 
   for ( auto const &packet : packets ) {
     // if (_id_to_sent_during_flow[packet.seq_num] != _flow_id) {
     //   continue;
     // }
 
-    if (_id_to_sent_during_flow[packet.seq_num] == _flow_id) {
-      const unsigned int lost_since_last_time = (unsigned int) packet.seq_num-_largest_ack-1;
-      _memory.lost(lost_since_last_time);
-    }
+    // if (_id_to_sent_during_flow[packet.seq_num] == _flow_id) {
+    //   const unsigned int lost_since_last_time = (unsigned int) packet.seq_num-_largest_ack-1;
+    //   _memory.lost(lost_since_last_time);
+    // }
 
     int packets_sent_in_this_episode = 1;
     if (!packet.first) {
@@ -54,7 +55,7 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
 
       const double delay = packet.tick_received - packet.tick_sent;
 
-      for (auto it=_id_to_sent_during_action.begin(); it!=_id_to_sent_during_action.lower_bound(packet.seq_num);) {
+      for (auto it=_id_to_sent_during_action.begin(); it!=_id_to_sent_during_action.lower_bound(packet.seq_num); it++) {
         _id_to_sent_during_action.erase(it->first);
         _id_to_sent_during_flow.erase(it->first);
       }
@@ -75,11 +76,11 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
       _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["received"] += 1;
       _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["delay_acc"] += delay;
       // FIXME: It doesn't really matter but conceptually it's wrong. It should be the time since the start of the simulation, for example
-      if (_memory._last_tick_received != 0) {
+      // if (_memory._last_tick_received != 0) {
         _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["interreceive_duration_acc"] += packet.tick_received - _memory._last_tick_received;
-      } else {
-        _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["interreceive_duration_acc"] += packet.tick_received - _start_tick;
-      }
+      // } else {
+      //   _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["interreceive_duration_acc"] += packet.tick_received - _start_tick;
+      // }
       // _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["end_time"] = packet.tick_received;
     }
 
@@ -93,24 +94,24 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
       _memory.packets_received(packet_for_memory_update, _flow_id, _largest_ack );
     }
 
-    _largest_ack = packet.seq_num;
+    _largest_ack = max( packet.seq_num, _largest_ack );
 
     if (_id_to_sent_during_flow[packet.seq_num] == _flow_id) {
       // printf("%lu: Yeah, getting action after receiving a packet...\n", _thread_id);
       get_action(packet.tick_received, packets_sent_in_this_episode);
     }
 
-    _id_to_sent_during_action.erase(packet.seq_num);
+    _id_to_sent_during_flow.erase(packet.seq_num);
     if (!packet.first) {
-      _id_to_sent_during_flow.erase(packet.seq_num);
+      _id_to_sent_during_action.erase(packet.seq_num);
     }
   }
 
   // _largest_ack = max( packets.at( packets.size() - 1 ).seq_num, _largest_ack );
-  if (!(_largest_ack > previous_largest_ack)) {
+  // if (!(_largest_ack > previous_largest_ack)) {
     // printf("%lu: largest ack: %d, previous largest ack: %d\n", _thread_id, _largest_ack, previous_largest_ack);
-  }
-  assert (_largest_ack > previous_largest_ack);
+  // }
+  // assert (_largest_ack > previous_largest_ack);
 }
 
 void Unicorn::reset(const double & tickno)
@@ -139,6 +140,7 @@ void Unicorn::reset(const double & tickno)
   // assert(_sent_packets.size() == 0);
 
   _memory.reset();
+  _largest_ack = _packets_sent - 1; /* Assume everything's been delivered */
   _last_send_time = 0;
   _the_window = MIN_WINDOW_UNICORN; // Reset the window to 1
   _flow_id += 1;
