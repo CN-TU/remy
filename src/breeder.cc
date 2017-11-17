@@ -15,6 +15,8 @@ typedef accumulator_set< double, stats< tag::tail_quantile <boost::accumulators:
 template <typename T>
 void Breeder< T >::apply_best_split( T & tree, const unsigned int generation ) const
 {
+  // FIXME: Just for debugging
+  assert(false);
   const Evaluator< T > eval( _options.config_range );
   auto outcome( eval.score( tree, true ) );
 
@@ -50,7 +52,7 @@ ActionImprover< T, A >::ActionImprover( const Evaluator< T > & s_evaluator,
 template <typename T, typename A>
 void ActionImprover< T, A >::evaluate_replacements(const vector<A> &replacements,
     vector< pair< const A &, future< pair< bool, double > > > > &scores,
-    const double carefulness ) 
+    const double carefulness )
 {
   for ( const auto & test_replacement : replacements ) {
     if ( eval_cache_.find( test_replacement ) == eval_cache_.end() ) {
@@ -71,16 +73,18 @@ void ActionImprover< T, A >::evaluate_replacements(const vector<A> &replacements
         async( launch::deferred, [] ( const double value ) {
                return make_pair( false, value ); }, eval_cache_.at( test_replacement ) ) );
     }
-  } 
+  }
 }
 
 template <typename T, typename A>
 vector<A> ActionImprover< T, A >::early_bail_out( const vector< A > &replacements,
         const double carefulness, const double quantile_to_keep )
-{  
+{
+  // FIXME: Just for debugging
+  assert(false);
   vector< pair< const A &, future< pair< bool, double > > > > scores;
   evaluate_replacements( replacements, scores, carefulness );
-  
+
   accumulator_t_right acc(
      tag::tail< boost::accumulators::right >::cache_size = scores.size() );
   vector<double> raw_scores;
@@ -89,9 +93,9 @@ vector<A> ActionImprover< T, A >::early_bail_out( const vector< A > &replacement
     acc( score );
     raw_scores.push_back( score );
   }
-  
+
   /* Set the lower bound to be MAX_PERCENT_ERROR worse than the current best score */
-  double lower_bound = std::min( score_to_beat_ * (1 + MAX_PERCENT_ERROR), 
+  double lower_bound = std::min( score_to_beat_ * (1 + MAX_PERCENT_ERROR),
         score_to_beat_ * (1 - MAX_PERCENT_ERROR) );
   /* Get the score at given quantile */
   double quantile_bound = quantile( acc, quantile_probability = 1 - quantile_to_keep );
@@ -112,10 +116,12 @@ vector<A> ActionImprover< T, A >::early_bail_out( const vector< A > &replacement
 template <typename T, typename A>
 double ActionImprover< T, A >::improve( A & action_to_improve )
 {
+  // FIXME: Just for debugging
+  assert(false);
   auto replacements = get_replacements( action_to_improve );
   vector< pair< const A &, future< pair< bool, double > > > > scores;
 
-  /* Run for 10% simulation time to get estimates for the final score 
+  /* Run for 10% simulation time to get estimates for the final score
      and discard bad performing ones early on. */
   vector<A> top_replacements = early_bail_out( replacements, 0.1, 0.5 );
 

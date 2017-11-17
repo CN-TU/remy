@@ -14,11 +14,6 @@ struct BreederOptions
   ConfigRange config_range = ConfigRange();
 };
 
-struct BreederOptionsUnicorn
-{
-  ConfigRangeUnicorn config_range = ConfigRangeUnicorn();
-};
-
 template <typename T, typename A>
 class ActionImprover
 {
@@ -42,7 +37,7 @@ protected:
         const double carefulness, const double quantile_to_keep);
 
 public:
-  ActionImprover( const Evaluator<  T > & evaluator, const T & tree, 
+  ActionImprover( const Evaluator<  T > & evaluator, const T & tree,
                    const double score_to_beat );
   virtual ~ActionImprover() {};
 

@@ -46,68 +46,85 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
     //   continue;
     // }
 
-    // if (_id_to_sent_during_flow[packet.seq_num] == _flow_id) {
-    //   const unsigned int lost_since_last_time = (unsigned int) packet.seq_num-_largest_ack-1;
-    //   _memory.lost(lost_since_last_time);
-    // }
-
-    int packets_sent_in_this_episode = 1;
-    packets_sent_in_this_episode = (int) _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["sent"];
-
-    const double delay = packet.tick_received - packet.tick_sent;
+    if (_id_to_sent_during_flow[packet.seq_num] == _flow_id) {
+      const unsigned int lost_since_last_time = (unsigned int) max(packet.seq_num-_largest_ack-1, (long) 0);
+      _memory.lost(lost_since_last_time);
+    }
 
     for (auto it=_id_to_sent_during_action.begin(); it!=_id_to_sent_during_action.lower_bound(packet.seq_num); it++) {
       _id_to_sent_during_action.erase(it->first);
+      for (auto inner_it=_flow_to_last_received.begin(); inner_it!=_flow_to_last_received.lower_bound(_id_to_sent_during_flow[it->first]);) {
+        inner_it = _flow_to_last_received.erase(inner_it);
+      }
       _id_to_sent_during_flow.erase(it->first);
     }
 
-    for (auto it=_outstanding_rewards.begin(); it!=_outstanding_rewards.lower_bound(_id_to_sent_during_action[packet.seq_num]);) {
-      const double throughput_final = it->second["received"];
-      const double delay_final = it->second["delay_acc"];
-      // const double duration = it->second["end_time"] - it->second["start_time"];
-      // const double duration = it->second["intersend_duration_acc"];
-      const double duration = it->second["interreceive_duration_acc"];
-      if (_training) {
-        // FIXME: A debugging hack to assert that no packets get lost when using infinitely sized buffers
-        assert(it->second["received"] == it->second["sent"]);
-        _rainbow.put_reward(_thread_id, throughput_final, delay_final, duration);
-      }
-      _put_rewards += 1;
-      it = _outstanding_rewards.erase(it);
-    }
+    int packets_sent_in_this_episode = 1;
+    // if (!packet.first) {
+      packets_sent_in_this_episode = (int) _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["sent"];
 
-    _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["received"] += 1;
-    _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["delay_acc"] += delay;
-    // FIXME: It doesn't really matter but conceptually it's wrong. It should be the time since the start of the simulation, for example
-    // if (_memory._last_tick_received != 0) {
-      _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["interreceive_duration_acc"] += packet.tick_received - _flow_to_last_received[_id_to_sent_during_flow[packet.seq_num]];
-    // } else {
-    //   _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["interreceive_duration_acc"] += packet.tick_received - _start_tick;
+      const double delay = packet.tick_received - packet.tick_sent;
+
+      for (auto it=_outstanding_rewards.begin(); it!=_outstanding_rewards.lower_bound(_id_to_sent_during_action[packet.seq_num]);) {
+        const double throughput_final = it->second["received"];
+        const double delay_final = it->second["delay_acc"];
+        // const double duration = it->second["end_time"] - it->second["start_time"];
+        // const double duration = it->second["intersend_duration_acc"];
+        const double duration = it->second["interreceive_duration_acc"];
+        if (_training) {
+          // FIXME: A debugging hack to assert that no packets get lost when using infinitely sized buffers
+          assert(it->second["received"] == it->second["sent"]);
+          _rainbow.put_reward(_thread_id, throughput_final, delay_final, duration);
+        }
+        _put_rewards += 1;
+        it = _outstanding_rewards.erase(it);
+      }
+
+      _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["received"] += 1;
+      _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["delay_acc"] += delay;
+      // FIXME: It doesn't really matter but conceptually it's wrong. It should be the time since the start of the simulation, for example
+      // if (_memory._last_tick_received != 0) {
+        _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["interreceive_duration_acc"] += packet.tick_received - _flow_to_last_received[_id_to_sent_during_flow[packet.seq_num]];
+      // } else {
+      //   _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["interreceive_duration_acc"] += packet.tick_received - _start_tick;
+      // }
+      // _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["end_time"] = packet.tick_received;
     // }
-    // _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["end_time"] = packet.tick_received;
 
     _packets_received += 1;
 
     // printf("%lu: %u, %u\n", _thread_id, _id_to_sent_during_flow[packet.seq_num], _flow_id);
-    if (_id_to_sent_during_flow[packet.seq_num] == _flow_id) {
+    if (_id_to_sent_during_flow[packet.seq_num] == _flow_id && (_active_flows.find(_id_to_sent_during_flow[packet.seq_num]) != _active_flows.end())) {
       // printf("%lu: Got packet flow of packet=%u, flow of Unicorn=%u, sent=%f, received=%f, seq_num=%d\n", _thread_id, _id_to_sent_during_flow[packet.seq_num], _flow_id, packet.tick_sent, packet.tick_received, packet.seq_num);
       vector<remy::Packet> packet_for_memory_update;
       packet_for_memory_update.push_back(packet);
       _memory.packets_received(packet_for_memory_update, _flow_id, _largest_ack );
-    }
 
-    _largest_ack = max( packet.seq_num, _largest_ack );
-
-    if (_id_to_sent_during_flow[packet.seq_num] == _flow_id && _active_flows.find(_id_to_sent_during_flow[packet.seq_num])) {
       // printf("%lu: Yeah, getting action after receiving a packet...\n", _thread_id);
       get_action(packet.tick_received, packets_sent_in_this_episode);
     }
 
-    _flow_to_last_received[_id_to_sent_during_flow[packet.seq_num]] = packet.tick_received;
-    _flow_to_last_received.erase(_id_to_sent_during_flow.erase(packet.seq_num));
+    _largest_ack = max(packet.seq_num, _largest_ack);
 
-    _id_to_sent_during_flow.erase(packet.seq_num);
-    _id_to_sent_during_action.erase(packet.seq_num);
+    _flow_to_last_received[_id_to_sent_during_flow[packet.seq_num]] = packet.tick_received;
+
+    // for (auto it=_flow_to_last_received.begin(); it!=_flow_to_last_received.lower_bound(_id_to_sent_during_flow[packet.seq_num]);) {
+    //   it = _flow_to_last_received.erase(it);
+    // }
+
+    // _id_to_sent_during_flow.erase(packet.seq_num);
+    // _id_to_sent_during_action.erase(packet.seq_num);
+
+    // // FIXME: This would be nicer
+    // for (auto it=_flow_to_last_received.begin(); it!=_flow_to_last_received.lower_bound(_id_to_sent_during_flow[packet.seq_num]);) {
+    //   it = _flow_to_last_received.erase(it);
+    // }
+    // for (auto it=_id_to_sent_during_flow.begin(); it!=_id_to_sent_during_flow.lower_bound(packet.seq_num);) {
+    //   it = _id_to_sent_during_flow.erase(it);
+    // }
+    // for (auto it=_id_to_sent_during_action.begin(); it!=_id_to_sent_during_action.lower_bound(packet.seq_num);) {
+    //   it = _id_to_sent_during_action.erase(it);
+    // }
   }
 
   // _largest_ack = max( packets.at( packets.size() - 1 ).seq_num, _largest_ack );
@@ -162,7 +179,7 @@ void Unicorn::reset(const double & tickno)
     // printf("Assigned thread id %lu to Unicorn\n", _thread_id);
   }
   // printf("%lu: Starting\n", _thread_id);
-  // get_action(tickno);
+  get_action(tickno);
 
   /* initial window and intersend time */
   // const Whisker & current_whisker( _whiskers.use_whisker( _memory, _track ) );
@@ -186,28 +203,28 @@ const double NORMALIZER = 1e-2;
 void Unicorn::get_action(const double& tickno, const int& packets_sent_in_this_episode) {
 
   // FIXME: HACK!!!
-  (void) packets_sent_in_this_episode;
+  // (void) packets_sent_in_this_episode;
   const double action = _rainbow.get_action(
     _thread_id,
     {
       _memory.field(0)*NORMALIZER,
       _memory.field(1)*NORMALIZER,
-      _memory.field(2),
+      // _memory.field(2),
       _memory.field(3)*NORMALIZER,
-      _memory.field(4)*NORMALIZER,
+      // _memory.field(4)*NORMALIZER,
       _memory.field(6)*NORMALIZER,
-      (_memory._last_tick_received - _memory._last_tick_sent)*NORMALIZER,
+      // (_memory._last_tick_received - _memory._last_tick_sent)*NORMALIZER,
       (double) _the_window,
       // _memory.field(6), // loss rate
       // (double) tickno - _memory._last_tick_sent, // time since last send
       // (double) tickno - _memory._last_tick_received, // time since last receive
       // (double) _memory._lost_since_last_time, // losses since last receive
+      (double) packets_sent_in_this_episode,
       _memory._send*NORMALIZER,
       _memory._rec*NORMALIZER,
       // _memory.field(2),
       // _memory.field(4),
       // (double) _the_window,
-      // (double) packets_sent_in_this_episode,
       // (double) tickno - _last_send_time
     },
     tickno,

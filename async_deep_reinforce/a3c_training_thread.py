@@ -87,9 +87,9 @@ class A3CTrainingThread(object):
     summary_writer.flush()
 
   def action_step(self, sess, state, tickno, window):
-    assert(state[-1] > 0)
     # Run this still with the old weights, before syncing them
     # print("state", state)
+    assert(np.all(np.isfinite(np.array(state, dtype=np.float32))))
 
     # print(self.thread_index, "state", state)
     if self.training:
@@ -190,6 +190,7 @@ class A3CTrainingThread(object):
     # self.estimated_values = []
     # self.start_lstm_states = []
     # self.variable_snapshots = []
+    # FIXME: Not resetting state any longer!!! Is that bad?
     self.local_network.reset_state()
 
   def process(self, sess, global_t, summary_writer, summary_op, summary_inputs, time_difference=None):
@@ -273,7 +274,13 @@ class A3CTrainingThread(object):
       # td -= self.delay_delta/SECONDS_NORMALIZER*(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
       # td_delay = -(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
-      td = R_packets/R_duration/(R_accumulated_delay/R_packets+self.delay_delta) - Vi[0]/Vi[2]/(Vi[1]/Vi[0]+self.delay_delta)
+      # Doesn't work...
+      # td = R_packets/R_duration/(R_accumulated_delay/R_packets+self.delay_delta) - Vi[0]/Vi[2]/(Vi[1]/Vi[0]+self.delay_delta)
+
+      td = R_packets/R_duration/(R_accumulated_delay/R_packets) - Vi[0]/Vi[2]/(Vi[1]/Vi[0]) - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+
+      # td = (np.log(R_packets/R_duration) - np.log(Vi[0]/Vi[2])) - self.delay_delta/SECONDS_NORMALIZER*(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+
 
       batch_si.append(si)
       batch_ai.append(ai)
