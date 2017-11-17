@@ -27,8 +27,12 @@ void Unicorn::send( const unsigned int id, NextHop & next, const double & tickno
       _active_flows.erase(_flow_id);
     }
     if (_last_send_time == 0) {
+      _memory._last_tick_sent = tickno;
+      _memory._last_tick_received = tickno;
       _flow_to_last_received[_flow_id] = tickno;
     }
+
+    _last_send_time = tickno;
     _id_to_sent_during_action[_packets_sent] = _put_actions;
     _outstanding_rewards[_put_actions]["sent"] += 1;
     _outstanding_rewards[_put_actions]["intersend_duration_acc"] += tickno - _last_send_time;
@@ -36,8 +40,6 @@ void Unicorn::send( const unsigned int id, NextHop & next, const double & tickno
 
     _memory.packet_sent( p );
     next.accept( p, tickno );
-
-    _last_send_time = tickno;
   } else {
   }
 }

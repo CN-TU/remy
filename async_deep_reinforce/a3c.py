@@ -251,7 +251,7 @@ def create_training_thread(training, delay_delta):
   created_thread.local_t = 0
   created_thread.episode_reward_throughput = 0
   created_thread.episode_reward_delay = 0
-  created_thread.local_network.reset_state()
+  # created_thread.local_network.reset_state()
   sess.run( created_thread.sync )
 
   return return_index

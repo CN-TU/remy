@@ -16,7 +16,7 @@ UnicornEvaluator::UnicornEvaluator( const ConfigRangeUnicorn & range )
     _configs(),
     _config_range(range)
 {
-  // printf("Creating UnicornEvaluator with random seed %u\n", _prng_seed);
+  printf("Creating UnicornEvaluator with random seed %u\n", _prng_seed);
   srand(_prng_seed);
   // add configs from every point in the cube of configs
   for (double simulation_ticks = range.simulation_ticks.low; simulation_ticks <= range.simulation_ticks.high; simulation_ticks += range.simulation_ticks.incr) {

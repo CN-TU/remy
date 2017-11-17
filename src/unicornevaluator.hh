@@ -7,6 +7,7 @@
 #include "random.hh"
 #include "network.hh"
 #include "unicorn.hh"
+#include "configrange.hh"
 
 class UnicornEvaluator
 {
