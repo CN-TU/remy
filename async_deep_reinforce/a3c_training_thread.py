@@ -277,7 +277,9 @@ class A3CTrainingThread(object):
       # Doesn't work...
       # td = R_packets/R_duration/(R_accumulated_delay/R_packets+self.delay_delta) - Vi[0]/Vi[2]/(Vi[1]/Vi[0]+self.delay_delta)
 
-      td = (np.log(R_packets/R_duration) - np.log(Vi[0]/Vi[2])) - self.delay_delta/SECONDS_NORMALIZER*(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+      td = R_packets/R_duration/(R_accumulated_delay/R_packets) - Vi[0]/Vi[2]/(Vi[1]/Vi[0]) - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+
+      # td = (np.log(R_packets/R_duration) - np.log(Vi[0]/Vi[2])) - self.delay_delta/SECONDS_NORMALIZER*(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
 
       batch_si.append(si)
