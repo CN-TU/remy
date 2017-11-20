@@ -125,10 +125,10 @@ double Rainbow::get_action(const long unsigned int thread_id, const vector<doubl
 	return action;
 }
 
-void Rainbow::put_reward(const long unsigned int thread_id, const double reward_throughput, const double reward_delay, const double duration) {
+void Rainbow::put_reward(const long unsigned int thread_id, const double reward_throughput, const double reward_delay, const double duration, const double lost) {
 	lock_guard<mutex> guard(global_lock);
 
-	PyObject* pRewardArgs = Py_BuildValue("(ifff)", (long) thread_id, reward_throughput, reward_delay, duration);
+	PyObject* pRewardArgs = Py_BuildValue("(iffff)", (long) thread_id, reward_throughput, reward_delay, duration, lost);
 	PyObject* pReturnValue = PyObject_CallObject(pRewardFunc, pRewardArgs);
 	if (pReturnValue == NULL) {
 		PyErr_Print();

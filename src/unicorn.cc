@@ -11,6 +11,7 @@ Unicorn::Unicorn(const bool& cooperative, const double& delay_delta)
   : _memory(),
     _packets_sent( 0 ),
     _packets_received( 0 ),
+    _packets_lost( 0 ),
     _last_send_time( 0 ),
     _the_window( MIN_WINDOW_UNICORN ), // Start with the possibility to send at least one packet
     _flow_id( 0 ),
@@ -48,6 +49,7 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
 
     if (_id_to_sent_during_flow[packet.seq_num] == _flow_id) {
       const unsigned int lost_since_last_time = (unsigned int) max(packet.seq_num-_largest_ack-1, (long) 0);
+      _packets_lost += lost_since_last_time;
       _memory.lost(lost_since_last_time);
     }
 
@@ -71,10 +73,11 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
         // const double duration = it->second["end_time"] - it->second["start_time"];
         // const double duration = it->second["intersend_duration_acc"];
         const double duration = it->second["interreceive_duration_acc"];
+        const double lost_final = it->second["sent"] - it->second["received"];
         if (_training) {
           // FIXME: A debugging hack to assert that no packets get lost when using infinitely sized buffers
-          assert(it->second["received"] == it->second["sent"]);
-          _rainbow.put_reward(_thread_id, throughput_final, delay_final, duration);
+          // assert(it->second["received"] == it->second["sent"]);
+          _rainbow.put_reward(_thread_id, throughput_final, delay_final, duration, lost_final);
         }
         _put_rewards += 1;
         it = _outstanding_rewards.erase(it);
@@ -85,6 +88,7 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
       // FIXME: It doesn't really matter but conceptually it's wrong. It should be the time since the start of the simulation, for example
       // if (_memory._last_tick_received != 0) {
         _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["interreceive_duration_acc"] += packet.tick_received - _flow_to_last_received[_id_to_sent_during_flow[packet.seq_num]];
+        assert(_outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["interreceive_duration_acc"] > 0);
       // } else {
       //   _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["interreceive_duration_acc"] += packet.tick_received - _start_tick;
       // }
@@ -159,7 +163,10 @@ void Unicorn::reset(const double & tickno)
   // assert(_put_actions == _put_rewards);
   // assert(_sent_packets.size() == 0);
 
-  _memory.reset();
+  // FIXME: Is this good?
+  // _memory.reset();
+  _memory._lost_since_last_time = 0;
+
   _largest_ack = _packets_sent - 1; /* Assume everything's been delivered */
   _last_send_time = 0;
   _the_window = MIN_WINDOW_UNICORN; // Reset the window to 1
@@ -209,11 +216,11 @@ void Unicorn::get_action(const double& tickno, const int& packets_sent_in_this_e
     {
       _memory.field(0)*NORMALIZER,
       _memory.field(1)*NORMALIZER,
-      // _memory.field(2),
+      _memory.field(2),
       _memory.field(3)*NORMALIZER,
-      // _memory.field(4)*NORMALIZER,
+      _memory.field(4)*NORMALIZER,
       _memory.field(6)*NORMALIZER,
-      // (_memory._last_tick_received - _memory._last_tick_sent)*NORMALIZER,
+      (_memory._last_tick_received - _memory._last_tick_sent)*NORMALIZER,
       (double) _the_window,
       // _memory.field(6), // loss rate
       // (double) tickno - _memory._last_tick_sent, // time since last send

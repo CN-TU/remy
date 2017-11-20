@@ -42,7 +42,7 @@ STD_BIAS_OFFSET = 0
 MAX_TIME_STEP = 5e6
 # GRAD_NORM_CLIP = 40.0 # gradient norm clipping
 USE_GPU = False # To use GPU, set True
-N_LSTM_LAYERS = int(environ.get('layers')) if environ.get('layers') is not None else 1
+N_LSTM_LAYERS = int(environ.get('layers')) if environ.get('layers') is not None else 2
 
 # Don't know if this normalization stuff makes sense. Better disable it when possible...
 SECONDS_NORMALIZER = 1e-2
@@ -50,9 +50,15 @@ SECONDS_NORMALIZER = 1e-2
 
 DELAY = 150*SECONDS_NORMALIZER
 BIAS_OFFSET = 1
-PACKETS_BIAS_OFFSET = inverse_softplus(BIAS_OFFSET)
-DELAY_BIAS_OFFSET = inverse_softplus(DELAY)
-INTER_PACKET_ARRIVAL_TIME_OFFSET = inverse_softplus(DELAY)
+# PACKETS_BIAS_OFFSET = inverse_softplus(BIAS_OFFSET)
+# DELAY_BIAS_OFFSET = inverse_softplus(DELAY)
+# INTER_PACKET_ARRIVAL_TIME_OFFSET = inverse_softplus(DELAY)
+# LOST_OFFSET = inverse_softplus(1e-20)
+
+PACKETS_BIAS_OFFSET = inverse_softplus(BIAS_OFFSET/(1-GAMMA))
+DELAY_BIAS_OFFSET = inverse_softplus(DELAY/(1-GAMMA))
+INTER_PACKET_ARRIVAL_TIME_OFFSET = inverse_softplus(DELAY/(1-GAMMA))
+LOST_OFFSET = inverse_softplus(1e-10/(1-GAMMA))
 
 # PACKETS_BIAS_OFFSET = 0
 # DELAY_BIAS_OFFSET = 0
@@ -61,7 +67,7 @@ INTER_PACKET_ARRIVAL_TIME_OFFSET = inverse_softplus(DELAY)
 INITIAL_WINDOW_INCREASE_BIAS_OFFSET = 0
 INITIAL_WINDOW_INCREASE_WEIGHT_FACTOR = 1
 
-STATE_SIZE = int(environ.get('state_size')) if environ.get('state_size') is not None else 8
+STATE_SIZE = int(environ.get('state_size')) if environ.get('state_size') is not None else 11
 HIDDEN_SIZE = int(environ.get('hidden_size')) if environ.get('hidden_size') is not None else 32
 # ACTION_SIZE = 1 # action size
 LAYER_NORMALIZATION = False

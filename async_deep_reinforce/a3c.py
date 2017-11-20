@@ -33,6 +33,7 @@ from constants import RMSP_ALPHA
 from constants import USE_GPU
 from constants import PRECISION
 from constants import LOG_LEVEL
+from constants import STATE_SIZE
 
 from os import environ
 
@@ -88,18 +89,18 @@ learning_rate_input = tf.placeholder(PRECISION)
 #                               clip_norm = GRAD_NORM_CLIP,
 #                               device = device)
 
-with tf.device(device):
-  grad_applier = tf.train.RMSPropOptimizer(
-    learning_rate = learning_rate_input,
-    decay = RMSP_ALPHA,
-    momentum = 0.0,
-    epsilon = RMSP_EPSILON
-  )
-
 # with tf.device(device):
-#   grad_applier = tf.train.GradientDescentOptimizer(
-#     learning_rate = learning_rate_input
+#   grad_applier = tf.train.RMSPropOptimizer(
+#     learning_rate = learning_rate_input,
+#     decay = RMSP_ALPHA,
+#     momentum = 0.0,
+#     epsilon = RMSP_EPSILON
 #   )
+
+with tf.device(device):
+  grad_applier = tf.train.GradientDescentOptimizer(
+    learning_rate = learning_rate_input
+  )
 
 # grad_applier = tf.train.GradientDescentOptimizer(learning_rate = learning_rate_input)
 
@@ -155,8 +156,10 @@ with tf.device(device):
   R_duration = tf.placeholder(PRECISION)
   R_packets = tf.placeholder(PRECISION)
   R_accumulated_delay = tf.placeholder(PRECISION)
+  R_lost = tf.placeholder(PRECISION)
   estimated_throughput = tf.placeholder(PRECISION)
   estimated_delay = tf.placeholder(PRECISION)
+  estimated_loss_rate = tf.placeholder(PRECISION)
   # speed = tf.placeholder(PRECISION)
   # tf.summary.scalar("score_throughput", score_throughput)
   tf.summary.scalar("score_delay", score_delay)
@@ -170,8 +173,10 @@ with tf.device(device):
   tf.summary.scalar("R_duration", R_duration)
   tf.summary.scalar("R_packets", R_packets)
   tf.summary.scalar("R_accumulated_delay", R_accumulated_delay)
+  tf.summary.scalar("R_lost", R_lost)
   tf.summary.scalar("estimated_throughput", estimated_throughput)
   tf.summary.scalar("estimated_delay", estimated_delay)
+  tf.summary.scalar("estimated_loss_rate", estimated_loss_rate)
 
   # tf.summary.scalar("speed", speed)
   summary_inputs = {
@@ -187,8 +192,10 @@ with tf.device(device):
     "R_duration": R_duration,
     "R_packets": R_packets,
     "R_accumulated_delay": R_accumulated_delay,
+    "R_lost": R_lost,
     "estimated_throughput": estimated_throughput,
-    "estimated_delay": estimated_delay
+    "estimated_delay": estimated_delay,
+    "estimated_loss_rate": estimated_loss_rate
     # "speed": speed
   }
 
@@ -243,7 +250,6 @@ def create_training_thread(training, delay_delta):
   created_thread.actions = []
   created_thread.ticknos = []
   created_thread.rewards = []
-  created_thread.durations = []
   created_thread.values = []
   created_thread.estimated_values = []
   created_thread.start_lstm_states = []
@@ -251,8 +257,9 @@ def create_training_thread(training, delay_delta):
   created_thread.local_t = 0
   created_thread.episode_reward_throughput = 0
   created_thread.episode_reward_delay = 0
-  # created_thread.local_network.reset_state()
+  created_thread.episode_reward_lost = 0
   sess.run( created_thread.sync )
+  created_thread.reset_state_and_reinitialize(sess)
 
   return return_index
 
@@ -269,10 +276,10 @@ def call_process_action(thread_id, state, tickno, window):
   chosen_action = training_threads[thread_id].action_step(sess, state, tickno, window)
   return chosen_action
 
-def call_process_reward(thread_id, reward_throughput, reward_delay, duration):
+def call_process_reward(thread_id, reward_throughput, reward_delay, duration, lost):
   # logging.debug(" ".join(map(str,("call_process_reward", thread_id, reward_throughput, reward_delay, duration))))
   global sess, global_t, summary_writer, summary_op, summary_inputs
-  diff_global_t = training_threads[thread_id].reward_step(sess, global_t, summary_writer, summary_op, summary_inputs, reward_throughput, reward_delay, duration)
+  diff_global_t = training_threads[thread_id].reward_step(sess, global_t, summary_writer, summary_op, summary_inputs, reward_throughput, reward_delay, duration, lost)
   global_t += diff_global_t
   if global_t >= MAX_TIME_STEP:
     logging.info("Reached maximum time step, saving and terminating...")

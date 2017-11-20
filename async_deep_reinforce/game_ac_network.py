@@ -16,12 +16,15 @@ from constants import PACKETS_BIAS_OFFSET
 from constants import DELAY_BIAS_OFFSET
 from constants import INTER_PACKET_ARRIVAL_TIME_OFFSET
 from constants import INITIAL_WINDOW_INCREASE_BIAS_OFFSET
+from constants import LOST_OFFSET
 from constants import INITIAL_WINDOW_INCREASE_WEIGHT_FACTOR
 
 import math
 import numpy as np
 import numpy.random
 import itertools
+
+tiny = 1e-10
 
 from tensorflow.python.ops import variable_scope as vs
 
@@ -77,12 +80,13 @@ class GameACNetwork(object):
 			self.r_packets = tf.placeholder(PRECISION, [None], name="r_packets")
 			self.r_accumulated_delay = tf.placeholder(PRECISION, [None], name="r_accumulated_delay")
 			self.r_duration = tf.placeholder(PRECISION, [None], name="r_duration")
+			self.r_lost = tf.placeholder(PRECISION, [None], name="r_lost")
 
 			# value loss (output)
 			# (Learning rate for Critic is half of Actor's, so multiply by 0.5)
 			# TODO: Why is the learning rate half of the Actor's? Sources?
 			# self.value_loss = 0.5 * (tf.nn.l2_loss(self.r_packets - self.v_packets) + tf.nn.l2_loss(self.r_accumulated_delay - self.v_accumulated_delay) + tf.nn.l2_loss(self.r_duration - self.v_duration))
-			self.value_loss = VALUE_FACTOR * (tf.nn.l2_loss(self.r_packets - self.v_packets) + tf.nn.l2_loss(self.r_accumulated_delay - self.v_accumulated_delay) + tf.nn.l2_loss(self.r_duration - self.v_duration))
+			self.value_loss = VALUE_FACTOR * (tf.nn.l2_loss(self.r_packets - self.v_packets) + tf.nn.l2_loss(self.r_accumulated_delay - self.v_accumulated_delay) + tf.nn.l2_loss(self.r_duration - self.v_duration) + tf.nn.l2_loss(self.r_lost - self.v_lost))
 
 			# gradient of policy and value are summed up
 			self.total_loss = self.policy_loss + self.value_loss
@@ -232,6 +236,7 @@ class GameACLSTMNetwork(GameACNetwork):
 			self.W_hidden_to_value_packets_fc, self.b_hidden_to_value_packets_fc = self._fc_variable([HIDDEN_SIZE, 1], bias_offset=PACKETS_BIAS_OFFSET, bias_range=(0.0, 0.0))
 			self.W_hidden_to_value_delay_fc, self.b_hidden_to_value_delay_fc = self._fc_variable([HIDDEN_SIZE, 1], bias_offset=DELAY_BIAS_OFFSET, bias_range=(0.0, 0.0))
 			self.W_hidden_to_value_duration_fc, self.b_hidden_to_value_duration_fc = self._fc_variable([HIDDEN_SIZE, 1], bias_offset=INTER_PACKET_ARRIVAL_TIME_OFFSET, bias_range=(0.0, 0.0))
+			self.W_hidden_to_value_lost_fc, self.b_hidden_to_value_lost_fc = self._fc_variable([HIDDEN_SIZE, 1], bias_offset=LOST_OFFSET, bias_range=(0.0, 0.0))
 
 			# state (input)
 			self.s = tf.placeholder(PRECISION, [None, STATE_SIZE])
@@ -281,13 +286,13 @@ class GameACLSTMNetwork(GameACNetwork):
 			# policy (output)
 			self.pi = (
 				raw_pi_mean,
-				# tf.nn.softplus(raw_pi_std) + MINIMUM_STD
 				tf.nn.softplus(raw_pi_std)
 				# tf.constant(0.5, shape=(1,1), dtype=PRECISION)
 				# tf.clip_by_value(raw_pi_mean*0.01, MINIMUM_STD, float("inf"))
 			)
 
 			# value (output)
+			# TODO: should you use clipping to avoid zero values?
 			v_packets_ = tf.nn.softplus(tf.matmul(lstm_outputs_value, self.W_hidden_to_value_packets_fc) + self.b_hidden_to_value_packets_fc)
 			self.v_packets = tf.reshape( v_packets_, [-1] )
 
@@ -296,6 +301,9 @@ class GameACLSTMNetwork(GameACNetwork):
 
 			v_duration_ = tf.nn.softplus(tf.matmul(lstm_outputs_value, self.W_hidden_to_value_duration_fc) + self.b_hidden_to_value_duration_fc)
 			self.v_duration = tf.reshape( v_duration_, [-1] )
+
+			v_lost_ = tf.nn.softplus(tf.matmul(lstm_outputs_value, self.W_hidden_to_value_lost_fc) + self.b_hidden_to_value_lost_fc)
+			self.v_lost = tf.reshape( v_lost_, [-1] )
 
 			scope.reuse_variables()
 
@@ -324,15 +332,15 @@ class GameACLSTMNetwork(GameACNetwork):
 	def run_action_and_value(self, sess, s_t):
 		# This run_policy_and_value() is used when forward propagating.
 		# so the step size is 1.
-		action_out, v_packets_out, v_accumulated_delay_out, v_duration_out, self.lstm_state_out_action, self.lstm_state_out_value = sess.run(
-			[self.chosen_action, self.v_packets, self.v_accumulated_delay, self.v_duration, self.lstm_state_action, self.lstm_state_value],
+		action_out, v_packets_out, v_accumulated_delay_out, v_duration_out, v_lost_out, self.lstm_state_out_action, self.lstm_state_out_value = sess.run(
+			[self.chosen_action, self.v_packets, self.v_accumulated_delay, self.v_duration, self.v_lost, self.lstm_state_action, self.lstm_state_value],
 			feed_dict = {self.s : [s_t],
 			self.initial_lstm_state_action : self.lstm_state_out_action,
 			self.initial_lstm_state_value : self.lstm_state_out_value,
 			self.step_size : [1]}
 		)
 		# pi_out: (1,3), v_out: (1)
-		return (action_out[0],(v_packets_out[0], v_accumulated_delay_out[0], v_duration_out[0]))
+		return (action_out[0],(v_packets_out[0], v_accumulated_delay_out[0], v_duration_out[0], v_lost_out[0]))
 
 	# Misleading name: Actually returns the mean of the distribution returned by the actor.
 	def run_action(self, sess, s_t):
@@ -354,7 +362,7 @@ class GameACLSTMNetwork(GameACNetwork):
 		# so we don't update LSTM state here.
 		prev_lstm_state_out_action = self.lstm_state_out_action
 		prev_lstm_state_out_value = self.lstm_state_out_value
-		v_packets_out, v_accumulated_delay_out, v_duration_out, _ = sess.run( [self.v_packets, self.v_accumulated_delay, self.v_duration, self.lstm_state_value],
+		v_packets_out, v_accumulated_delay_out, v_duration_out, v_lost_out, _ = sess.run( [self.v_packets, self.v_accumulated_delay, self.v_duration, self.v_lost, self.lstm_state_value],
 								feed_dict = {self.s : [s_t],
 								self.initial_lstm_state_value : self.lstm_state_out_value,
 								# self.initial_lstm_state0 : self.lstm_state_out[0],
@@ -364,7 +372,7 @@ class GameACLSTMNetwork(GameACNetwork):
 		# roll back lstm state
 		self.lstm_state_out_action = prev_lstm_state_out_action
 		self.lstm_state_out_value = prev_lstm_state_out_value
-		return (v_packets_out[0], v_accumulated_delay_out[0], v_duration_out[0])
+		return (v_packets_out[0], v_accumulated_delay_out[0], v_duration_out[0], v_lost_out[0])
 
 	def run_loss(self, sess, feed_dict):
 		# We don't have to roll back the LSTM state here as it is restored in the "process" function of a3c_training_thread.py anyway and because run_loss is only called there.
@@ -383,4 +391,5 @@ class GameACLSTMNetwork(GameACNetwork):
 						self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc,
 						self.W_hidden_to_value_packets_fc, self.b_hidden_to_value_packets_fc,
 						self.W_hidden_to_value_delay_fc, self.b_hidden_to_value_delay_fc,
-						self.W_hidden_to_value_duration_fc, self.b_hidden_to_value_duration_fc] + self.LSTM_variables
+						self.W_hidden_to_value_duration_fc, self.b_hidden_to_value_duration_fc,
+						self.W_hidden_to_value_lost_fc, self.b_hidden_to_value_lost_fc] + self.LSTM_variables

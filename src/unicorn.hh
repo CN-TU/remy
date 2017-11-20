@@ -24,7 +24,7 @@ class Unicorn
 protected:
   Memory _memory;
 
-  long unsigned int _packets_sent, _packets_received;
+  long unsigned int _packets_sent, _packets_received, _packets_lost;
   double _last_send_time;
   double _the_window;
 
