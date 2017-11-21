@@ -86,7 +86,7 @@ class GameACNetwork(object):
 			# (Learning rate for Critic is half of Actor's, so multiply by 0.5)
 			# TODO: Why is the learning rate half of the Actor's? Sources?
 			# self.value_loss = 0.5 * (tf.nn.l2_loss(self.r_packets - self.v_packets) + tf.nn.l2_loss(self.r_accumulated_delay - self.v_accumulated_delay) + tf.nn.l2_loss(self.r_duration - self.v_duration))
-			self.value_loss = VALUE_FACTOR * (tf.nn.l2_loss(self.r_packets - self.v_packets) + tf.nn.l2_loss(self.r_accumulated_delay - self.v_accumulated_delay) + tf.nn.l2_loss(self.r_duration - self.v_duration) + tf.nn.l2_loss(self.r_lost - self.v_lost))
+			self.value_loss = VALUE_FACTOR * (tf.norm(self.r_packets - self.v_packets, ord=2) + tf.norm(self.r_accumulated_delay - self.v_accumulated_delay, ord=2) + tf.norm(self.r_duration - self.v_duration, ord=2) + tf.norm(self.r_lost - self.v_lost, ord=2))
 
 			# gradient of policy and value are summed up
 			self.total_loss = self.policy_loss + self.value_loss

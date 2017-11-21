@@ -6,6 +6,8 @@ import math
 LOG_LEVEL = logging.INFO
 logging.basicConfig(level=LOG_LEVEL)
 
+tiny = 1e-10
+
 def inverse_softplus(x):
 	return math.log(math.exp(x) - 1)
 
@@ -25,7 +27,7 @@ else:
 logging.info(" ".join(map(str,("CHECKPOINT_DIR:",CHECKPOINT_DIR))))
 
 LOG_FILE = ABSOLUTE_PATH+'tmp/a3c_log'
-ACTOR_FACTOR = 1e0
+ACTOR_FACTOR = 0.5e0
 VALUE_FACTOR = 1e0
 GENERAL_FACTOR = 1e-4
 # INITIAL_ALPHA_LOW = 1e-2*GENERAL_FACTOR   # log_uniform low limit for learning rate
@@ -50,15 +52,15 @@ SECONDS_NORMALIZER = 1e-2
 
 DELAY = 150*SECONDS_NORMALIZER
 BIAS_OFFSET = 1
-# PACKETS_BIAS_OFFSET = inverse_softplus(BIAS_OFFSET)
-# DELAY_BIAS_OFFSET = inverse_softplus(DELAY)
-# INTER_PACKET_ARRIVAL_TIME_OFFSET = inverse_softplus(DELAY)
-# LOST_OFFSET = inverse_softplus(1e-20)
+PACKETS_BIAS_OFFSET = inverse_softplus(BIAS_OFFSET)
+DELAY_BIAS_OFFSET = inverse_softplus(DELAY)
+INTER_PACKET_ARRIVAL_TIME_OFFSET = inverse_softplus(DELAY)
+LOST_OFFSET = inverse_softplus(1e-3)
 
-PACKETS_BIAS_OFFSET = inverse_softplus(BIAS_OFFSET/(1-GAMMA))
-DELAY_BIAS_OFFSET = inverse_softplus(DELAY/(1-GAMMA))
-INTER_PACKET_ARRIVAL_TIME_OFFSET = inverse_softplus(DELAY/(1-GAMMA))
-LOST_OFFSET = inverse_softplus(1e-10/(1-GAMMA))
+# PACKETS_BIAS_OFFSET = inverse_softplus(BIAS_OFFSET/(1-GAMMA))
+# DELAY_BIAS_OFFSET = inverse_softplus(DELAY/(1-GAMMA))
+# INTER_PACKET_ARRIVAL_TIME_OFFSET = inverse_softplus(DELAY/(1-GAMMA))
+# LOST_OFFSET = inverse_softplus(1e-10/(1-GAMMA))
 
 # PACKETS_BIAS_OFFSET = 0
 # DELAY_BIAS_OFFSET = 0

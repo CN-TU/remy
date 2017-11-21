@@ -245,7 +245,7 @@ class A3CTrainingThread(object):
 
     R_packets_initial, R_accumulated_delay_initial, R_duration_initial, R_lost_initial = R_packets, R_accumulated_delay, R_duration, R_lost
 
-    # R_packets, R_accumulated_delay, R_duration, R_lost = (R_packets)/(1-GAMMA), (R_accumulated_delay)/(1-GAMMA), (R_duration)/(1-GAMMA), (R_lost)/(1-GAMMA)
+    R_packets, R_accumulated_delay, R_duration, R_lost = (R_packets)/(1-GAMMA), (R_accumulated_delay)/(1-GAMMA), (R_duration)/(1-GAMMA), (R_lost)/(1-GAMMA)
     # logging.debug(" ".join(map(str,("exp(R_packets)", R_packets, "exp(R_accumulated_delay)", R_accumulated_delay, "exp(R_duration)", R_duration))))
     assert(np.isfinite(R_duration))
     assert(np.isfinite(R_packets))
@@ -287,7 +287,8 @@ class A3CTrainingThread(object):
       # td = R_packets - Vi[0] - self.delay_delta*(R_lost - Vi[3]) # - self.delay_delta*(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
       # td = R_packets/R_duration - Vi[0]/Vi[2] - self.delay_delta*(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
       # td = R_packets/R_duration - Vi[0]/(Vi[2]) - self.delay_delta*(R_accumulated_delay/R_packets - Vi[1]/Vi[0]) - (R_lost/R_duration - Vi[3]/(Vi[2]))
-      td = inverse_sigmoid(self.delay_delta, R_lost/(R_packets+R_lost))*R_packets/R_duration - inverse_sigmoid(self.delay_delta, Vi[3]/(Vi[0]+Vi[3]))*Vi[0]/Vi[2] - (R_lost/R_duration - Vi[3]/(Vi[2]))
+      # td = inverse_sigmoid(self.delay_delta, R_lost/(R_packets+R_lost))*R_packets/R_duration - inverse_sigmoid(self.delay_delta, Vi[3]/(Vi[0]+Vi[3]))*Vi[0]/Vi[2] - (R_lost/R_duration - Vi[3]/(Vi[2]))
+      td = inverse_sigmoid(self.delay_delta, R_lost/(R_packets+R_lost) - 0.05)*R_packets/R_duration - inverse_sigmoid(self.delay_delta, Vi[3]/(Vi[0]+Vi[3]) - 0.05)*Vi[0]/Vi[2] - (R_lost/R_duration - Vi[3]/(Vi[2])) - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
       # td = R_packets/R_duration/(R_accumulated_delay/R_packets) - Vi[0]/Vi[2]/(Vi[1]/Vi[0]) - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
       # td = (np.log(R_packets/R_duration) - np.log(Vi[0]/Vi[2])) - self.delay_delta/SECONDS_NORMALIZER*(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
@@ -295,14 +296,14 @@ class A3CTrainingThread(object):
       batch_si.append(si)
       batch_ai.append(ai)
       batch_td.append(td)
-      # batch_R_duration.append((R_duration*(1-GAMMA)))
-      # batch_R_packets.append(R_packets*(1-GAMMA))
-      # batch_R_accumulated_delay.append(R_accumulated_delay*(1-GAMMA))
-      # batch_R_lost.append(R_lost*(1-GAMMA))
-      batch_R_duration.append(R_duration)
-      batch_R_packets.append(R_packets)
-      batch_R_accumulated_delay.append(R_accumulated_delay)
-      batch_R_lost.append(R_lost)
+      batch_R_duration.append((R_duration*(1-GAMMA)))
+      batch_R_packets.append(R_packets*(1-GAMMA))
+      batch_R_accumulated_delay.append(R_accumulated_delay*(1-GAMMA))
+      batch_R_lost.append(R_lost*(1-GAMMA))
+      # batch_R_duration.append(R_duration)
+      # batch_R_packets.append(R_packets)
+      # batch_R_accumulated_delay.append(R_accumulated_delay)
+      # batch_R_lost.append(R_lost)
 
       # logging.debug(" ".join(map(str,("batch_td_throughput[-1]", batch_td_throughput[-1], "batch_td_delay[-1]", batch_td_delay[-1], "batch_R_packets[-1]", batch_R_packets[-1], "batch_R_accumulated_delay[-1]", batch_R_accumulated_delay[-1], "batch_R_duration[-1]", batch_R_duration[-1]))))
 
@@ -354,8 +355,8 @@ class A3CTrainingThread(object):
 
     # if len(ticknos) == 0:
     #   print(self.thread_index, "actions", self.actions, "rewards", self.rewards, "values", self.values, "estimated_values", self.estimated_values, "ticknos", self.ticknos)
-    if final or self.local_t % LOG_INTERVAL == 0:
-    # if final:
+    # if final or self.local_t % LOG_INTERVAL == 0:
+    if final:
       # if ticknos[-1]-ticknos[0] > 0 and self.episode_reward_throughput > 0:
       if self.episode_reward_throughput > 0:
         # print(ticknos)
@@ -368,7 +369,7 @@ class A3CTrainingThread(object):
 
         # logging.info("{}: score_throughput={}, score_delay={}, measured throughput beginning={}, measured delay beginning={}, measured throughput end={}, measured delay end={}".format(self.thread_index, normalized_final_score_throughput, normalized_final_score_delay, batch_R_packets[0]/batch_R_duration[0]*SECONDS_NORMALIZER, batch_R_accumulated_delay[0]/batch_R_packets[0]/SECONDS_NORMALIZER, batch_R_packets[-1]/batch_R_duration[-1]*SECONDS_NORMALIZER, batch_R_accumulated_delay[-1]/batch_R_packets[-1]/SECONDS_NORMALIZER))
         # logging.info("{}: score_delay={}, measured throughput beginning={}, measured delay beginning={}, measured throughput end={}, measured delay end={} {}".format(self.thread_index, normalized_final_score_delay, batch_R_packets[0]/batch_R_duration[0]*SECONDS_NORMALIZER, batch_R_accumulated_delay[0]/batch_R_packets[0]/SECONDS_NORMALIZER, batch_R_packets[-1]/batch_R_duration[-1]*SECONDS_NORMALIZER, batch_R_accumulated_delay[-1]/batch_R_packets[-1]/SECONDS_NORMALIZER, ("final:"+str(final)+", delta:"+str(self.delay_delta)+"; "+" ".join(map(str,("R_packets", R_packets_initial, "R_accumulated_delay", R_accumulated_delay_initial/SECONDS_NORMALIZER, "R_duration", R_duration_initial/SECONDS_NORMALIZER))), "state", batch_si[0], "action", batch_ai[0][0])))
-        logging.info("{}: score_delay={}, measured throughput beginning={}, measured delay beginning={} {}".format(self.thread_index, normalized_final_score_delay, batch_R_packets[0]/batch_R_duration[0]*SECONDS_NORMALIZER, batch_R_accumulated_delay[0]/batch_R_packets[0]/SECONDS_NORMALIZER, ("final:"+str(final)+", delta:"+str(self.delay_delta)+"; "+" ".join(map(str,("R_packets", R_packets_initial*(1-GAMMA), "R_accumulated_delay", R_accumulated_delay_initial*(1-GAMMA)/SECONDS_NORMALIZER, "R_duration", R_duration_initial*(1-GAMMA)/SECONDS_NORMALIZER, "R_lost", R_lost_initial*(1-GAMMA)))), "state", batch_si[0], "action", batch_ai[0][0])))
+        logging.info("{}: score_delay={}, measured throughput beginning={}, measured delay beginning={} {}".format(self.thread_index, normalized_final_score_delay, batch_R_packets[0]/batch_R_duration[0]*SECONDS_NORMALIZER, batch_R_accumulated_delay[0]/batch_R_packets[0]/SECONDS_NORMALIZER, ("final:"+str(final)+", delta:"+str(self.delay_delta)+"; "+" ".join(map(str,("R_packets", R_packets_initial, "R_accumulated_delay", R_accumulated_delay_initial/SECONDS_NORMALIZER, "R_duration", R_duration_initial/SECONDS_NORMALIZER, "R_lost", R_lost_initial))), "state", batch_si[0], "action", batch_ai[0][0])))
 
 
         # time_difference > 0 because of a bug in Unicorn.cc that makes it possible for time_difference to be smaller than 0.
@@ -398,10 +399,10 @@ class A3CTrainingThread(object):
           "estimated_throughput": batch_R_packets[0]/batch_R_duration[0]*SECONDS_NORMALIZER,
           "estimated_delay": batch_R_accumulated_delay[0]/batch_R_packets[0]/SECONDS_NORMALIZER,
           "estimated_loss_rate": batch_R_lost[0]/(batch_R_lost[0] + batch_R_packets[0]),
-          "R_duration": batch_R_duration[0]*(1-GAMMA)/SECONDS_NORMALIZER,
-          "R_packets": batch_R_packets[0]*(1-GAMMA),
-          "R_accumulated_delay": batch_R_accumulated_delay[0]*(1-GAMMA)/SECONDS_NORMALIZER,
-          "R_lost": batch_R_lost[0]*(1-GAMMA),
+          "R_duration": batch_R_duration[0]/SECONDS_NORMALIZER,
+          "R_packets": batch_R_packets[0],
+          "R_accumulated_delay": batch_R_accumulated_delay[0]/SECONDS_NORMALIZER,
+          "R_lost": batch_R_lost[0],
           "score_delay": normalized_final_score_delay,
           "actor_loss": actor_loss.item(),
           "value_loss": value_loss,
