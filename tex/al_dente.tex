@@ -49,17 +49,17 @@
 \begin{frame}{How does Congestion Control work nowadays?}
 Simplified:
 \begin{itemize}
-\item Start with Congestion Window being 1 in the beginning of a flow.
+\item Congestion Window 1 in the beginning of a flow.
 \item Upon receiving an acknowledgement for a previously sent packet, increase the Congestion Window (cwnd): $$\text{cwnd} = \frac{1}{\text{cwnd}}$$
 \item Recently also a bit more sophisticated $\rightarrow$ \textit{CUBIC} etc. 
 \item When there is packet loss then we sent too much (buffer of a router on the way overflew) $\rightarrow$ congestion $\rightarrow$ decrease Congestion Window
-\item Currently the most common thing to do is $$\text{cwnd} = \frac{\text{cwnd}}{2}$$
+\item The most common thing to do is $$\text{cwnd} = \frac{\text{cwnd}}{2}$$
 \end{itemize}
 \end{frame}
 
 \begin{frame}{Problems}
 \begin{itemize}
-\item Only decrease window on loss $\rightarrow$ then it's already too late! We should decrease before when buffers of routers fill up and latency increases!
+\item Only decrease window on loss $\rightarrow$ That's too late! Decrease before when buffers of routers fill up and latency increases!
 \item On wireless connections stochastic packet loss is common $\rightarrow$ TCP thinks it's congestion.
 \end{itemize}
 \end{frame}
@@ -96,7 +96,7 @@ In the meantime another ACK could have arrived. What do we do? Not defined with 
 
 \begin{frame}{Partial Actions: Example}
 \begin{itemize}
-\item We increase the window by $0.3$ (action). This allows us to send two packets (partial actions).  
+\item Let's say the window is 1.9. We increase the window by $0.3$ (action). This allows us to send two packets (partial actions).  
 \item We receive the ACK for the first packet (feedback). We update the state and perform a new action.
 \item We receive the second ACK. Again, we update the state and perform an action. However, because we got all partial rewards of the previous action, we can calculate the reward and update our agent.
 \end{itemize}
@@ -109,7 +109,7 @@ In the meantime another ACK could have arrived. What do we do? Not defined with 
 \item Maximize long term reward: \begin{align*}
 R_t = \left(\left(\sum_{i=0}^{k-1} \gamma^ir_{t+i}\right) + \gamma^k V(s_{t+k}; \theta_\text{v})\right),
 \end{align*}
-\item The \textbf{Critic} tries to estimate how much (long-term) reward he can expect considering the current state.
+\item The \textbf{Critic} tries to estimate how much (long-term) reward one can expect considering the current state.
 \end{itemize}
 \end{frame}
 
@@ -121,7 +121,7 @@ R_t = \left(\left(\sum_{i=0}^{k-1} \gamma^ir_{t+i}\right) + \gamma^k V(s_{t+k}; 
 \item What it thinks is the best action (e.g. increase the window by $0.3$)
 \item A standard deviation to experiment a little bit (e.g. $0.45$)
 \end{itemize}
-\item So the actor outputs a distribution from which actions are sampled. Thanks to the standard deviation we experiment and don't get stuck with suboptimal actions. 
+\item So the actor outputs a normal distribution from which actions are sampled. Thanks to the standard deviation we experiment and don't get stuck with suboptimal actions. 
 \end{itemize}
 \end{frame}
 
@@ -131,13 +131,13 @@ R_t = \left(\left(\sum_{i=0}^{k-1} \gamma^ir_{t+i}\right) + \gamma^k V(s_{t+k}; 
 \toprule
 Parameter & Value & Distribution \\
 \midrule
-Two-way propagation delay & $150\,$ms & constant \\
+Two-way RTT when queue is 0 & $150\,$ms & constant \\
 Bottleneck bandwidth & $15\,$Mbit/s & constant \\
 Number of senders & $8$ & constant \\
 Flow length & $100\,$kB & exponential \\
 Time between flows & $0.5\,$s & exponential \\
-Simulation duration & $100\,$s & constant \\
-Buffer size & $1000$ packets & constant \\
+Simulation duration & $500\,$s & constant \\
+Buffer size & $100$ packets & constant \\
 Stochastic loss prob. & $0\%$ & constant \\
 \bottomrule
 \end{tabular}
@@ -145,6 +145,7 @@ Stochastic loss prob. & $0\%$ & constant \\
 
 \begin{frame}{Preliminary results -- Comparison}
 Stuff goes here!
+
 \end{frame}
 
 \newcommand{\nodedistance}{2}
@@ -155,7 +156,6 @@ Stuff goes here!
 \begin{tikzpicture}[node distance=\nodedistance,>=stealth',bend angle=45,auto]
 
   \tikzstyle{place}=[circle,thick,draw=blue!75,fill=blue!20,minimum size=6mm]
-  \tikzstyle{red place}=[place,draw=red!75,fill=red!20]
   \tikzstyle{transition}=[rectangle,thick,draw=black!75,
   			  fill=black!20,minimum size=4mm]
 
@@ -165,7 +165,7 @@ Stuff goes here!
     \node [place,tokens=1] (s1) at (\nd{0}, \nd{1}) [label={[align=center]left:Receive\\ feedback}] {};
     \node [place] (s2) at (\nd{1}, \nd{2}) [label={[align=center]above:Received\\ ACKs}] {};
     \node [place] (s3) at (\nd{2}, \nd{1}) [label={[align=center]right:Packets\\ in the\\ network}] {};
-    \node [place,tokens=1] (s4) at (\nd{1}, \nd{0}) [label={[align=center]below:Open congestion\\ window (cwnd)}] {};      
+    \node [place] (s4) at (\nd{1}, \nd{0}) [label={[align=center]below:Open congestion\\ window (cwnd)}] {};      
 
     \node [transition] (e1) at (\nd{0}, \nd{0}) [label=left:Take action] {}
       edge [post] node {$a$}(s4)
@@ -190,6 +190,120 @@ Stuff goes here!
   \end{scope}
 
 \end{tikzpicture}
+\end{frame}
+
+\newcommand{\nnfontsize}{\tiny}
+
+\begin{frame}{Neural Network}
+
+\centering
+\begin{tikzpicture}[node distance=1.2cm, >=stealth',bend angle=45,auto]
+
+  \tikzstyle{place}=[circle,thick,draw=blue!75,fill=blue!20,minimum size=6mm]
+  \tikzstyle{input place}=[circle,thick,draw=olive!75,fill=olive!20,minimum size=6mm]
+  \tikzstyle{output place}=[circle,thick,draw=magenta!75,fill=magenta!20,minimum size=6mm]
+   \tikzstyle{lstm place}=[circle,thick,draw=red!75,fill=red!20,minimum size=6mm]
+   \tikzstyle{softplus place}=[circle,thick,draw=green!75,fill=green!20,minimum size=6mm]
+
+  \tikzstyle{transition}=[rectangle,thick,draw=black!75,
+  			  fill=black!20,minimum size=4mm]
+
+%  \tikzstyle{every label}=[blue!75]
+
+  \begin{scope}
+    \node [input place] (s1) [label={[align=center]left:\nnfontsize State (12)}] {};
+    \node [place] (s2) [above right of=s1, label={[align=center]above:\nnfontsize Linear}] {};
+    
+  \path[->] (s1) edge node {} (s2);
+    
+    \node [lstm place] (s3) [right of=s2, label={[align=center]below:\nnfontsize LSTM (32)}] {};
+
+  \path[->] (s2) edge node {} (s3); 
+  \path[->] (s3) edge [loop above] node {} (s3);   
+   
+    \node [lstm place] (s4) [right of=s3, label={[align=center]below:\nnfontsize LSTM (32)}] {};    
+    
+  \path[->] (s3) edge node {} (s4);
+  \path[->] (s4) edge [loop above] node {} (s4);
+    
+    \node [softplus place] (s7) [right of=s4, label={[align=center]below:{\nnfontsize Softplus}}] {};
+    
+  \path[->] (s4) edge node {} (s7);
+    
+    \node [output place] (s8) [right of=s7, label={[align=center]below:\nnfontsize $\sigma$~(1)}] {};    
+
+  \path[->] (s7) edge node {} (s8);
+
+    \node [place] (s5) [above of=s7, label={[align=center]above:\nnfontsize Linear}] {};
+    
+  \path[->] (s4) edge node {} (s5);
+
+    \node [output place] (s6) [right of=s5, label={[align=center]above:\nnfontsize $\mu$ (1)}] {};    
+    
+  \path[->] (s5) edge node {} (s6);    
+    
+    \node [place] (s10) [below right of=s1, label={[align=center]below:\nnfontsize Linear}] {};
+    
+  \path[->] (s1) edge node {} (s10);
+
+    
+    \node [lstm place] (s11) [right of=s10, label={[align=center]above:\nnfontsize LSTM (32)}] {};
+    
+  \path[->] (s10) edge node {} (s11);
+  \path[->] (s11) edge [loop below] node {} (s11);
+
+    \node [lstm place] (s12) [right of=s11, label={[align=center]above:\nnfontsize LSTM (32)}] {};
+    
+  \path[->] (s11) edge node {} (s12);
+  \path[->] (s12) edge [loop below] node {} (s12);
+    
+    \node [softplus place] (s13) [right of=s12, label={[align=center]above:\nnfontsize Softplus}] {};
+    
+  \path[->] (s12) edge node {} (s13);
+
+    \node [output place] (s17) [right of=s13, label={[align=center]above:\nnfontsize $V_\text{packets}$ (1)}] {};
+    
+  \path[->] (s13) edge node {} (s17);
+    
+    \node [softplus place] (s15) [below of=s13, label={[align=center]above:\nnfontsize Softplus}] {};
+    
+  \path[->] (s12) edge node {} (s15);
+
+    \node [output place] (s19) [right of=s15, label={[align=center]above:\nnfontsize $V_\text{delay}$ (1)}] {};  
+    
+  \path[->] (s15) edge node {} (s19);    
+    
+    \node [softplus place] (s16) [below of=s15, label={[align=center]above:\nnfontsize Softplus}] {};
+    
+  \path[->] (s12) edge node {} (s16);    
+    
+    \node [output place] (s20) [right of=s16, label={[align=center]above:\nnfontsize $V_\text{lost}$ (1)}] {};    
+
+  \path[->] (s16) edge node {} (s20);    
+    
+    \node [softplus place] (s14) [below of=s16, label={[align=center]above:\nnfontsize Softplus}] {};
+    
+  \path[->] (s12) edge node {} (s14);
+    
+    \node [output place] (s21) [right of=s14, label={[align=center]above:\nnfontsize $V_\text{duration}$ (1)}] {};   
+    
+  \path[->] (s14) edge node {} (s21); 
+
+  \end{scope}
+
+\end{tikzpicture}
+\end{frame}
+
+\begin{frame}{Reward 1}
+\begin{align*}
+\frac{R_\text{packets}}{R_\text{duration}}\text{Sigmoid}_\alpha\left(\frac{R_\text{lost}}{R_\text{lost} + R_\text{packets}} - 0.05\right) - \frac{R_\text{lost}}{R_\text{duration}} - \frac{R_\text{delay}}{R_\text{packets}}
+\end{align*}
+\end{frame}
+
+\begin{frame}{Reward 2}
+\begin{align*}
+R_\text{packets}\text{Sigmoid}_\alpha\left(\frac{R_\text{lost}}{R_\text{lost} + R_\text{packets}} - 0.05\right) - R_\text{lost} - \frac{R_\text{delay}}{R_\text{packets}}
+\end{align*}
 \end{frame}
 
 \end{document}
