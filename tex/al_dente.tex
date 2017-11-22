@@ -145,6 +145,7 @@ Stochastic loss prob. & $0\%$ & constant \\
 
 \begin{frame}{Preliminary results -- Comparison}
 Stuff goes here!
+
 \end{frame}
 
 \newcommand{\nodedistance}{2}
@@ -155,7 +156,6 @@ Stuff goes here!
 \begin{tikzpicture}[node distance=\nodedistance,>=stealth',bend angle=45,auto]
 
   \tikzstyle{place}=[circle,thick,draw=blue!75,fill=blue!20,minimum size=6mm]
-  \tikzstyle{red place}=[place,draw=red!75,fill=red!20]
   \tikzstyle{transition}=[rectangle,thick,draw=black!75,
   			  fill=black!20,minimum size=4mm]
 
@@ -202,28 +202,31 @@ Stuff goes here!
   \tikzstyle{place}=[circle,thick,draw=blue!75,fill=blue!20,minimum size=6mm]
   \tikzstyle{input place}=[circle,thick,draw=olive!75,fill=olive!20,minimum size=6mm]
   \tikzstyle{output place}=[circle,thick,draw=magenta!75,fill=magenta!20,minimum size=6mm]
+   \tikzstyle{lstm place}=[circle,thick,draw=red!75,fill=red!20,minimum size=6mm]
+   \tikzstyle{softplus place}=[circle,thick,draw=green!75,fill=green!20,minimum size=6mm]
+
   \tikzstyle{transition}=[rectangle,thick,draw=black!75,
   			  fill=black!20,minimum size=4mm]
 
 %  \tikzstyle{every label}=[blue!75]
 
   \begin{scope}
-    \node [input place] (s1) [label={[align=center]left:\nnfontsize State (11)}] {};
-    \node [place] (s2) [above right of=s1, label={[align=center]above:\nnfontsize Lin.~(11,32)}] {};
+    \node [input place] (s1) [label={[align=center]left:\nnfontsize State (12)}] {};
+    \node [place] (s2) [above right of=s1, label={[align=center]above:\nnfontsize Linear}] {};
     
   \path[->] (s1) edge node {} (s2);
     
-    \node [place] (s3) [right of=s2, label={[align=center]below:\nnfontsize LSTM (32)}] {};
+    \node [lstm place] (s3) [right of=s2, label={[align=center]below:\nnfontsize LSTM (32)}] {};
 
   \path[->] (s2) edge node {} (s3); 
   \path[->] (s3) edge [loop above] node {} (s3);   
    
-    \node [place] (s4) [right of=s3, label={[align=center]below:\nnfontsize LSTM (32)}] {};    
+    \node [lstm place] (s4) [right of=s3, label={[align=center]below:\nnfontsize LSTM (32)}] {};    
     
   \path[->] (s3) edge node {} (s4);
   \path[->] (s4) edge [loop above] node {} (s4);
     
-    \node [place] (s7) [right of=s4, label={[align=center]below:\nnfontsize Lin.~(32,1)}] {};
+    \node [softplus place] (s7) [right of=s4, label={[align=center]below:{\nnfontsize Softplus}}] {};
     
   \path[->] (s4) edge node {} (s7);
     
@@ -231,7 +234,7 @@ Stuff goes here!
 
   \path[->] (s7) edge node {} (s8);
 
-    \node [place] (s5) [above of=s7, label={[align=center]above:\nnfontsize Lin.~(32,1)}] {};
+    \node [place] (s5) [above of=s7, label={[align=center]above:\nnfontsize Linear}] {};
     
   \path[->] (s4) edge node {} (s5);
 
@@ -239,56 +242,68 @@ Stuff goes here!
     
   \path[->] (s5) edge node {} (s6);    
     
-    \node [place] (s10) [below right of=s1, label={[align=center]below:\nnfontsize Lin.~(11,32)}] {};
+    \node [place] (s10) [below right of=s1, label={[align=center]below:\nnfontsize Linear}] {};
     
   \path[->] (s1) edge node {} (s10);
 
     
-    \node [place] (s11) [right of=s10, label={[align=center]above:\nnfontsize LSTM (32)}] {};
+    \node [lstm place] (s11) [right of=s10, label={[align=center]above:\nnfontsize LSTM (32)}] {};
     
   \path[->] (s10) edge node {} (s11);
   \path[->] (s11) edge [loop below] node {} (s11);
 
-    \node [place] (s12) [right of=s11, label={[align=center]above:\nnfontsize LSTM (32)}] {};
+    \node [lstm place] (s12) [right of=s11, label={[align=center]above:\nnfontsize LSTM (32)}] {};
     
   \path[->] (s11) edge node {} (s12);
   \path[->] (s12) edge [loop below] node {} (s12);
     
-    \node [place] (s13) [right of=s12, label={[align=center]above:\nnfontsize Lin.~(32,1)}] {};
+    \node [softplus place] (s13) [right of=s12, label={[align=center]above:\nnfontsize Softplus}] {};
     
   \path[->] (s12) edge node {} (s13);
 
-    \node [output place] (s17) [right of=s13, label={[align=center]above:\nnfontsize $R_\text{packets}$ (1)}] {};
+    \node [output place] (s17) [right of=s13, label={[align=center]above:\nnfontsize $V_\text{packets}$ (1)}] {};
     
   \path[->] (s13) edge node {} (s17);
     
-    \node [place] (s15) [below of=s13, label={[align=center]above:\nnfontsize Lin.~(32,1)}] {};
+    \node [softplus place] (s15) [below of=s13, label={[align=center]above:\nnfontsize Softplus}] {};
     
   \path[->] (s12) edge node {} (s15);
 
-    \node [output place] (s19) [right of=s15, label={[align=center]above:\nnfontsize $R_\text{delay}$ (1)}] {};  
+    \node [output place] (s19) [right of=s15, label={[align=center]above:\nnfontsize $V_\text{delay}$ (1)}] {};  
     
   \path[->] (s15) edge node {} (s19);    
     
-    \node [place] (s16) [below of=s15, label={[align=center]above:\nnfontsize Lin.~(32,1)}] {};
+    \node [softplus place] (s16) [below of=s15, label={[align=center]above:\nnfontsize Softplus}] {};
     
   \path[->] (s12) edge node {} (s16);    
     
-    \node [output place] (s20) [right of=s16, label={[align=center]above:\nnfontsize $R_\text{lost}$ (1)}] {};    
+    \node [output place] (s20) [right of=s16, label={[align=center]above:\nnfontsize $V_\text{lost}$ (1)}] {};    
 
   \path[->] (s16) edge node {} (s20);    
     
-    \node [place] (s14) [below of=s16, label={[align=center]above:\nnfontsize Lin.~(32,1)}] {};
+    \node [softplus place] (s14) [below of=s16, label={[align=center]above:\nnfontsize Softplus}] {};
     
   \path[->] (s12) edge node {} (s14);
     
-    \node [output place] (s21) [right of=s14, label={[align=center]above:\nnfontsize $R_\text{duration}$ (1)}] {};   
+    \node [output place] (s21) [right of=s14, label={[align=center]above:\nnfontsize $V_\text{duration}$ (1)}] {};   
     
   \path[->] (s14) edge node {} (s21); 
 
   \end{scope}
 
 \end{tikzpicture}
+\end{frame}
+
+\begin{frame}{Reward 1}
+\begin{align*}
+\frac{R_\text{packets}}{R_\text{duration}}\text{Sigmoid}_\alpha\left(\frac{R_\text{lost}}{R_\text{lost} + R_\text{packets}} - 0.05\right) - \frac{R_\text{lost}}{R_\text{duration}} - \frac{R_\text{delay}}{R_\text{packets}}
+\end{align*}
+\end{frame}
+
+\begin{frame}{Reward 2}
+\begin{align*}
+R_\text{packets}\text{Sigmoid}_\alpha\left(\frac{R_\text{lost}}{R_\text{lost} + R_\text{packets}} - 0.05\right) - R_\text{lost} - \frac{R_\text{delay}}{R_\text{packets}}
+\end{align*}
 \end{frame}
 
 \end{document}
