@@ -156,6 +156,12 @@ void Unicorn::reset(const double & tickno)
     // _put_rewards += 1;
     finishFlow();
   }
+
+  // FIXME: Then why exactly do we also do this in unicorn-template.cc?
+  if (_active_flows.find(_flow_id) != _active_flows.end()) {
+    _active_flows.erase(_flow_id);
+  }
+
   // if (_put_actions != _put_rewards) {
   //   printf("%lu: _put_actions: %lu, _put_rewards: %lu\n", _thread_id, _put_actions, _put_rewards);
   // }
@@ -229,6 +235,7 @@ void Unicorn::get_action(const double& tickno, const int& packets_sent_in_this_e
       (double) packets_sent_in_this_episode,
       _memory._send*NORMALIZER,
       _memory._rec*NORMALIZER,
+      (double) _memory._lost_since_last_time,
       // _memory.field(2),
       // _memory.field(4),
       // (double) _the_window,

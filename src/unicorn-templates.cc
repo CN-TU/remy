@@ -29,6 +29,7 @@ void Unicorn::send( const unsigned int id, NextHop & next, const double & tickno
     if (_last_send_time == 0) {
       _memory._last_tick_sent = tickno;
       _memory._last_tick_received = tickno;
+      _memory._lost_since_last_time = 0;
       _flow_to_last_received[_flow_id] = tickno;
     }
 

@@ -9,6 +9,7 @@
 
 using namespace std;
 
+// TODO: I guess one needs another global lock so that it cannot happen that two threads concurrently call this method?
 Rainbow& Rainbow::getInstance() {
 	// FIXME: I guess one should check for a NULL pointer
 	const char* cooperative_string = getenv("cooperative");

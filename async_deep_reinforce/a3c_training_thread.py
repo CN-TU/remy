@@ -17,6 +17,7 @@ from constants import LOCAL_T_MAX
 from constants import LOG_LEVEL
 from constants import SECONDS_NORMALIZER
 from constants import STATE_SIZE
+from constants import SIGMOID_ALPHA
 
 import logging
 
@@ -24,8 +25,8 @@ logging.basicConfig(level=LOG_LEVEL)
 
 LOG_INTERVAL = 200
 
-def inverse_sigmoid(alpha, x):
-  return 1/(1+math.exp(alpha*x))
+def inverse_sigmoid(x):
+  return 1/(1+math.exp(x))
 
 class A3CTrainingThread(object):
   def __init__(self,
@@ -177,7 +178,7 @@ class A3CTrainingThread(object):
         self.windows += nones_to_add
         self.ticknos += nones_to_add
       # TODO: Is this useful? I guess only the `local_t' is actually needed...
-      elif len(self.actions) <= 0:
+      else:
         self.local_t = 0
         self.episode_count += 1
         self.episode_reward_throughput = 0
@@ -288,7 +289,12 @@ class A3CTrainingThread(object):
       # td = R_packets/R_duration - Vi[0]/Vi[2] - self.delay_delta*(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
       # td = R_packets/R_duration - Vi[0]/(Vi[2]) - self.delay_delta*(R_accumulated_delay/R_packets - Vi[1]/Vi[0]) - (R_lost/R_duration - Vi[3]/(Vi[2]))
       # td = inverse_sigmoid(self.delay_delta, R_lost/(R_packets+R_lost))*R_packets/R_duration - inverse_sigmoid(self.delay_delta, Vi[3]/(Vi[0]+Vi[3]))*Vi[0]/Vi[2] - (R_lost/R_duration - Vi[3]/(Vi[2]))
-      td = inverse_sigmoid(self.delay_delta, R_lost/(R_packets+R_lost) - 0.05)*R_packets/R_duration - inverse_sigmoid(self.delay_delta, Vi[3]/(Vi[0]+Vi[3]) - 0.05)*Vi[0]/Vi[2] - (R_lost/R_duration - Vi[3]/(Vi[2])) - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+
+      # td = inverse_sigmoid(self.delay_delta, R_lost/(R_packets+R_lost) - 0.05)*R_packets/R_duration - inverse_sigmoid(self.delay_delta, Vi[3]/(Vi[0]+Vi[3]) - 0.05)*Vi[0]/Vi[2] - (R_lost/R_duration - Vi[3]/(Vi[2])) - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+      # td = inverse_sigmoid(self.delay_delta, R_lost/(R_packets+R_lost))*R_packets/R_duration - inverse_sigmoid(self.delay_delta, Vi[3]/(Vi[0]+Vi[3]))*Vi[0]/Vi[2] - (R_lost/R_duration - Vi[3]/(Vi[2])) - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+
+      td = R_packets*(1-GAMMA)*inverse_sigmoid(SIGMOID_ALPHA * R_lost/(R_packets+R_lost) - self.delay_delta) - Vi[0]*inverse_sigmoid(SIGMOID_ALPHA * Vi[3]/(Vi[0]+Vi[3]) - self.delay_delta) - (R_lost*(1-GAMMA) - Vi[3]) - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+
       # td = R_packets/R_duration/(R_accumulated_delay/R_packets) - Vi[0]/Vi[2]/(Vi[1]/Vi[0]) - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
       # td = (np.log(R_packets/R_duration) - np.log(Vi[0]/Vi[2])) - self.delay_delta/SECONDS_NORMALIZER*(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
