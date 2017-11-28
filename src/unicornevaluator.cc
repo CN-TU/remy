@@ -10,14 +10,17 @@
 #include <cstdlib>
 #include <cmath>
 
-UnicornEvaluator::UnicornEvaluator( const ConfigRangeUnicorn & range )
-  : _prng_seed( global_PRNG()() ), /* freeze the PRNG seed for the life of this UnicornEvaluator */
+UnicornEvaluator::UnicornEvaluator( const ConfigRangeUnicorn & range, const size_t thread_id )
+  : _prng_seed( 0 ), /* freeze the PRNG seed for the life of this UnicornEvaluator */
     // _tick_count( range.simulation_ticks ),
     _configs(),
     _config_range(range)
 {
+  PRNG* prng = global_PRNG(thread_id);
+  _prng_seed = (*prng)();
+  delete prng;
   printf("Creating UnicornEvaluator with random seed %u\n", _prng_seed);
-  srand(_prng_seed);
+  // srand(_prng_seed);
   // add configs from every point in the cube of configs
   for (double simulation_ticks = range.simulation_ticks.low; simulation_ticks <= range.simulation_ticks.high; simulation_ticks += range.simulation_ticks.incr) {
     for (double link_ppt = range.link_ppt.low; link_ppt <= range.link_ppt.high; link_ppt += range.link_ppt.incr) {

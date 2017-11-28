@@ -26,7 +26,7 @@ public:
   };
 
 private:
-  const unsigned int _prng_seed;
+  unsigned int _prng_seed;
   // unsigned int _tick_count;
 
   std::vector< NetConfig > _configs;
@@ -35,7 +35,7 @@ private:
   // ProblemBuffers::Problem _ProblemSettings_DNA ( void ) const;
 
 public:
-  UnicornEvaluator( const ConfigRangeUnicorn & range );
+  UnicornEvaluator( const ConfigRangeUnicorn & range, const size_t thread_id );
 
   // ProblemBuffers::Problem DNA( const T & actions ) const;
 

@@ -80,11 +80,11 @@ class A3CTrainingThread(object):
     return self.local_network.get_vars()
 
   def _anneal_learning_rate(self, global_time_step):
-    learning_rate = self.initial_learning_rate * (self.max_global_time_step - global_time_step) / self.max_global_time_step
-    if learning_rate < 0.0:
-      learning_rate = 0.0
-    return learning_rate
-    # return self.initial_learning_rate
+    # learning_rate = self.initial_learning_rate * (self.max_global_time_step - global_time_step) / self.max_global_time_step
+    # if learning_rate < 0.0:
+    #   learning_rate = 0.0
+    # return learning_rate
+    return self.initial_learning_rate
 
   def _record_score(self, sess, summary_writer, summary_op, summary_inputs, things, global_t):
     # print("window in _record_score", self.windows, self.time_differences)
@@ -293,7 +293,8 @@ class A3CTrainingThread(object):
       # td = inverse_sigmoid(self.delay_delta, R_lost/(R_packets+R_lost) - 0.05)*R_packets/R_duration - inverse_sigmoid(self.delay_delta, Vi[3]/(Vi[0]+Vi[3]) - 0.05)*Vi[0]/Vi[2] - (R_lost/R_duration - Vi[3]/(Vi[2])) - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
       # td = inverse_sigmoid(self.delay_delta, R_lost/(R_packets+R_lost))*R_packets/R_duration - inverse_sigmoid(self.delay_delta, Vi[3]/(Vi[0]+Vi[3]))*Vi[0]/Vi[2] - (R_lost/R_duration - Vi[3]/(Vi[2])) - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
-      td = R_packets*(1-GAMMA)*inverse_sigmoid(SIGMOID_ALPHA * R_lost/(R_packets+R_lost) - self.delay_delta) - Vi[0]*inverse_sigmoid(SIGMOID_ALPHA * Vi[3]/(Vi[0]+Vi[3]) - self.delay_delta) - (R_lost*(1-GAMMA) - Vi[3]) - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+      # td = R_packets*(1-GAMMA)*inverse_sigmoid(SIGMOID_ALPHA * R_lost/(R_packets+R_lost) - self.delay_delta) - Vi[0]*inverse_sigmoid(SIGMOID_ALPHA * Vi[3]/(Vi[0]+Vi[3]) - self.delay_delta) - (R_lost*(1-GAMMA) - Vi[3]) - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+      td = R_packets*(1-GAMMA)*inverse_sigmoid(SIGMOID_ALPHA * R_lost/(R_packets+R_lost) - self.delay_delta) - Vi[0]*inverse_sigmoid(SIGMOID_ALPHA * Vi[3]/(Vi[0]+Vi[3]) - self.delay_delta) - (R_lost*(1-GAMMA) - Vi[3])# - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
       # td = R_packets/R_duration/(R_accumulated_delay/R_packets) - Vi[0]/Vi[2]/(Vi[1]/Vi[0]) - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 

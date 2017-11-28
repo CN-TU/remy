@@ -17,7 +17,7 @@ UnicornEvaluator::Outcome UnicornBreeder::run(const size_t iterations)
     exit(1);
   }
   for (size_t i=0; i<iterations; i++) {
-    const UnicornEvaluator eval( _options.config_range );
+    const UnicornEvaluator eval( _options.config_range, _thread_id );
 
     auto outcome(eval.score());
 
@@ -31,7 +31,7 @@ UnicornEvaluator::Outcome UnicornBreeder::run(const size_t iterations)
 
   fclose(f);
 
-  const UnicornEvaluator eval2( _options.config_range );
+  const UnicornEvaluator eval2( _options.config_range, _thread_id );
   const auto new_score = eval2.score();
 
   return new_score;
