@@ -43,6 +43,31 @@ private:
 template class SimulationResults< WhiskerTree >;
 template class SimulationResults< FinTree >;
 
+// top level results class
+class SimulationResultsUnicorn
+{
+public:
+  SimulationResultsUnicorn() : run_data() {};
+
+  SimulationResultBuffers::SimulationsDataUnicorn DNA( void ) const;
+
+  // Adds a run and returns a reference to it
+  SimulationRunData & add_run_data( const NetConfig & config, double interval );
+
+  void set_prng_seed( unsigned int prng_seed ) { this->prng_seed = prng_seed; }
+  void set_tick_count( unsigned int tick_count ) { this->tick_count = tick_count; }
+  void set_log_interval_ticks( unsigned int log_interval_ticks ) { this->log_interval_ticks = log_interval_ticks; }
+
+private:
+  void _populate_actions( SimulationResultBuffers::SimulationsData & pb ) const;
+
+  std::vector< struct SimulationRunData > run_data;
+
+  // problem settings
+  unsigned int prng_seed = 0;
+  unsigned int tick_count = 0;
+  unsigned int log_interval_ticks = 0;
+};
 
 class SimulationRunData
 {

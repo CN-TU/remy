@@ -64,6 +64,7 @@ public:
   unsigned int num_threads;
   bool cooperative;
   double delay_delta;
+  unsigned int iterations;
 
   ConfigRangeUnicorn( void );
   ConfigRangeUnicorn( RemyBuffers::ConfigRangeUnicorn configrange );

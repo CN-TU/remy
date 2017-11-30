@@ -60,9 +60,42 @@ void Network<Gang1Type, Gang2Type>::tick( void )
 }
 
 template <class Gang1Type, class Gang2Type>
-void Network<Gang1Type, Gang2Type>::run_simulation( const double & duration )
+void Network<Gang1Type, Gang2Type>::run_simulation( const double & duration_ref )
 {
   assert( _tickno == 0 );
+
+  double duration = duration_ref;
+  if (duration_ref <= 0) {
+    duration = std::numeric_limits<double>::max();
+    puts("Running simulation until the end of time.");
+  }
+  while ( _tickno < duration ) {
+    /* find element with soonest event */
+    _tickno = min( min( _senders.next_event_time( _tickno ),
+			min(_link.next_event_time( _tickno ), _stochastic_loss.next_event_time( _tickno)) ),
+		   min( _delay.next_event_time( _tickno ),
+			_rec.next_event_time( _tickno ) ) );
+
+    if ( _tickno > duration ) break;
+    assert( _tickno < std::numeric_limits<double>::max() );
+
+    tick();
+  }
+}
+
+template <class Gang1Type, class Gang2Type>
+void Network<Gang1Type, Gang2Type>::run_simulation_with_logging( const double & duration_ref, SimulationRunData & run_data )
+{
+  assert( _tickno == 0 );
+  const double interval = run_data.interval();
+
+  double duration = duration_ref;
+  if (duration_ref <= 0) {
+    duration = std::numeric_limits<double>::max();
+    puts("Running simulation until the end of time.");
+  }
+
+  double next_log_time = interval;
 
   while ( _tickno < duration ) {
     /* find element with soonest event */
@@ -75,6 +108,14 @@ void Network<Gang1Type, Gang2Type>::run_simulation( const double & duration )
     assert( _tickno < std::numeric_limits<double>::max() );
 
     tick();
+
+    if ( _tickno > next_log_time ) {
+      SimulationRunDataPoint & datum = run_data.add_datum( _tickno / 1000.0 );
+      datum.add_sender_data( _senders.statistics_for_log() );
+      datum.add_network_data( packets_in_flight() );
+      next_log_time += interval;
+    }
+
   }
 }
 

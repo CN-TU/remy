@@ -1,6 +1,10 @@
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
+#include <utility>
+#include <cstdio>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "unicornbreeder.hh"
 
@@ -8,7 +12,6 @@ using namespace std;
 
 UnicornEvaluator::Outcome UnicornBreeder::run(const size_t iterations)
 {
-  size_t iteration_number = 0;
   char file_name[64 * sizeof(char)];
   sprintf(file_name, "stats/thread%lu", _thread_id);
   FILE* f = fopen(file_name, "w");
@@ -19,14 +22,42 @@ UnicornEvaluator::Outcome UnicornBreeder::run(const size_t iterations)
   for (size_t i=0; i<iterations; i++) {
     const UnicornEvaluator eval( _options.config_range, _thread_id );
 
-    auto outcome(eval.score());
+    auto outcome_and_logging = eval.score_with_logging();
+
+    auto outcome = get<0>(outcome_and_logging);
+    auto logging = get<1>(outcome_and_logging);
 
     const double final_score = outcome.score;
-    fprintf(f, "%lu,%lu,%f\n", iteration_number, (unsigned long)time(NULL), final_score);
+    fprintf(f, "%lu,%lu,%f\n", i, (unsigned long)time(NULL), final_score);
     fflush(f);
-    printf("Finished iteration %lu in thread %lu! Score is %f.\n", iteration_number, _thread_id, final_score);
+    printf("Finished iteration %lu in thread %lu! Score is %f.\n", i, _thread_id, final_score);
 
-    iteration_number += 1;
+    char* file_name = getenv("checkpoints");
+    string output_filename = "logging/" + string(strchr(file_name, '/')+1);
+
+    if ( !output_filename.empty() ) {
+      char of[ 128 ];
+      snprintf( of, 128, "%s.%d", output_filename.c_str(), (int) i );
+      fprintf( stderr, "Writing to \"%s\"... ", of );
+      int fd = open( of, O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR );
+      if ( fd < 0 ) {
+        perror( "open" );
+        exit( 1 );
+      }
+
+      auto log_thing = logging.DNA();
+      if ( not log_thing.SerializeToFileDescriptor( fd ) ) {
+        fprintf( stderr, "Could not serialize RemyCC.\n" );
+        exit( 1 );
+      }
+
+      if ( close( fd ) < 0 ) {
+        perror( "close" );
+        exit( 1 );
+      }
+
+      fprintf( stderr, "done.\n" );
+    }
   }
 
   fclose(f);

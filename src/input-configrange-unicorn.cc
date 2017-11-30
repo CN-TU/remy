@@ -268,6 +268,7 @@ int main(int argc, char *argv[]) {
   update_config_with_uint32(input_config, &RemyBuffers::ConfigRangeUnicorn::set_num_threads, argc, argv, "num_threads", mandatory);
   update_config_with_bool(input_config, &RemyBuffers::ConfigRangeUnicorn::set_cooperative, argc, argv, "cooperative", mandatory);
   update_config_with_double(input_config, &RemyBuffers::ConfigRangeUnicorn::set_delay_delta, argc, argv, "delay_delta", mandatory);
+  update_config_with_uint32(input_config, &RemyBuffers::ConfigRangeUnicorn::set_iterations, argc, argv, "iterations", mandatory);
   if ( !(infinite_buffers) ) {
     update_config_with_range(input_config.mutable_buffer_size(), argc, argv, "buf_size", mandatory);
   } else {

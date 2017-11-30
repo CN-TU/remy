@@ -148,6 +148,7 @@ int main( int argc, char *argv[] )
   printf( "Number of threads is %u\n", options.config_range.num_threads );
   printf( "Training %s\n", options.config_range.cooperative ? "cooperatively" : "independently" );
   printf("Delay delta is %f\n", options.config_range.delay_delta);
+  printf("Iterations is %u\n", options.config_range.iterations);
   cooperative = options.config_range.cooperative;
   printf( "#######################\n" );
 
@@ -157,11 +158,15 @@ int main( int argc, char *argv[] )
   sprintf(number_of_threads_string, "num_threads=%u", options.config_range.num_threads*(uint32_t) options.config_range.num_senders.high);
   putenv(number_of_threads_string);
 
-  const size_t iterations_per_thread = std::numeric_limits<size_t>::max();
+  const size_t iterations_per_thread = options.config_range.iterations <= 0 ? std::numeric_limits<size_t>::max() : options.config_range.iterations;
+
   vector<thread> thread_array(options.config_range.num_threads);
 
   if (stat("stats", &st) == -1) {
     mkdir("stats", 0700);
+  }
+  if (stat("logging", &st) == -1) {
+    mkdir("logging", 0700);
   }
   for (size_t i=0; i<options.config_range.num_threads; i++) {
     thread_array[i] = thread(unicorn_thread, i, options, iterations_per_thread);
