@@ -9,7 +9,6 @@ SimulationRunData & SimulationResults< ActionTree >::add_run_data( const NetConf
 
 SimulationRunData & SimulationResultsUnicorn::add_run_data( const NetConfig & config, double interval )
 {
-
   run_data.emplace_back( config, interval );
   return run_data.back();
 }

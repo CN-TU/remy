@@ -57,6 +57,8 @@ public:
   void set_prng_seed( unsigned int prng_seed ) { this->prng_seed = prng_seed; }
   void set_tick_count( unsigned int tick_count ) { this->tick_count = tick_count; }
   void set_log_interval_ticks( unsigned int log_interval_ticks ) { this->log_interval_ticks = log_interval_ticks; }
+  const std::vector< struct SimulationRunData > & data() const { return run_data; }
+  // std::vector< struct SimulationRunData > & modifiable_data() { return run_data; }
 
 private:
   void _populate_actions( SimulationResultBuffers::SimulationsData & pb ) const;
@@ -80,6 +82,7 @@ public:
   const NetConfig & config() const { return _config; }
   double interval() const { return _interval; }
   const std::vector< struct SimulationRunDataPoint > & data() const { return _data; }
+  // std::vector< struct SimulationRunDataPoint > & modifiable_data() { return _data; }
 
 private:
   NetConfig _config;

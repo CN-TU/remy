@@ -168,6 +168,9 @@ int main( int argc, char *argv[] )
   if (stat("logging", &st) == -1) {
     mkdir("logging", 0700);
   }
+  if (stat("csv", &st) == -1) {
+    mkdir("csv", 0700);
+  }
   for (size_t i=0; i<options.config_range.num_threads; i++) {
     thread_array[i] = thread(unicorn_thread, i, options, iterations_per_thread);
   }

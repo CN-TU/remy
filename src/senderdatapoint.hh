@@ -38,15 +38,16 @@ public:
     packets_in_flight = _packets;
   }
 
-private:
-
-  // composite protobufs from other objects
+    // composite protobufs from other objects
   SimulationResultBuffers::SenderState sender_state;
   SimulationResultBuffers::UtilityData utility_data;
 
   // information directly stored in this object
   bool sending = false;
   unsigned int packets_in_flight = 0;
+
+private:
+
 };
 
 #endif // SENDER_DATA_POINT_HH
