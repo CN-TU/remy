@@ -1,0 +1,41 @@
+\newcommand{\nodedistance}{2}
+\newcommand{\nd}[1]{\numexpr #1 * \nodedistance \relax}
+
+\centering
+\begin{tikzpicture}[node distance=\nodedistance,>=stealth',bend angle=45,auto]
+
+  \tikzstyle{place}=[circle,thick,draw=blue!75,fill=blue!20,minimum size=6mm]
+  \tikzstyle{transition}=[rectangle,thick,draw=black!75,
+  			  fill=black!20,minimum size=4mm]
+
+%  \tikzstyle{every label}=[blue!75]
+
+  \begin{scope}
+    \node [place,tokens=1] (s1) at (\nd{0}, \nd{1}) [label={[align=center]left:Receive\\ feedback}] {};
+    \node [place] (s2) at (\nd{1}, \nd{2}) [label={[align=center]above:Received\\ ACK}] {};
+    \node [place] (s3) at (\nd{2}, \nd{1}) [label={[align=center]right:Packets\\ in the\\ network}] {};
+    \node [place] (s4) at (\nd{1}, \nd{0}) [label={[align=center]below:Open congestion\\ window (cwnd)}] {};      
+
+    \node [transition] (e1) at (\nd{0}, \nd{0}) [label=left:Take action] {}
+      edge [post] node {$a$}(s4)
+      edge [pre] node {1} (s1);    
+     
+    \node [transition] (e2) at (\nd{2}, \nd{0}) [label={[align=center]right:Send\\ packet}] {}
+      edge [pre] node {1} (s4)
+      edge [post] node {1} (s3);
+
+    \node [transition] (e3) at (\nd{2}, \nd{2}) [label={[align=center]right:Receive\\ ACK}] {}
+      edge [pre] node {1} (s3)
+      edge [post] node {1} (s2);
+
+    \node [transition] (e4) at (\nd{1}, \nd{1}) [label={[align=center]left:Update\\open\\cwnd}] {}
+      edge [pre] node {1} (s2)
+      edge [post] node {1} (s4);
+      
+    \node [transition] (e5) at (\nd{0}, \nd{2}) [label={[align=center]left:Received\\ feedback}] {}
+      edge [pre] node {1} (s2)
+      edge [post] node {1} (s1);
+
+  \end{scope}
+
+\end{tikzpicture}

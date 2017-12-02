@@ -65,7 +65,7 @@
 
 
 \begin{document}
-\title{Let's Play Congestion Control}
+\title{Some title}
 \titlenote{Produces the permission block, and
   copyright information}
 \subtitle{Extended Abstract}
@@ -146,39 +146,80 @@ ACM SIG Proceedings.\footnote{This is an abstract footnote}
 
 \keywords{Put some comma-separated keywords here}
 
+\settopmatter{printfolios=true}
 
-\maketitle
+\maketitle%
 
-\section{Partial Action Actor Critic Learning}
-\label{sec:pal}
+\section{Introduction}
 
-Partial Action Actor Critic Learning (PAL) is a modification of the Asynchronous Advantage Actor Critic algorithm proposed by \citet{mnih_asynchronous_2016}. It consists of two Artificial Neural Networks (ANNs), the Actor Network and the Value Network (the Critic part in the abbreviation stands for the Value Network). Given a state, the Actor Networks outputs what it deems to be the optimum action to perform in that certain state. The Value Network estimates what long-term reward can be expected in this state. So an action is considered good if it achieved a long-term reward that is higher than the long-term reward expected by the Value Network and it is considered bad if the reward was lower than expected. The long-term reward is implemented as a moving average of future rewards. So if a high reward can be achieved right now this is more favorable than if it can be achieved in the future. However it can also be beneficial to get a low reward now and instead get a very large one in the future. 
+In recent years, there have been several approaches to make congestion control learnable, most notably \textit{Remy} \citep{winstein_tcp_2013}, which learns an optimum congestion control w.r.t.~a specific utility function for specified network scenarios in an off-line fashion. Furthermore there is \textit{Performance-oriented Congestion Control} (PCC) \citep{dong_pcc:_2015}, which repeatedly tries different rates during periods of approximately one round-trip time (RTT) and chooses the better rate w.r.t.~a specific utility function. 
 
-\subsection{Algorithm}
-\label{subsec:alg}
+We make use of a new Reinforcement Learning (RL) based approach that can learn a congestion control algorithm on-line and is able to perform actions on a per acknowledgement basis. 
 
-In \autoref{alg:pal} we show the code that runs in one of the learning threads. As proposed in literature, we use several concurrent threads to improve training performance. A major difference to previous approaches to reinforcement learning is the fact that we allow more actions to be taken before the previous actions' rewards have been received. In classical reinforcement learning, an action is always followed by a reward and a reward is always followed by a action. In our proposed concept, however, it is possible to take new actions while the previous action hasn't received its reward yet.
+\subsection{Actor Critic Learning}
+\label{subsec:ac}
+
+To this end we propose \textit{Partial Action Learning} (PAL) (see \ref{subsec:pal}) which is a modification of the Actor Critic framework for neural networks proposed by \citet{mnih_asynchronous_2016}, which we outline in this section. 
+
+There are two Artificial Neural Networks (ANNs), the Actor Network and the Value Network (the Critic part in the abbreviation stands for the Value Network). Given a state, the Actor Network outputs what it deems to be the optimum action to perform in that certain state. The Value Network estimates what long-term reward can be expected in this state. So an action is considered good if it achieved a long-term reward that is higher than the long-term reward expected by the Value Network and it is considered bad if the reward was lower than expected. The long-term reward is implemented as a moving average of future rewards. So if a high reward can be achieved right now this is more favorable than if it can be achieved in the future. However it can also be beneficial to get a low reward now and instead get a very large one in the future. 
+
+\subsubsection{Value Network}
+\label{subsubsec:genericvalue}
+
+The Value Network outputs the expected long-term reward $V(s_{t}; \theta_\text{v})$ given a state $s_t$ at time step $t$ and the parameters (neural network weights) of the value network $\theta_v$.
+
+With $r_t$ being the reward that was received at time $t$ and $\gamma$ being the roll-off factor, which stands for the influence that future reward has on the moving average (commonly set to $0.99$), we define the expected long-term reward as 
+\begin{align*}
+R_t = \left(\left(\sum_{i=0}^{k-1} \gamma^ir_{t+i}\right) + \gamma^k V(s_{t+k}; \theta_\text{v})\right)\left( 1-\gamma \right),
+\end{align*}
+where $k$ is upper-bounded by $t_\text{max}$ ($t_\text{max}$ is a fixed hyperparameter that indicates how many rewards should be received before updating the neural network). So $R_t$ is simply a moving average of rewards at time step $t$. However, usual moving averages take into account values from the past while this one uses values from the future. In practice this means that we collect $t_\text{max}$ rewards, compute the expected long-term reward starting at each time step, update the neural network and start the same procedure again. 
+
+%\todo{Explanation not so clear?}
+
+The loss function, which the value network tries to minimize at each time step, is the square of the difference of the actual long-term reward received and the expected long-term reward
+\begin{align*}
+l_{\text{v},t} = \left(R_t - V(s_t; \theta_\text{v})\right)^2.
+\end{align*}
+
+\subsubsection{Actor Network}
+\label{subsubsec:genericactor}
+
+The Actor Network outputs a probability distribution from which the action $a_t$ at time step $t$ is randomly sampled. We use the mean $\mu$ and the standard deviation $\sigma$, to parametrize a normal distribution. The main idea is that the network learns to output the right mean at the right time step to maximize the future reward and that it uses the standard deviation to try out new actions, which could yield a better than expected reward. 
+
+With $v_t$ being the value that the value network estimated as the future reward given the current state $s_t$ at time step $t$ ($v_t$ is just an abbreviation for $V(s_t; \theta_\text{v})$) and $\theta_a$ the parameters of the actor network and with $\beta$ being a factor that specifies the importance of the entropy $H$, $\pi$ designating the probability density function, meaning that $\pi\left( a_t \given s_t; \theta_\text{a} \right)$ is the value of the probability density function of taking action $a_t$ in state $s_t$ with the current weights of the actor network $\theta_\text{a}$, we define the loss that the actor network aims to minimize as follows:
+\begin{align*}
+l_{\text{a},t} =& -\log \left( \pi\left( a_t \given s_t; \theta_\text{a} \right)\right)\left( R_t - v_t \right)\\ 
+&- \beta H\left( \pi\left( s_t; \theta_a \right)\right).
+\end{align*}
+
+\section{Method}
+\subsection{Partial Action Learning}
+\label{subsec:pal}
+
+The key difference between PAL and previous approaches to Reinforcement Learning is that in classical Reinforcement Learning, an action is always followed by a reward and a reward is always followed by a action. In our proposed concept, however, it is possible to take new actions while previous actions haven't received their rewards yet.
+
+Another major difference in PAL is that one action generates a number of partial actions ($\geq 0$) (see \autoref{fig:pal}). Each partial action generates feedback upon interacting with the environment. Upon receiving feedback for a partial action, the agent determines the current state and triggers a new action. When all feedbacks of one action were received, the agent combines them to form the reward and updates the value and actor networks.
+
+In \autoref{alg:pal} we show the code that runs in each of the agents (in the congestion control scenario, one agent corresponds to a sender). It is possible to have several agents which share a set of weights but one can also use separate weights for each agent, which is more realistic in case of congestion control in the Internet, as different senders cannot easily share a set of neural network weights over the Internet.
 
 \begin{figure}
 \begin{minipage}{\columnwidth}
 \includesvg{figures/Reinforcement_learning_diagram}
-\caption{The classical reinforcement learning approach.\protect\footnote{adapted from \url{https://upload.wikimedia.org/wikipedia/commons/1/1b/Reinforcement_learning_diagram.svg}}}
+\caption{The classical Reinforcement Learning approach.\protect\footnote{adapted from \url{https://upload.wikimedia.org/wikipedia/commons/1/1b/Reinforcement_learning_diagram.svg}}}
 \label{fig:reinforcement}
 \end{minipage}
 \end{figure}
 
-Another major difference in PAL is that one action generates a number of partial actions ($\geq 0$) (see \autoref{fig:pal}). Each partial action generates feedback upon interacting with the environment. Upon receiving feedback for a partial action, the agent determines the current state and triggers a new action. When all partial rewards of one action were received, the agent combines them to form the reward and updates the value and actor networks (see \autoref{alg:grad}).
-
 \begin{figure}
 \begin{minipage}{\columnwidth}
 \includesvg{figures/Reinforcement_learning_diagram_PAL}
-\caption{Partial Action Actor Critic Learning: An action consists of zero or more partial actions which trigger partial rewards upon interacting with the environment. Each partial reward updates the state. The value and actor networks are updated upon receiving all partial rewards of one action.\protect\footnote{adapted from \url{https://upload.wikimedia.org/wikipedia/commons/1/1b/Reinforcement_learning_diagram.svg}}}
+\caption{Partial Action Learning: An action consists of zero or more partial actions which trigger feedback upon interacting with the environment. Each feedback updates the state. The value and actor networks are updated upon receiving all feedback of one action.\protect\footnote{adapted from \url{https://upload.wikimedia.org/wikipedia/commons/1/1b/Reinforcement_learning_diagram.svg}}}
 \label{fig:pal}
 \end{minipage}
 \end{figure}
 
 \begin{algorithm}
-\caption{Partial Action Actor Critic Learning -- pseudocode for each learning thread. Only $\theta_{\text{a},\text{g}}$ and $\theta_{\text{v},\text{g}}$ are shared between the threads. They are initialized randomly in the beginning. \todo{Update algorithm}}
+\caption{Partial Action Learning -- pseudocode for each agent. It is possible that the agents share the global weights $\theta_{\text{a},\text{g}}$ and $\theta_{\text{v},\text{g}}$, which can be reasonable when learning off-line. Otherwise an individual copy of them is kept by each agent. All weights are initialized randomly in the beginning. LSTM cells are used in both the actor and the value network.}
 \label{alg:pal}
 \begin{algorithmic}[1]
 \Loop
@@ -188,29 +229,35 @@ Another major difference in PAL is that one action generates a number of partial
 	\State $l_\text{rewards} \gets  [] $
 	\State $l_\text{estimatedValues} \gets  [] $
 	\State $l_\text{snapshots} \gets  [] $
+	\State $l_\text{hiddenStates} \gets  [] $
 	\State $t \gets 0$
 	\State $s_0 \gets \text{initialState}()$
+	\State $h_\text{a} \gets \text{initialHiddenState}()$
+	\State $h_\text{v} \gets \text{initialHiddenState}()$
 	\State $\theta_\text{a} \gets \theta_{\text{a},\text{g}}$
 	\State $\theta_\text{v} \gets \theta_{\text{v},\text{g}}$
 	\Repeat
-		\State $l_\text{states}.\text{append}(s_t)$
 		\State $l_\text{estimatedValues}.\text{append}(V(s_t; \theta_\text{v}))$
 		\If{$t \bmod t_\text{max} = 0$}
 			\State $\theta_\text{a} \gets \theta_{\text{a},\text{g}}$
 			\State $\theta_\text{v} \gets \theta_{\text{v},\text{g}}$
 			\State $l_\text{snapshots}.\text{append}((\theta_\text{a}, \theta_\text{v}))$
+			\State $l_\text{hiddenStates}.\text{append}((h_\text{a}, h_\text{v}))$
 		\EndIf
+		\State $l_\text{states}.\text{append}(s_t)$
 		\State Sample $a_t$ from the 
 		\StateIndent[3] Actor Network's probability distribution
 		\State $l_\text{actions}.\text{append}(a_t)$
+		\State $l_\text{values}.\text{append}(V(s_t; \theta_\text{v}))$
 		\State $l_{\text{partialActions},t} \gets \text{partialActions}(a_t)$
-		\ForAll{partial actions $a_{{\text{p},n,t}}$ in $l_{\text{partialActions},t}$}
-			\State Take partial action $a_{{\text{p},n,t}}$
+		\ForAll{partial actions $a_{{\text{p},i,t}}$ in $l_{\text{partialActions},t}$}
+			\State Take partial action $a_{{\text{p},i,t}}$
 		\EndFor
-		\State Receive feedback $r_{\text{p},n,t'}$
-		\StateIndent[3] where $t' \leq t$ and $0 \leq n \leq\#(l_{\text{partialActions},t'})$
+		\State Wait for the next feedback $r_{\text{p},j,t'}$
+		\StateIndent[3] where $t' \leq t$ and $0 \leq j \leq\#(l_{\text{partialActions},t'})$
 		\If{all feedback of $a_{t'}$ was received}
-			\State $r_{t'} \gets \text{reward w.r.t all feedback }r_{\text{p},n,t'}$
+			\State $r_{t'} \gets \text{reward w.r.t all feedback }r_{\text{p},k,t'}$
+					\StateIndent[4] where $0 \leq k \leq\#(l_{\text{partialActions},t'})$
 			\State $l_\text{rewards}.\text{append}(r_{t'})$
 			\If{$\#\left(l_\text{rewards}\right) > t_\text{max}$ or the episode is over}
 				\State \Call{computeGradients}{}
@@ -224,127 +271,76 @@ Another major difference in PAL is that one action generates a number of partial
 \end{algorithmic}
 \end{algorithm}
 \begin{algorithm}
-\caption{Partial Action Actor Critic Learning -- procedure which computes and applies the gradients.}
+\caption{Partial Action Learning -- procedure which computes and applies the gradients.}
 \label{alg:grad}
 \begin{algorithmic}[1]%
 %\algrestore{palalg}
 \Function{computeGradients}{}
 	\State $t_\text{end} = \min\left(t_\text{max}, \#\left( l_\text{rewards} \right)\right)$
 	\State $\theta_\text{backup} \gets \left(\theta_\text{a}, \theta_\text{v}\right)$
+	\State $h_\text{backup} \gets \left(h_\text{a}, h_\text{v}\right)$
 	\State $\theta_\text{a}, \theta_\text{v} \gets l_\text{snapshots}[0]$
-	\State $R_{i+1} \gets \frac{l_\text{estimatedValues}[t_\text{end}]}{1-\gamma}$
+	\State $h_\text{a}, h_\text{v} \gets l_\text{hiddenStates}[0]$
+	\State $R_{i+1} \gets$ last element of $l_\text{estimatedValues}$%
 	\For{$i\gets t_\text{end}-1, 0$}
-		\State $R_i \gets r_i + \gamma R_{i+1}$
+		\State $R_i \gets \left(r_i + \gamma R_{i+1}\right)\left(1-\gamma\right)$
 		\State $a \gets l_\text{actions}[i]$
 		\State $s \gets l_\text{states}[i]$
 		\State $v \gets l_\text{values}[i]$
-		\State $d\theta_\text{v} \gets \frac{\partial\left(R_i - v\right)}{\partial\theta_v}$
-		\State $d\theta_\text{v} \gets -\frac{\partial\log \left( \pi\left( a \given s; \theta_\text{a} \right)\right)\left(R_i - v\right)}{\partial\theta_a}$
+		\State $d\theta_\text{a} \gets -\frac{\partial\log \left( \pi\left( a \given s; \theta_\text{a} \right)\right)\left(R_i - v\right)}{\partial\theta_a}$
 		\StateIndent[4] $-\frac{\partial\beta H\left( \pi\left( s; \theta_a \right)\right)}{\partial\theta_a}$
+		\State $d\theta_\text{v} \gets \frac{\partial\left(R_i - v\right)}{\partial\theta_v}$
 		\State $\theta_{\text{a},\text{g}} \gets \theta_{\text{a},\text{g}} + d\theta_\text{a}$
 		\State $\theta_{\text{v},\text{g}} \gets \theta_{\text{v},\text{g}} + d\theta_\text{v}$
 	\EndFor
 	\State Remove first $t_\text{end}$ elements from
 	\StateIndent[2] $l_\text{actions}$, $l_\text{states}$, $l_\text{values}$, $l_\text{rewards}$, $l_\text{estimatedValues}$
-	\State Remove first element from $l_\text{snapshots}$
+	\State Remove the first element from $l_\text{snapshots}$
+	\State Remove the first element from $l_\text{hiddenStates}$
 	\State $\theta_\text{a}, \theta_\text{v} = \theta_\text{backup}$
+	\State $h_\text{a}, h_\text{v} = h_\text{backup}$
 \EndFunction
 \end{algorithmic}
 \end{algorithm}
 
-\subsection{Value Network}
-\label{subsec:genericvalue}
-
-The value network estimates the expected long-term reward given a state $s_t$.
-
-Let $r_t$ be the reward that was received at time $t$. $V(s_t; \theta_\text{v})$ designates the expected mean reward in state $s_t$ given the parameters (neural network weights) of the value network $\theta_v$. Then, with $\gamma$ being the roll-off factor, which designates the influence that future reward has on the moving average, (set to $0.99$), we define the average reward as 
-\begin{align*}
-R_t = \left(\left(\sum_{i=0}^{k-1} \gamma^ir_{t+i}\right) + \gamma^k V(s_{t+k}; \theta_\text{v})\right),
-\end{align*}
-where $k$ is upper-bounded by $t_\text{max}$ ($t_\text{max}$ is a fixed hyperparameter that indicates how many steps should be performed before updating the neural network). So $R$ is simply a moving average of rewards. However, usual moving averages take into account values from the past while this one uses values from the future; it runs reversely. 
-
-The loss function, which the value network tries to minimize, is the square of the difference of the actual average reward received and the expected average reward
-\begin{align*}
-l_{\text{v},t} = \left(R_t - V(s_t; \theta_\text{v})\right)^2.
-\end{align*}
-
-\subsection{Actor Network}
-\label{subsec:genericactor}
-
-Let $a_t$ be the action that was taken at time step $t$, $v_t$ the value that the value network estimated as the future reward given the current state $s_t$ at time step $t$ ($v_t$ is just an abbreviation for $V(s_t; \theta_\text{v})$) and $\theta_a$ the parameters (neural network weights) of the actor network. Furthermore, let $\beta$ be a factor that specifies the importance of the entropy $H$. $\pi$ designates the probability density function, which means that $\pi\left( a_t \given s_t; \theta_\text{a} \right)$ is the value of the probability density function of taking action $a_t$ in state $s_t$ with the current weights of the actor network $\theta_\text{a}$. Then
-\begin{align*}
-l_{\text{a},t} =& -\log \left( \pi\left( a_t \given s_t; \theta_\text{a} \right)\right)\left( R_t - v_t \right)\\ 
-&- \beta H\left( \pi\left( s_t; \theta_a \right)\right)
-\end{align*}
-is the actor loss that we try to minimize. 
-
-\section{Congestion Control specifics}
+\subsection{Congestion Control specifics}
 
 \begin{figure}
 
-\newcommand{\nodedistance}{2}
-\newcommand{\nd}[1]{\numexpr #1 * \nodedistance \relax}
+\input{petri_net.tex}
 
-\begin{tikzpicture}[node distance=\nodedistance,>=stealth',bend angle=45,auto]
-
-  \tikzstyle{place}=[circle,thick,draw=blue!75,fill=blue!20,minimum size=6mm]
-  \tikzstyle{red place}=[place,draw=red!75,fill=red!20]
-  \tikzstyle{transition}=[rectangle,thick,draw=black!75,
-  			  fill=black!20,minimum size=4mm]
-
-%  \tikzstyle{every label}=[blue!75]
-
-  \begin{scope}
-    \node [place,tokens=1] (s1) at (\nd{0}, \nd{1}) [label={[align=center]left:Receive\\ feedback}] {};
-    \node [place] (s2) at (\nd{1}, \nd{2}) [label={[align=center]above:Received\\ ACKs}] {};
-    \node [place] (s3) at (\nd{2}, \nd{1}) [label={[align=center]right:Packets\\ in the\\ network}] {};
-    \node [place,tokens=1] (s4) at (\nd{1}, \nd{0}) [label={[align=center]below:Open congestion\\ window (cwnd)}] {};      
-
-    \node [transition] (e1) at (\nd{0}, \nd{0}) [label=left:Take action] {}
-      edge [post] node {$a$}(s4)
-      edge [pre] node {1} (s1);    
-     
-    \node [transition] (e2) at (\nd{2}, \nd{0}) [label={[align=center]right:Send\\ packet}] {}
-      edge [pre] node {1} (s4)
-      edge [post] node {1} (s3);
-
-    \node [transition] (e3) at (\nd{2}, \nd{2}) [label={[align=center]right:Receive\\ ACK}] {}
-      edge [pre] node {1} (s3)
-      edge [post] node {1} (s2);
-
-    \node [transition] (e4) at (\nd{1}, \nd{1}) [label={[align=center]left:Update\\open\\cwnd}] {}
-      edge [pre] node {1} (s2)
-      edge [post] node {1} (s4);
-      
-    \node [transition] (e5) at (\nd{0}, \nd{2}) [label={[align=center]left:Received\\ feedback}] {}
-      edge [pre] node {1} (s2)
-      edge [post] node {1} (s1);
-
-  \end{scope}
-
-\end{tikzpicture}
-
-\caption{A petri net describing the congestion control mechanism. We start with one token in the state \textit{Open congestion window}, which means that initially we can send one packet. We start with another token in the state \textit{Received feedback}, which means that we can take an action right in the beginning. The concept is the following: If there is at least one token in the \textit{Open congestion window}, send a packet. The acknowledgement (or timeout if the packet gets lost) for the packet is received by the \textit{Open congestion window}, meaning that when we get an ACK we can send another packet (The \textit{Open congestion window} signifies the congestion window minus the packets that are currently unacknowledged.). Furthermore the state \textit{Received feedback} receives each ACK/timeout and takes an action. \textit{Take action} adds \textit{a} tokens to the \textit{Open congestion window}, where $a$ is a real number (possibly also negative); thus in each state there can also be a real number of tokens (e.g.~ 2.34 tokens are possible in the \textit{Open congestion window}). However, we define that the congestion window can never be smaller than 1.}
+\caption{A petri net describing the congestion control mechanism. We start with one token in the state \textit{Received feedback}, which means that we can take an action right in the beginning. The concept is the following: If there is at least one token in the \textit{Open congestion window}, send a packet. The token goes to the network and after some time the acknowledgement (or timeout if the packet gets lost) for the packet is received in the \textit{Received ACK} state. From here one token goes to the \textit{Open congestion window} meaning that when we get an ACK (or timeout) we can send another packet (The \textit{Open congestion window} signifies the congestion window minus the packets that are currently unacknowledged.). Furthermore the state \textit{Received feedback} receives a token upon receiving an ACK/timeout. \textit{Take action} adds \textit{a} tokens to the \textit{Open congestion window}, where $a$ is a real number (possibly also negative); thus in each state there can also be a real number of tokens (e.g.~ 2.34 tokens are possible in the \textit{Open congestion window}). However, we define that the congestion window can never be smaller than 1 (This means that the sum of all tokens in the \textit{Open congestion window.}, \textit{Received ACK} and \textit{Packets in the network} states can never be smaller than 1.}
 \label{fig:petri}
 \end{figure}
 
-The classical Reinforcement Learning assumes that a reward follows an action and vice-versa (see \autoref{fig:reinforcement}). However, in the case of congestion control, it is desirable to perform a new action without having received a reward for the previous action. For example, imagine that you receive two acknowledgements directly after each other. For each of these two acknowledgements an action has to be performed but it does not seem feasible for the second action to wait until the first action has received a reward. The Asynchronous Actor Critic framework as described by \cite{mnih_asynchronous_2016} cannot be applied to congestion control as it assumes that actions and rewards are synchronized and thus we use the proposed Partial Action Actor Critic Learning (see \autoref{sec:pal}). We describe the concept of using reinforcement learning for congestion control with a petri net (see \autoref{fig:petri}).
+The motivation for PAL is that classical Reinforcement Learning assumes that a reward follows an action and vice-versa (see \autoref{fig:reinforcement}). However, in the case of congestion control, it is desirable to perform a new action without having received a reward for the previous action. For example, imagine that we receive two acknowledgements directly after one other. For each of these two acknowledgements an action has to be performed but it does not seem feasible for the second action to wait until the first action has received a reward as it takes one RTT until an acknowledgement (a reward) is received. Thus the Asynchronous Actor Critic framework as described by \cite{mnih_asynchronous_2016} cannot be applied to congestion control as it assumes that actions and rewards are synchronized and so we have to use Partial Action Learning (see \autoref{subsec:pal}). We describe the overall workings of PAL for congestion control using a petri net (see \autoref{fig:petri}).
 
-In the following a time step $t$ corresponds to the reception of an acknowledgement. The beginning of the flow, before any packet is sent, corresponds to time step $0$.
+To use PAL for congestion control we first have to define the correct semantics for this specific use case and we have to explicitly state how the state, reward etc.~are defined. Furthermore, we have to define how the actor and value network explicitely work in case of congestion control. In the following a time step $t$ corresponds to the reception of an acknowledgement. The beginning of the flow, before any packet is sent, corresponds to time step $0$.
 
 \begin{description}
-\item[$\textit{s}_\text{t}$] The state  describes the current ``congestion state''. Various features that indicate congestion are included in it. Each time an acknowledgement is received, the state is updated and the actor network is asked for the next action. 
-\item[$\textit{a}_\text{t}$] Based on a given state and the history of previous states, the actor network returns an action $a_t$, which is a real number ($\geq 1$) that stands for the congestion window to be used until the next acknowledgement is received. 
-\item[$\textit{r}_\text{t}$] The reward is a tuple of at least one reward metric. These are discussed in more detail in \autoref{subsec:value}
-\item[$\textit{v}_\text{t}$] The value is a tuple of the expected average reward estimated by the value network (see \autoref{subsec:value}) for each of the reward metrics. 
+\item[$\textit{s}_\text{t}$] The state  describes the current ``congestion state''. The following features are included in it:
+\begin{itemize}
+\item the round-trip time of the last packet
+\item the current congestion window
+\item the time between the last two packets that were sent
+\item the time between the last two packets that were received
+\item the number of packets that were lost since the last acknowledgement was received
+\end{itemize}
+Each time an acknowledgement is received, the state is updated and the actor network is asked for the next action.
+\item[$\textit{a}_\text{t}$] Based on a given state and the history of previous states (because we use LSTM cells and thus can also consider previous states), the actor network returns an action $a_t$, which is a real number that stands for the change of the congestion window. 
+\item[$\textit{r}_\text{t}$] The reward is a tuple of at least one reward metric. 
+%These are discussed in more detail in \autoref{subsubsec:value}. 
+For each reward metric there is also an output of the value network that predicts the expected long-term average of this reward metric given the current state. 
+%\item[$\textit{v}_\text{t}$] The value is a tuple of the expected average reward estimated by the value network (see \autoref{subsubsec:value}) for each of the reward metrics. 
 \end{description}
 
-We actually use four different types of reward: 
+We actually use the following types of reward: 
 \begin{description}
 \item[$\textit{r}_{\text{packet},t}$] is the number of the packets that the sender sent during time step $t$ and that were not lost (so they were acknowledged at some point by the receiver).
-\item[$\textit{r}_{\text{byte},t}$] is the sum of the bytes of the packets that the sender sent and that were not lost. Example: During $t$, three packets were sent with 300, 200, and 1500 bytes each so $\textit{r}_{\text{byte},t} = 2000$
+%\item[$\textit{r}_{\text{byte},t}$] is the sum of the bytes of the packets that the sender sent and that were not lost. Example: At time $t'$, three packets were sent with 300, 200, and 1500 bytes each so $\textit{r}_{\text{byte},t'} = 2000$
 \item[$\textit{r}_{\text{delay},t}$] is the sum of the round trip times of the packets that the sender sent and that were not lost.
 \item[$\textit{r}_{\text{duration},t}$] is the sum of the time between receiving the last packet and receiving this packet (``inter-receive time'') for the packets that the sender sent and that were not lost.
+\item[$\textit{r}_{\text{lost},t}$] is the sum of packets that were lost between receiving the last packet and receiving this packet.
 \end{description}
 
 %We actually use four moving averages for four different types of reward: 
@@ -355,37 +351,74 @@ We actually use four different types of reward:
 %\item[$\textit{R}_\text{duration}$] is the moving average of the time between receiving the last packet and receiving this packet (``inter-receive time'') for the packets that the sender sent and that were not lost.
 %\end{description}
 
-\subsection{Value Network}
-\label{subsec:value}
+The overall structure of the neural network for both the value and the actor network is depicted in \autoref{fig:neural_network}.
 
-In the case of congestion control, the loss function $l_{\text{v},t}$ of the value network is actually the sum of the square of the difference for each of the four moving averages for each type of reward:
+\begin{figure}
+
+\input{neural_network.tex}
+
+\caption{An overview of the complete neural network being used. Ocher stands for the input, blue for linear layers, red for LSTM layers, green for linear layers with a softplus activation function and purple for the outputs of the neural network. The numbers in parentheses next to each label stand  for the number of neurons being used in that layer.}
+\label{fig:neural_network}
+\end{figure}
+
+\subsubsection{Value Network}
+\label{subsubsec:value}
+
+In the case of congestion control, the loss function $l_{\text{v},t}$ of the value network is actually the sum of the squares of the difference for each of the expected long-term averages and the empirically found averages for each reward metric:
 \begin{align*}
 l_{\text{v},t} =& \left(R_{\text{packet},t} - V_\text{packet}(s_t; \theta_\text{v})\right)^2 \\
-&+\left(R_{\text{byte},t} - V_\text{byte}(s_t; \theta_\text{v})\right)^2 \\
+%&+\left(R_{\text{byte},t} - V_\text{byte}(s_t; \theta_\text{v})\right)^2 \\
 &+\left(R_{\text{delay},t} - V_\text{delay}(s_t; \theta_\text{v})\right)^2 \\
-&+\left(R_{\text{duration},t} - V_\text{duration}(s_t; \theta_\text{v})\right)^2
+&+\left(R_{\text{duration},t} - V_\text{duration}(s_t; \theta_\text{v})\right)^2 \\
+&+\left(R_{\text{lost},t} - V_\text{lost}(s_t; \theta_\text{v})\right)^2
 \end{align*}
 
-\subsection{Actor Network}
-\label{subsec:actor}
+\subsubsection{Actor Network}
+\label{subsubsec:actor}
 
 The actor network outputs two parameters: The mean of a normal distribution $\mu$ and its standard deviation $\sigma$. 
 
-Each time an action $a_t$ is requested, a value $X$ is sampled from the current normal distribution defined by the parameters $\mu$ and $\sigma$: 
-\begin{align*}
-X&\sim {\mathcal {N}}(\mu ,\sigma^{2})\\
-\end{align*}
+Each time an action $a_t$ is requested, it is sampled from the current normal distribution defined by the parameters $\mu$ and $\sigma$.
 
-$a_t$ is the sampled value $X$ at time $t$ and the window is incremented by $a_t$; however, the window can never be smaller than 1. At the beginning of a flow the window is 1 as well.
+Then the window is incremented by $a_t$; however, the window can never be smaller than 1. At the beginning of a flow the window starts with 1 as well.
 
 With $H$ being the entropy, the actor network minimizes the loss
+%\begin{align*}
+%l_{\text{a},t} =& -\log \left( \pi \left( a_t \given s_t ; \theta_\text{a} \right) \right)\\
+%&\left( \left(\log\left(\frac{R_{\text{byte},t}}{{R_{\text{duration},t}}}\right) - \log\left(\frac{v_{\text{byte},t}}{{v_{\text{duration},t}}}\right)\right) - \left( \frac{R_{\text{delay},t}}{{R_{\text{packet},t}}}- \frac{v_{\text{delay},t}}{{v_{\text{packet},t}}} \right)\right)\\ 
+%&+ \beta H\left( \pi\left( s_t; \theta_a \right)\right).
+
 \begin{align*}
 l_{\text{a},t} =& -\log \left( \pi \left( a_t \given s_t ; \theta_\text{a} \right) \right)\\
-&\left( \left(\log\left(\frac{R_{\text{byte},t}}{{R_{\text{duration},t}}}\right) - \log\left(\frac{v_{\text{byte},t}}{{v_{\text{duration},t}}}\right)\right) - \left( \frac{R_{\text{delay},t}}{{R_{\text{packet},t}}}- \frac{v_{\text{delay},t}}{{v_{\text{packet},t}}} \right)\right)\\ 
-&+ \beta H\left( \pi\left( s_t; \theta_a \right)\right).
+& \left( U_{\text{measured},t} - U_{\text{expected},t} \right)\\ 
+&- \beta H\left( \pi\left( s_t; \theta_a \right)\right)
 \end{align*}
+where $U$ can be any utility function defined based on some of the reward metrics. In the above formulation, one considers how much better the actual experienced Utility was compared to the expected one. The Utility is formed from the previously defined expected long-term values. 
  
+\subsection{Utility function}
+
+As the utility function one can choose an arbitrary function based on the reward metrics previously defined. A safe choice is to use PCC's \citep{dong_pcc:_2015} reward function as its convergence has been previously proven. It is defined as follows:
+
+\begin{align*}
+U_t = r_{\text{received},t}\text{Sigmoid}_\alpha\left(\frac{r_{\text{loss},t}}{r_{\text{sent},t}} - 0.05\right) + r_{\text{loss},t}
+\end{align*}
+where 
+\begin{align*}
+\text{Sigmoid}_\alpha(x) = \frac{1}{1+e^{\alpha x}},
+\end{align*}
+$r_\text{received}$ is the actual throughput (in packets per second), $r_\text{loss}$ is the loss rate (in packets per second) and $r_\text{sent}$ is the sending rate (in packets per second). Thus $\frac{r_\text{loss}}{r_\text{sent}}$ is the ratio of data getting lost compared to those being sent, which is a number between 0 and 1.
+
+Intuitively it means that one takes the actual throughput (packets that get received by the receiver and do not get lost) times the sigmoid function of the loss ratio minus 0.05 plus the loss rate. The sigmoid function essentially acts as a cutoff threshold. As soon as the loss rate rises above 5\%, the Sigmoid function decreases very quickly and thus diminishes the Utility. 
+
+It is also possible to set the cutoff threshold to 0, which means that losing packets is heavily punished; or one can increase the threshold to allow for more loss. 
+
+$r_{\text{received},t}$ can be calculated as $\frac{R_\text{packet},t}{R_\text{duration},t}$, $r_{\text{loss},t}$ can be calculated as $\frac{R_\text{lost},t}{R_\text{duration},t}$ and $r_{\text{sent},t}$ can be calculated as $\frac{{R_\text{packet},t} + {R_\text{lost},t}}{R_\text{duration},t}$.
+
+Actually, we assume equally sized packets for all of the above methodology, however, it would also easily be possible to consider the number of bytes per packet as well: One would have to add an additional reward metric of the average number of bytes per packet and as well add one more output to the value network. 
+
 \subsection{Example}
+
+In this section, an example of the overall procedure is outlined. 
 
 \begin{enumerate}
 \item Receive an ACK
@@ -393,8 +426,8 @@ l_{\text{a},t} =& -\log \left( \pi \left( a_t \given s_t ; \theta_\text{a} \righ
 \item Sample an increase for the congestion window from the Actor Network (e.g. $0.24$) and add it to the current congestion window.
 \item 
 \begin{enumerate}
-\item If this was the last ACK, which completes a previous action (e.g. a previous action resulted in $3$ packets being sent; so if this is the ACK for the third (and last) packet of this previous action we got all the ACKs to compute the reward.)
-\item If we now have $t_{max}$ rewards (set to 20) then we also update the neural network. 
+\item If this was the last ACK, which completes a previous action (e.g. a previous action resulted in $3$ packets being sent; so if this is the ACK for the third (and last) packet of this previous action, we got all the ACKs to compute the reward), combine all partial rewards to form the actual reward for that action. 
+\item If we now have $t_\text{max}$ rewards (set to 20) then we also update the neural network. 
 \end{enumerate}
 
 \end{enumerate}
@@ -423,44 +456,44 @@ l_{\text{a},t} =& -\log \left( \pi \left( a_t \given s_t ; \theta_\text{a} \righ
 %
 %\todo{Add figure to visually explain that}
 
-\subsection{Convergence}
-
-Assume we have $N$ senders, each with its specific baseline delay (this encompasses all delays excluding only the queueing delay) $d_i$. Each sender keeps a congestion window $b_i$. The link speed at the bottleneck is designated as $c$. 
-
-%We define the excessive window as 
+%\subsection{Convergence}
+%
+%Assume we have $N$ senders, each with its specific baseline delay (this encompasses all delays excluding only the queueing delay) $d_i$. Each sender keeps a congestion window $b_i$. The link speed at the bottleneck is designated as $c$. 
+%
+%%We define the excessive window as 
+%%\begin{align*}
+%%b_\text{excess} = \max\left( \left( \sum_{j=1}^N \frac{b_j}{d_j} \right) - c, 0 \right)
+%%\end{align*}
+%%and the queueing delay as 
+%%\begin{align*}
+%%d_q = \frac{b_\text{excess}}{c}.
+%%\end{align*}
+%
+%With $b = (b_i)$ we observe the following relation:
+%
 %\begin{align*}
-%b_\text{excess} = \max\left( \left( \sum_{j=1}^N \frac{b_j}{d_j} \right) - c, 0 \right)
+%c = \sum_{j=1}^N \frac{b_j}{d_j + d_q(b)}
 %\end{align*}
-%and the queueing delay as 
+%
+%Then we define the utility function for each sender $i$ as
 %\begin{align*}
-%d_q = \frac{b_\text{excess}}{c}.
+%V_i(b) \coloneqq \begin{cases}
+%\log\left(\frac{b_i}{d_i}\right) - \delta_i d_i & \text{if } \sum_{j=1}^N \frac{b_i}{d_i} \leq c\\
+%\log\left(\frac{b_i}{d_i + d_q(b)}\right) - \delta_i (d_i + d_q(b)) & \text{otherwise}
+%\end{cases}
 %\end{align*}
-
-With $b = (b_i)$ we observe the following relation:
-
-\begin{align*}
-c = \sum_{j=1}^N \frac{b_j}{d_j + d_q(b)}
-\end{align*}
-
-Then we define the utility function for each sender $i$ as
-\begin{align*}
-V_i(b) \coloneqq \begin{cases}
-\log\left(\frac{b_i}{d_i}\right) - \delta_i d_i & \text{if } \sum_{j=1}^N \frac{b_i}{d_i} \leq c\\
-\log\left(\frac{b_i}{d_i + d_q(b)}\right) - \delta_i (d_i + d_q(b)) & \text{otherwise}
-\end{cases}
-\end{align*}
-
-\begin{align*}
-&\log\left(\frac{b_i}{d_i + d_q}\right) - \delta_i (d_i + d_q) \\
-=& \log\left(b_i\right) - \log\left(d_i + d_q\right) - \delta_i (d_i + d_q)
-\end{align*}
-
-\begin{align*}
-\frac{\partial V_i}{\partial b_i} = \begin{cases}
-\frac{1}{b_i} & \text{if } \sum_{j=1}^N \frac{b_i}{d_i} \leq c\\
-\frac{1}{b_i} - \frac{\partial d_q}{\partial b_i}\left(b_i\right)\frac{1}{d_i+d_q\left(b_i\right)} - \delta\frac{\partial d_q}{b_i}\left(b_i\right) & \text{otherwise}
-\end{cases}
-\end{align*}
+%
+%\begin{align*}
+%&\log\left(\frac{b_i}{d_i + d_q}\right) - \delta_i (d_i + d_q) \\
+%=& \log\left(b_i\right) - \log\left(d_i + d_q\right) - \delta_i (d_i + d_q)
+%\end{align*}
+%
+%\begin{align*}
+%\frac{\partial V_i}{\partial b_i} = \begin{cases}
+%\frac{1}{b_i} & \text{if } \sum_{j=1}^N \frac{b_i}{d_i} \leq c\\
+%\frac{1}{b_i} - \frac{\partial d_q}{\partial b_i}\left(b_i\right)\frac{1}{d_i+d_q\left(b_i\right)} - \delta\frac{\partial d_q}{b_i}\left(b_i\right) & \text{otherwise}
+%\end{cases}
+%\end{align*}
 
 %\begin{align*}
 %G(b) = \begin{pmatrix}
@@ -470,9 +503,9 @@ V_i(b) \coloneqq \begin{cases}
 %\end{pmatrix} \text{if } \text{if } \sum_{j=1}^N \frac{b_i}{d_i} \leq c
 %\end{align*}
 
-To show diagonal strict concavity we have to show that d.s.c.~is fulfilled \begin{enumerate*} \item for two distinct points lying in $\sum_{j=1}^N \frac{b_i}{d_i} \leq c$ \item for two distinct points lying in $\sum_{j=1}^N \frac{b_i}{d_i} > c$ and \item when one point is in one part of the function and the other in the other one\end{enumerate*}.
-
-\todo{Insert what d.s.c~actually is and quote Altman's paper}
+%To show diagonal strict concavity we have to show that d.s.c.~is fulfilled \begin{enumerate*} \item for two distinct points lying in $\sum_{j=1}^N \frac{b_i}{d_i} \leq c$ \item for two distinct points lying in $\sum_{j=1}^N \frac{b_i}{d_i} > c$ and \item when one point is in one part of the function and the other in the other one\end{enumerate*}.
+%
+%\todo{Insert what d.s.c~actually is and quote Altman's paper}
 
 %\begin{enumerate}
 %\item (b^1 - 
@@ -480,30 +513,30 @@ To show diagonal strict concavity we have to show that d.s.c.~is fulfilled \begi
 %\item
 %\end{enumerate}
 
-\section{Results}
-
-We train on the following scenario:
- 
-\begin{table}[h]
-\centering
-\begin{tabular}{rll}
-\toprule
-Parameter & Value & Distribution \\
-\midrule
-Two-way propagation delay & $100\,$ms & constant \\
-Bottleneck bandwidth & $3\,$Mbit/s & constant \\
-Number of senders & $2$ & constant \\
-Flow length & $\infty$ & constant \\
-Simulation duration & $50\,$s--$150\,$s & uniform \\
-Buffer size & $\infty$ & constant \\
-Stochastic loss prob. & $0\%$ & constant \\
-\bottomrule
-\end{tabular}
-\caption{The parameters of our very first simple experiment}
-\label{tab:smallexperiment}
-\end{table}
-
-\todo{Insert results when comparing to regular TCP}
+%\section{Results}
+%
+%We train on the following scenario:
+% 
+%\begin{table}[h]
+%\centering
+%\begin{tabular}{rll}
+%\toprule
+%Parameter & Value & Distribution \\
+%\midrule
+%Two-way propagation delay & $100\,$ms & constant \\
+%Bottleneck bandwidth & $3\,$Mbit/s & constant \\
+%Number of senders & $2$ & constant \\
+%Flow length & $\infty$ & constant \\
+%Simulation duration & $50\,$s--$150\,$s & uniform \\
+%Buffer size & $\infty$ & constant \\
+%Stochastic loss prob. & $0\%$ & constant \\
+%\bottomrule
+%\end{tabular}
+%\caption{The parameters of our very first simple experiment}
+%\label{tab:smallexperiment}
+%\end{table}
+%
+%\todo{Insert results when comparing to regular TCP}
  
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{congestion}
