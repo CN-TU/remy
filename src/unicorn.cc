@@ -200,10 +200,13 @@ void Unicorn::reset(const double & tickno)
   // _intersend_time = current_whisker.intersend();
 }
 
-double Unicorn::next_event_time( const double & tickno ) const
+double Unicorn::next_event_time( const double & tickno )
 {
   // return tickno;
   if (int(_packets_sent) < _largest_ack + 1 + (int) floor(_the_window) ) {
+    return tickno;
+  } else if (_last_send_time > 0 && tickno - _last_send_time >= TIMEOUT_THRESHOLD) {
+    reset(tickno);
     return tickno;
   } else {
     /* window is currently closed */

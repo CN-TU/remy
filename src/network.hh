@@ -93,9 +93,9 @@ private:
   void tick( void );
 
 public:
-  Network( const typename Gang1Type::Sender & example_sender1, const typename Gang2Type::Sender & example_sender2, PRNG & s_prng, const NetConfig & config );
+  Network( typename Gang1Type::Sender & example_sender1, typename Gang2Type::Sender & example_sender2, PRNG & s_prng, const NetConfig & config );
 
-  Network( const typename Gang1Type::Sender & example_sender1, PRNG & s_prng, const NetConfig & config );
+  Network( typename Gang1Type::Sender & example_sender1, PRNG & s_prng, const NetConfig & config );
 
   // Network(PRNG & s_prng, const NetConfig & config );
 

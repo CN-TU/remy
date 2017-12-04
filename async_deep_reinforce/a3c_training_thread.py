@@ -269,16 +269,16 @@ class A3CTrainingThread(object):
     # compute and accmulate gradients
     for(ai, ri, si, Vi) in zip(actions, rewards, states, values):
       # FIXME: Make sure that it actually works with how the roll-off factor gets normalized.
-      assert(false)
+      # assert(False)
 
-      R_duration = (ri[2]*SECONDS_NORMALIZER + GAMMA*R_duration)*(1-GAMMA)
+      R_duration = ((1-GAMMA)*ri[2]*SECONDS_NORMALIZER + GAMMA*R_duration)
 
-      R_packets = (ri[0] + GAMMA*R_packets)*(1-GAMMA)
-      R_lost = (ri[3] + GAMMA*R_lost)*(1-GAMMA)
+      R_packets = ((1-GAMMA)*ri[0] + GAMMA*R_packets)
+      R_lost = ((1-GAMMA)*ri[3] + GAMMA*R_lost)
       # TODO: In theory it should be np.log(R_bytes/R_duration) but remy doesn't have bytes
       # td = (np.log(R_packets/R_duration) - np.log(Vi[0]/Vi[2]))
 
-      R_accumulated_delay = (ri[1]*SECONDS_NORMALIZER + GAMMA*R_accumulated_delay)*(1-GAMMA)
+      R_accumulated_delay = ((1-GAMMA)*ri[1]*SECONDS_NORMALIZER + GAMMA*R_accumulated_delay)
       # R_delay = R_accumulated_delay/R_packets
       # td_delay = -(np.log(R_accumulated_delay/R_packets/DELAY_MULTIPLIER) - np.log(Vi[1]/Vi[0]/DELAY_MULTIPLIER))
       # td -= self.delay_delta/SECONDS_NORMALIZER*(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
@@ -302,17 +302,20 @@ class A3CTrainingThread(object):
 
       # td = (np.log(R_packets/R_duration) - np.log(Vi[0]/Vi[2])) - self.delay_delta/SECONDS_NORMALIZER*(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
+      # R_packets, R_accumulated_delay, R_duration, R_lost = (R_packets)/(1-GAMMA), (R_accumulated_delay)/(1-GAMMA), (R_duration)/(1-GAMMA), (R_lost)/(1-GAMMA)
+
       batch_si.append(si)
       batch_ai.append(ai)
       batch_td.append(td)
-      batch_R_duration.append((R_duration))
+      batch_R_duration.append(R_duration)
       batch_R_packets.append(R_packets)
       batch_R_accumulated_delay.append(R_accumulated_delay)
       batch_R_lost.append(R_lost)
-      # batch_R_duration.append(R_duration)
-      # batch_R_packets.append(R_packets)
-      # batch_R_accumulated_delay.append(R_accumulated_delay)
-      # batch_R_lost.append(R_lost)
+
+      # batch_R_duration.append(R_duration/(1-GAMMA))
+      # batch_R_packets.append(R_packets/(1-GAMMA))
+      # batch_R_accumulated_delay.append(R_accumulated_delay/(1-GAMMA))
+      # batch_R_lost.append(R_lost/(1-GAMMA))
 
       # logging.debug(" ".join(map(str,("batch_td_throughput[-1]", batch_td_throughput[-1], "batch_td_delay[-1]", batch_td_delay[-1], "batch_R_packets[-1]", batch_R_packets[-1], "batch_R_accumulated_delay[-1]", batch_R_accumulated_delay[-1], "batch_R_duration[-1]", batch_R_duration[-1]))))
 

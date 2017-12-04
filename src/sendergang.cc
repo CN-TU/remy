@@ -291,7 +291,7 @@ vector< SenderDataPoint > SenderGang<SenderType, SwitcherType>::statistics_for_l
 }
 
 template <class SenderType>
-double SwitchedSender<SenderType>::next_event_time( const double & tickno ) const
+double SwitchedSender<SenderType>::next_event_time( const double & tickno )
 {
   assert( next_switch_tick >= tickno );
 
@@ -299,10 +299,10 @@ double SwitchedSender<SenderType>::next_event_time( const double & tickno ) cons
 }
 
 template <class SenderType, class SwitcherType>
-double SenderGang<SenderType, SwitcherType>::next_event_time( const double & tickno ) const
+double SenderGang<SenderType, SwitcherType>::next_event_time( const double & tickno )
 {
   double ret = std::numeric_limits<double>::max();
-  for ( const auto & x : _gang ) {
+  for ( auto & x : _gang ) {
     const double the_next_event = x.next_event_time( tickno );
     assert( the_next_event >= tickno );
     if ( the_next_event < ret ) {

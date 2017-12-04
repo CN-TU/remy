@@ -36,7 +36,7 @@ public:
   std::vector< std::pair< double, double > > throughputs_delays( void ) const;
   std::vector< SenderDataPoint > statistics_for_log( void ) const;
 
-  double next_event_time( const double & tickno ) const;
+  double next_event_time( const double & tickno );
 
   const Gang1Type & gang1( void ) const { return gang1_; }
   const Gang2Type & gang2( void ) const { return gang2_; }

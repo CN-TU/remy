@@ -67,7 +67,7 @@ LOST_OFFSET = inverse_softplus(1e-3)
 # INTER_PACKET_ARRIVAL_TIME_OFFSET = 0
 
 INITIAL_WINDOW_INCREASE_BIAS_OFFSET = 0
-INITIAL_WINDOW_INCREASE_WEIGHT_FACTOR = 1
+INITIAL_WINDOW_INCREASE_WEIGHT_FACTOR = 1e-1
 
 STATE_SIZE = int(environ.get('state_size')) if environ.get('state_size') is not None else 12
 HIDDEN_SIZE = int(environ.get('hidden_size')) if environ.get('hidden_size') is not None else 32

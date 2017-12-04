@@ -99,12 +99,13 @@ pair<UnicornEvaluator::Outcome, SimulationResultsUnicorn> UnicornEvaluator::scor
 
   SimulationResultsUnicorn complete_logging = SimulationResultsUnicorn();
 
+  Unicorn sample = Unicorn(config_range.cooperative, config_range.delay_delta);
   for ( auto &x : shuffled_configs ) {
     SimulationRunData& logging = complete_logging.add_run_data(x, interval );
     printf("Running for %.f ticks\n", x.simulation_ticks);
     /* run once */
     Network<SenderGang<Unicorn, ByteSwitchedSender<Unicorn>>,
-      SenderGang<Unicorn, ByteSwitchedSender<Unicorn>>> network1( Unicorn(config_range.cooperative, config_range.delay_delta), run_prng, x );
+      SenderGang<Unicorn, ByteSwitchedSender<Unicorn>>> network1( sample, run_prng, x );
     network1.run_simulation_with_logging( x.simulation_ticks, logging );
 
     the_outcome.score += network1.senders().utility();
@@ -127,12 +128,12 @@ UnicornEvaluator::Outcome UnicornEvaluator::score(
 
   vector<NetConfig> shuffled_configs(configs);
   std::shuffle(shuffled_configs.begin(), shuffled_configs.end(), run_prng);
-
+  Unicorn sample = Unicorn(config_range.cooperative, config_range.delay_delta);
   for ( auto &x : shuffled_configs ) {
     printf("Running for %.f ticks\n", x.simulation_ticks);
     /* run once */
     Network<SenderGang<Unicorn, ByteSwitchedSender<Unicorn>>,
-      SenderGang<Unicorn, ByteSwitchedSender<Unicorn>>> network1( Unicorn(config_range.cooperative, config_range.delay_delta), run_prng, x );
+      SenderGang<Unicorn, ByteSwitchedSender<Unicorn>>> network1( sample, run_prng, x );
     network1.run_simulation( x.simulation_ticks );
 
     the_outcome.score += network1.senders().utility();

@@ -32,7 +32,7 @@ public:
   void switch_on( const double & tickno );
   void switch_off( const double & tickno, const unsigned int num_sending );
 
-  double next_event_time( const double & tickno ) const;
+  double next_event_time( const double & tickno );
   SenderDataPoint statistics_for_log( void ) const;
   Utility utility;
   bool sending;
@@ -163,7 +163,7 @@ public:
   std::vector< std::pair< double, double > > throughputs_delays( void ) const;
   std::vector< SenderDataPoint > statistics_for_log( void ) const;
 
-  double next_event_time( const double & tickno ) const;
+  double next_event_time( const double & tickno );
 
   SwitcherType & mutable_sender( const unsigned int num ) { return _gang.at( num ); }
   const SwitcherType & sender( const unsigned int num ) const { return _gang.at( num ); }

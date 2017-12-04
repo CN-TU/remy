@@ -21,6 +21,8 @@
 #define MIN_WINDOW_UNICORN 1.0
 #define MAX_WINDOW_UNICORN 1000.0
 
+#define TIMEOUT_THRESHOLD 1000
+
 class Unicorn
 {
 protected:
@@ -78,7 +80,7 @@ public:
 	// Unicorn(Unicorn const&) = delete;
 	void operator=(Unicorn const&) = delete;
 
-  double next_event_time( const double & tickno ) const;
+  double next_event_time( const double & tickno );
 
   const long unsigned int & packets_sent( void ) const { return _packets_sent; }
 
