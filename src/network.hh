@@ -99,7 +99,9 @@ public:
 
   // Network(PRNG & s_prng, const NetConfig & config );
 
-  void run_simulation( const double & duration );
+  void run_simulation( const double & duration_ref );
+
+  void run_simulation_with_logging( const double & duration_ref, SimulationRunData & run_data );
 
   void run_simulation_with_logging_until( const double tick_limit, SimulationRunData &, const double interval );
 

@@ -10,14 +10,20 @@
 #include <cstdlib>
 #include <cmath>
 
-UnicornEvaluator::UnicornEvaluator( const ConfigRangeUnicorn & range )
-  : _prng_seed( global_PRNG()() ), /* freeze the PRNG seed for the life of this UnicornEvaluator */
+using namespace std;
+
+UnicornEvaluator::UnicornEvaluator( const ConfigRangeUnicorn & range, const size_t thread_id )
+  : _prng_seed( 0 ), /* freeze the PRNG seed for the life of this UnicornEvaluator */
     // _tick_count( range.simulation_ticks ),
     _configs(),
-    _config_range(range)
+    _config_range(range),
+    _thread_id(thread_id)
 {
+  PRNG* prng = global_PRNG(thread_id);
+  _prng_seed = (*prng)();
+  delete prng;
   printf("Creating UnicornEvaluator with random seed %u\n", _prng_seed);
-  srand(_prng_seed);
+  // srand(_prng_seed);
   // add configs from every point in the cube of configs
   for (double simulation_ticks = range.simulation_ticks.low; simulation_ticks <= range.simulation_ticks.high; simulation_ticks += range.simulation_ticks.incr) {
     for (double link_ppt = range.link_ppt.low; link_ppt <= range.link_ppt.high; link_ppt += range.link_ppt.incr) {
@@ -74,6 +80,40 @@ UnicornEvaluator::UnicornEvaluator( const ConfigRangeUnicorn & range )
 
 //   return ret;
 // }
+
+pair<UnicornEvaluator::Outcome, SimulationResultsUnicorn> UnicornEvaluator::score_with_logging(
+             const unsigned int prng_seed,
+             const vector<NetConfig> & configs,
+             const ConfigRangeUnicorn& config_range)
+{
+  PRNG run_prng( prng_seed );
+
+  /* run tests */
+  UnicornEvaluator::Outcome the_outcome;
+
+  vector<NetConfig> shuffled_configs(configs);
+  std::shuffle(shuffled_configs.begin(), shuffled_configs.end(), run_prng);
+
+  const double interval = 100000;
+  size_t counter = 0;
+
+  SimulationResultsUnicorn complete_logging = SimulationResultsUnicorn();
+
+  for ( auto &x : shuffled_configs ) {
+    SimulationRunData& logging = complete_logging.add_run_data(x, interval );
+    printf("Running for %.f ticks\n", x.simulation_ticks);
+    /* run once */
+    Network<SenderGang<Unicorn, ByteSwitchedSender<Unicorn>>,
+      SenderGang<Unicorn, ByteSwitchedSender<Unicorn>>> network1( Unicorn(config_range.cooperative, config_range.delay_delta), run_prng, x );
+    network1.run_simulation_with_logging( x.simulation_ticks, logging );
+
+    the_outcome.score += network1.senders().utility();
+    the_outcome.throughputs_delays.emplace_back( x, network1.senders().throughputs_delays() );
+    counter += 1;
+  }
+
+  return {the_outcome, complete_logging};
+}
 
 UnicornEvaluator::Outcome UnicornEvaluator::score(
              const unsigned int prng_seed,
@@ -153,4 +193,9 @@ UnicornEvaluator::Outcome UnicornEvaluator::score(
 UnicornEvaluator::Outcome UnicornEvaluator::score() const
 {
   return score(_prng_seed, _configs, _config_range);
+}
+
+pair<UnicornEvaluator::Outcome, SimulationResultsUnicorn> UnicornEvaluator::score_with_logging() const
+{
+  return score_with_logging(_prng_seed, _configs, _config_range);
 }

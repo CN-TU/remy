@@ -15,9 +15,11 @@
 #include "rainbow.hh"
 #include <cmath>
 
+#include "simulationresults.pb.h"
+
 // #define MAX_WINDOW 1000000
 #define MIN_WINDOW_UNICORN 1.0
-#define MAX_WINDOW_UNICORN 500.0
+#define MAX_WINDOW_UNICORN 1000.0
 
 class Unicorn
 {
@@ -79,6 +81,8 @@ public:
   double next_event_time( const double & tickno ) const;
 
   const long unsigned int & packets_sent( void ) const { return _packets_sent; }
+
+  SimulationResultBuffers::SenderState state_DNA() const;
 
   // SimulationResultBuffers::SenderState state_DNA() const;
   // double window(

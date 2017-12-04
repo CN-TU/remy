@@ -303,3 +303,12 @@ Unicorn::~Unicorn() {
     _rainbow.delete_thread(_thread_id);
   }
 }
+
+SimulationResultBuffers::SenderState Unicorn::state_DNA() const
+{
+  SimulationResultBuffers::SenderState ret;
+  ret.mutable_memory()->CopyFrom( _memory.DNA() );
+  ret.set_window_size( _the_window );
+  ret.set_intersend_time( nan("1") );
+  return ret;
+}

@@ -23,6 +23,11 @@ message SimulationsData {
     repeated SimulationRunData run_data = 23; // one for each config
 }
 
+message SimulationsDataUnicorn {
+    optional ProblemBuffers.ProblemSettings settings = 21;
+    repeated SimulationRunData run_data = 23; // one for each config
+}
+
 /*
  * SimulationRunData stores the data relating to a single simulation, i.e. some
  * known configuration, lots of data points.

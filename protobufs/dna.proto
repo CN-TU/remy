@@ -115,6 +115,7 @@ message ConfigRangeUnicorn {
   optional uint32 num_threads = 79;
   optional bool cooperative = 80;
   optional double delay_delta = 81;
+  optional uint32 iterations = 82;
 }
 
 message NetConfig {
