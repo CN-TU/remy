@@ -73,11 +73,11 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
         // const double duration = it->second["end_time"] - it->second["start_time"];
         // const double duration = it->second["intersend_duration_acc"];
         const double duration = it->second["interreceive_duration_acc"];
-        const double lost_final = it->second["sent"] - it->second["received"];
+        const double sent_final = it->second["sent"];
         if (_training) {
           // FIXME: A debugging hack to assert that no packets get lost when using infinitely sized buffers
           // assert(it->second["received"] == it->second["sent"]);
-          _rainbow.put_reward(_thread_id, throughput_final, delay_final, duration, lost_final);
+          _rainbow.put_reward(_thread_id, throughput_final, delay_final, duration, sent_final);
         }
         _put_rewards += 1;
         it = _outstanding_rewards.erase(it);
@@ -206,6 +206,7 @@ double Unicorn::next_event_time( const double & tickno )
   if (int(_packets_sent) < _largest_ack + 1 + (int) floor(_the_window) ) {
     return tickno;
   } else if (_last_send_time > 0 && tickno - _last_send_time >= TIMEOUT_THRESHOLD) {
+    printf("%lu: timeout occurred!\n", _thread_id);
     reset(tickno);
     return tickno;
   } else {

@@ -29,7 +29,7 @@ logging.info(" ".join(map(str,("CHECKPOINT_DIR:",CHECKPOINT_DIR))))
 LOG_FILE = ABSOLUTE_PATH+'tmp/a3c_log'
 ACTOR_FACTOR = 1e0
 VALUE_FACTOR = 1e0
-GENERAL_FACTOR = 1e-4
+GENERAL_FACTOR = 1e-5
 # INITIAL_ALPHA_LOW = 1e-2*GENERAL_FACTOR   # log_uniform low limit for learning rate
 # INITIAL_ALPHA_HIGH = 1e0*GENERAL_FACTOR   # log_uniform high limit for learning rate
 INITIAL_RATE = GENERAL_FACTOR
@@ -38,10 +38,11 @@ PRECISION = tf.float32
 
 INITIAL_ALPHA_LOG_RATE = 0.4226 # log_uniform interpolate rate for learning rate (around 7 * 10^-4)
 GAMMA = 0.99 # discount factor for rewards
+GAMMA_FACTOR = 1
 ENTROPY_BETA = 1e-4
 # STD_BIAS_OFFSET = inverse_softplus(0.3)
 STD_BIAS_OFFSET = 0
-MAX_TIME_STEP = 1e6
+MAX_TIME_STEP = 1e8
 # GRAD_NORM_CLIP = 40.0 # gradient norm clipping
 USE_GPU = False # To use GPU, set True
 N_LSTM_LAYERS = int(environ.get('layers')) if environ.get('layers') is not None else 2
@@ -55,7 +56,7 @@ BIAS_OFFSET = 1
 PACKETS_BIAS_OFFSET = inverse_softplus(BIAS_OFFSET)
 DELAY_BIAS_OFFSET = inverse_softplus(DELAY)
 INTER_PACKET_ARRIVAL_TIME_OFFSET = inverse_softplus(DELAY)
-LOST_OFFSET = inverse_softplus(1e-3)
+SENT_OFFSET = inverse_softplus(BIAS_OFFSET)
 
 # PACKETS_BIAS_OFFSET = inverse_softplus(BIAS_OFFSET/(1-GAMMA))
 # DELAY_BIAS_OFFSET = inverse_softplus(DELAY/(1-GAMMA))

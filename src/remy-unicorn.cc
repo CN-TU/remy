@@ -50,6 +50,8 @@ void unicorn_thread(const size_t thread_id, const BreederOptionsUnicorn options,
 
 int main( int argc, char *argv[] )
 {
+  setlinebuf(stdout);
+  setlinebuf(stderr);
   // WhiskerTree whiskers;
   BreederOptionsUnicorn options;
   // FIXME: Unused. Might be useful to compare to original Remy...
