@@ -1,7 +1,5 @@
-\newcommand{\nnfontsize}{\tiny}
-
 \centering
-\begin{tikzpicture}[node distance=1.2cm, >=stealth',bend angle=45,auto]
+\begin{tikzpicture}[every label/.append style={font=\tiny}, node distance=1.2cm, >=stealth',bend angle=45,auto]
 
   \tikzstyle{place}=[circle,thick,draw=blue!75,fill=blue!20,minimum size=6mm]
   \tikzstyle{input place}=[circle,thick,draw=olive!75,fill=olive!20,minimum size=6mm]
@@ -15,89 +13,89 @@
 %  \tikzstyle{every label}=[blue!75]
 
   \begin{scope}
-    \node [input place] (s1) [label={[align=center]left:\nnfontsize State (12)}] {};
-    \node [place] (s2) [above right of=s1, label={[align=center]above:\nnfontsize Linear}] {};
+    \node [input place] (s1) [label={[align=center]left: State (12)}] {};
+    \node [place] (s2) [above right of=s1, label={[align=center]above: Linear}] {};
     
   \path[->] (s1) edge node {} (s2);
     
-    \node [lstm place] (s3) [right of=s2, label={[align=center]below:\nnfontsize LSTM (32)}] {};
+    \node [lstm place] (s3) [right of=s2, label={[align=center]below: LSTM (32)}] {};
 
   \path[->] (s2) edge node {} (s3); 
   \path[->] (s3) edge [loop above] node {} (s3);   
    
-    \node [lstm place] (s4) [right of=s3, label={[align=center]below:\nnfontsize LSTM (32)}] {};    
+    \node [lstm place] (s4) [right of=s3, label={[align=center]below: LSTM (32)}] {};    
     
   \path[->] (s3) edge node {} (s4);
   \path[->] (s4) edge [loop above] node {} (s4);
     
-    \node [softplus place] (s7) [right of=s4, label={[align=center]below:{\nnfontsize Softplus}}] {};
+    \node [softplus place] (s7) [right of=s4, label={[align=center]below:{ Softplus}}] {};
     
   \path[->] (s4) edge node {} (s7);
     
-    \node [output place] (s8) [right of=s7, label={[align=center]below:\nnfontsize $\sigma$~(1)}] {};    
+    \node [output place] (s8) [right of=s7, label={[align=center]below: $\sigma$~(1)}] {};    
 
   \path[->] (s7) edge node {} (s8);
 
-    \node [place] (s5) [above of=s7, label={[align=center]above:\nnfontsize Linear}] {};
+    \node [place] (s5) [above of=s7, label={[align=center]above: Linear}] {};
     
   \path[->] (s4) edge node {} (s5);
 
-    \node [output place] (s6) [right of=s5, label={[align=center]above:\nnfontsize $\mu$ (1)}] {};    
+    \node [output place] (s6) [right of=s5, label={[align=center]above: $\mu$ (1)}] {};    
     
   \path[->] (s5) edge node {} (s6);    
     
-    \node [place] (s10) [below right of=s1, label={[align=center]below:\nnfontsize Linear}] {};
+    \node [place] (s10) [below right of=s1, label={[align=center]below: Linear}] {};
     
   \path[->] (s1) edge node {} (s10);
 
     
-    \node [lstm place] (s11) [right of=s10, label={[align=center]above:\nnfontsize LSTM (32)}] {};
+    \node [lstm place] (s11) [right of=s10, label={[align=center]above: LSTM (32)}] {};
     
   \path[->] (s10) edge node {} (s11);
   \path[->] (s11) edge [loop below] node {} (s11);
 
-    \node [lstm place] (s12) [right of=s11, label={[align=center]above:\nnfontsize LSTM (32)}] {};
+    \node [lstm place] (s12) [right of=s11, label={[align=center]above: LSTM (32)}] {};
     
   \path[->] (s11) edge node {} (s12);
   \path[->] (s12) edge [loop below] node {} (s12);
     
-    \node [softplus place] (s13) [right of=s12, label={[align=center]above:\nnfontsize Softplus}] {};
+    \node [softplus place] (s13) [right of=s12, label={[align=center]above: Softplus}] {};
     
   \path[->] (s12) edge node {} (s13);
 
-    \node [output place] (s17) [right of=s13, label={[align=center]above:\nnfontsize $V_\text{packets}$ (1)}] {};
+    \node [output place] (s17) [right of=s13, label={[align=center]above: $V_\text{packets}$ (1)}] {};
     
   \path[->] (s13) edge node {} (s17);
     
-    \node [softplus place] (s15) [below of=s13, label={[align=center]above:\nnfontsize Softplus}] {};
+    \node [softplus place] (s15) [below of=s13, label={[align=center]above: Softplus}] {};
     
   \path[->] (s12) edge node {} (s15);
 
-    \node [output place] (s19) [right of=s15, label={[align=center]above:\nnfontsize $V_\text{delay}$ (1)}] {};  
+    \node [output place] (s19) [right of=s15, label={[align=center]above: $V_\text{delay}$ (1)}] {};  
     
   \path[->] (s15) edge node {} (s19);    
     
-    \node [softplus place] (s16) [below of=s15, label={[align=center]above:\nnfontsize Softplus}] {};
+    \node [softplus place] (s16) [below of=s15, label={[align=center]above: Softplus}] {};
     
   \path[->] (s12) edge node {} (s16);    
     
-    \node [output place] (s20) [right of=s16, label={[align=center]above:\nnfontsize $V_\text{lost}$ (1)}] {};    
+    \node [output place] (s20) [right of=s16, label={[align=center]above: $V_\text{lost}$ (1)}] {};    
 
   \path[->] (s16) edge node {} (s20);    
     
-    \node [softplus place] (s14) [below of=s16, label={[align=center]above:\nnfontsize Softplus}] {};
+    \node [softplus place] (s14) [below of=s16, label={[align=center]above: Softplus}] {};
     
   \path[->] (s12) edge node {} (s14);
     
-    \node [output place] (s21) [right of=s14, label={[align=center]above:\nnfontsize $V_\text{duration}$ (1)}] {};   
+    \node [output place] (s21) [right of=s14, label={[align=center]above: $V_\text{duration}$ (1)}] {};   
     
   \path[->] (s14) edge node {} (s21); 
   
-%    \node [softplus place] (s17) [below of=s14, label={[align=center]above:\nnfontsize Softplus}] {};
+%    \node [softplus place] (s17) [below of=s14, label={[align=center]above: Softplus}] {};
 %    
 %  \path[->] (s12) edge node {} (s17);
 %    
-%    \node [output place] (s22) [right of=s17, label={[align=center]above:\nnfontsize $V_\text{byte}$ (1)}] {};   
+%    \node [output place] (s22) [right of=s17, label={[align=center]above: $V_\text{byte}$ (1)}] {};   
 %    
 %  \path[->] (s17) edge node {} (s22);   
 
