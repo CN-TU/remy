@@ -50,7 +50,7 @@
 Simplified:
 \begin{itemize}
 \item Congestion Window 1 in the beginning of a flow.
-\item Upon receiving an acknowledgement for a previously sent packet, increase the Congestion Window (cwnd): $$\text{cwnd} = \frac{1}{\text{cwnd}}$$
+\item Upon receiving an acknowledgement (ACK) for a previously sent packet, increase the Congestion Window (cwnd): $$\text{cwnd} = \frac{1}{\text{cwnd}}$$
 \item Recently also a bit more sophisticated $\rightarrow$ \textit{CUBIC} etc. 
 \item When there is packet loss then we sent too much (buffer of a router on the way overflew) $\rightarrow$ congestion $\rightarrow$ decrease Congestion Window
 \item The most common thing to do is $$\text{cwnd} = \frac{\text{cwnd}}{2}$$
@@ -74,6 +74,16 @@ Simplified:
 \end{itemize}
 \end{frame}
 
+\begin{frame}{Other Potential Solution}
+\begin{itemize}
+\item \textit{PCC: Re-architecting Congestion Control for Consistent High Performance (PCC)} by Dong et al.~(2013).
+\item Sender uses rate $r_1$ for some time and then $b_2$ for some time. 
+\item Which rate was better? 
+\item Use better rate and start experimenting again 
+\item Problem: cannot react quickly as it has to wait for a whole measurement period until it changes its action. 
+\end{itemize}
+\end{frame}
+
 \begin{frame}{Reinforcement Learning}
 \centering
 \includesvg{figures/Reinforcement_learning_diagram}
@@ -81,9 +91,10 @@ Simplified:
 
 \begin{frame}{Problems with RL}
 \begin{itemize}
-\item Let's say an action is increasing the Congestion Window
-\item We can calculate the reward when we get back all the ACKs of packets that were sent during an action
-\item This means we can't do anything until receiving each action's reward. But that takes at least one Round Trip Time! Doesn't work.
+\item An action is increasing the Congestion Window
+\item We can calculate the reward after receiving all ACKs
+\item That takes at least one Round Trip Time
+\item In the mean time other packets could have arrived
 \item Example: We increase the cwnd by 2 packets. So we can send two packets. To evaluate if this action was good we have to get the ACKs of these two packets, which happens after one RTT!
 In the meantime another ACK could have arrived. What do we do? Not defined with RL...
 \end{itemize}
@@ -96,9 +107,11 @@ In the meantime another ACK could have arrived. What do we do? Not defined with 
 
 \begin{frame}{Partial Actions: Example}
 \begin{itemize}
-\item Let's say the window is 1.9. We increase the window by $0.3$ (action). This allows us to send two packets (partial actions).  
-\item We receive the ACK for the first packet (feedback). We update the state and perform a new action.
-\item We receive the second ACK. Again, we update the state and perform an action. However, because we got all partial rewards of the previous action, we can calculate the reward and update our agent.
+\item Example: the window is 1.9
+\item Increase the window by $0.3$ (action)
+\item Send two packets (partial actions).  
+\item Receive the ACK for the first packet (feedback). Update the state and perform a new action.
+\item Receive the second ACK. Again, we update the state and perform an action. However, because we got all partial rewards of the previous action, we can calculate the reward and update our agent.
 \end{itemize}
 \textbf{Key point}: We can update the state without receiving the full reward yet.
 \end{frame}
@@ -163,12 +176,6 @@ Stuff goes here!
 \begin{frame}{Reward 1}
 \begin{align*}
 \frac{R_\text{packets}}{R_\text{duration}}\text{Sigmoid}_\alpha\left(\frac{R_\text{lost}}{R_\text{lost} + R_\text{packets}} - 0.05\right) - \frac{R_\text{lost}}{R_\text{duration}} - \frac{R_\text{delay}}{R_\text{packets}}
-\end{align*}
-\end{frame}
-
-\begin{frame}{Reward 2}
-\begin{align*}
-R_\text{packets}\text{Sigmoid}_\alpha\left(\frac{R_\text{lost}}{R_\text{lost} + R_\text{packets}} - 0.05\right) - R_\text{lost} - \frac{R_\text{delay}}{R_\text{packets}}
 \end{align*}
 \end{frame}
 
