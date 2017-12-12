@@ -22,7 +22,7 @@ public:
   _thread_id(thread_id)
   {};
 
-  UnicornEvaluator::Outcome run(const size_t iterations);
+  void run(const size_t iterations);
 };
 
 #endif

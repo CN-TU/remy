@@ -15,6 +15,12 @@ void Unicorn::send( const unsigned int id, NextHop & next, const double & tickno
     return;
   }
 
+  if (_last_send_time > 0 && tickno - _last_send_time >= TIMEOUT_THRESHOLD) {
+    printf("%lu: timeout occurred!\n", _thread_id);
+    reset(tickno);
+    return;
+  }
+
   // printf("left:%d, right:%d\n",int(_packets_sent),  (int) _largest_ack + 1 + (int) floor(_the_window));
   if (
     (int(_packets_sent) < _largest_ack + 1 + _the_window ) &&
@@ -41,6 +47,5 @@ void Unicorn::send( const unsigned int id, NextHop & next, const double & tickno
 
     _memory.packet_sent( p );
     next.accept( p, tickno );
-  } else {
   }
 }

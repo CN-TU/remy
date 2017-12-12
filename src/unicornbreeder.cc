@@ -10,7 +10,7 @@
 
 using namespace std;
 
-UnicornEvaluator::Outcome UnicornBreeder::run(const size_t iterations)
+void UnicornBreeder::run(const size_t iterations)
 {
   char file_name[64 * sizeof(char)];
   sprintf(file_name, "stats/thread%lu", _thread_id);
@@ -95,8 +95,7 @@ UnicornEvaluator::Outcome UnicornBreeder::run(const size_t iterations)
 
   fclose(f);
 
-  const UnicornEvaluator eval2( _options.config_range, _thread_id );
-  const auto new_score = eval2.score();
-
-  return new_score;
+  // const UnicornEvaluator eval2( _options.config_range, _thread_id );
+  // const auto new_score = eval2.score();
+  // return new_score;
 }

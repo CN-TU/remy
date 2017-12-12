@@ -12,6 +12,8 @@ public:
   typedef double DataType;
 
 private:
+
+public:
   DataType _rec_send_ewma;
   DataType _rec_rec_ewma;
   DataType _rtt_ratio;
@@ -20,8 +22,8 @@ private:
   DataType _queueing_delay;
   DataType _slow_rec_send_ewma;
   DataType _loss;
-
-public:
+  DataType _loss_ewma;
+  DataType _slow_loss_ewma;
   double _last_tick_sent;
   double _last_tick_received;
   double _min_rtt;
@@ -38,6 +40,8 @@ public:
       _queueing_delay( s_data.at(5) ),
       _slow_rec_send_ewma( s_data.at(6) ),
       _loss( 0 ),
+      _loss_ewma(0),
+      _slow_loss_ewma(0),
       _last_tick_sent( 0 ),
       _last_tick_received( 0 ),
       _min_rtt( 0 ),
@@ -55,6 +59,8 @@ public:
       _queueing_delay( 0 ),
       _slow_rec_send_ewma( 0 ),
       _loss( 0 ),
+      _loss_ewma(0),
+      _slow_loss_ewma(0),
       _last_tick_sent( 0 ),
       _last_tick_received( 0 ),
       _min_rtt( 0 ),
@@ -63,7 +69,7 @@ public:
       _lost_since_last_time(0)
   {}
 
-  void reset( void ) { _rec_send_ewma = _rec_rec_ewma = _rtt_ratio = _slow_rec_rec_ewma = _slow_rec_send_ewma = _rtt_diff = _queueing_delay = _last_tick_sent = _last_tick_received = _min_rtt = _loss = _send = _rec = _lost_since_last_time = 0; }
+  void reset( void ) { _rec_send_ewma = _rec_rec_ewma = _rtt_ratio = _slow_rec_rec_ewma = _slow_rec_send_ewma = _rtt_diff = _queueing_delay = _last_tick_sent = _last_tick_received = _min_rtt = _loss = _loss_ewma = _slow_loss_ewma = _send = _rec = _lost_since_last_time = 0; }
 
   static const unsigned int datasize = 6;
 

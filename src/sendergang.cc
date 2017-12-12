@@ -2,6 +2,7 @@
 #include <algorithm>
 
 #include "sendergang.hh"
+#include "unicorn.hh"
 
 using namespace std;
 
@@ -203,7 +204,7 @@ void TimeSwitchedSender<SenderType>::tick( NextHop & next, Receiver & rec,
   }
 }
 
-template <class SenderType>
+template <typename SenderType>
 template <class NextHop>
 void ExternalSwitchedSender<SenderType>::tick( NextHop & next, Receiver & rec,
 					       const double & tickno,
@@ -217,6 +218,38 @@ void ExternalSwitchedSender<SenderType>::tick( NextHop & next, Receiver & rec,
   if ( SwitchedSender<SenderType>::sending ) {
     SwitchedSender<SenderType>::sender.send( SwitchedSender<SenderType>::id, next, tickno );
     SwitchedSender<SenderType>::accumulate_sending_time_until( tickno, num_sending );
+  }
+}
+
+template <>
+template <class NextHop>
+void ByteSwitchedSender<Unicorn>::tick( NextHop & next, Receiver & rec,
+					   const double & tickno,
+					   const unsigned int num_sending,
+					   PRNG & prng,
+					   Exponential & start_distribution )
+{
+
+  if ( rec.readable( id ) ) {
+    const std::vector< Packet > & packets = rec.packets_for( id );
+    while (sender.packets_lost( packets )) {
+      SwitchedSender<Unicorn>::sender.send( SwitchedSender<Unicorn>::id, next, tickno, packets_sent_cap_ );
+    }
+  }
+
+  SwitchedSender<Unicorn>::receive_feedback( rec );
+
+  /* possibly send packets */
+  if ( SwitchedSender<Unicorn>::sending ) {
+    assert( SwitchedSender<Unicorn>::sender.packets_sent() < packets_sent_cap_ );
+    SwitchedSender<Unicorn>::sender.send( SwitchedSender<Unicorn>::id, next, tickno, packets_sent_cap_ );
+    SwitchedSender<Unicorn>::accumulate_sending_time_until( tickno, num_sending );
+
+    /* do we need to switch ourselves off? */
+    if ( SwitchedSender<Unicorn>::sender.packets_sent() == packets_sent_cap_ ) {
+      SwitchedSender<Unicorn>::switch_off( tickno, num_sending );
+      SwitchedSender<Unicorn>::next_switch_tick = tickno + start_distribution.sample( prng );
+    }
   }
 }
 
@@ -291,7 +324,7 @@ vector< SenderDataPoint > SenderGang<SenderType, SwitcherType>::statistics_for_l
 }
 
 template <class SenderType>
-double SwitchedSender<SenderType>::next_event_time( const double & tickno )
+double SwitchedSender<SenderType>::next_event_time( const double & tickno ) const
 {
   assert( next_switch_tick >= tickno );
 
@@ -299,7 +332,7 @@ double SwitchedSender<SenderType>::next_event_time( const double & tickno )
 }
 
 template <class SenderType, class SwitcherType>
-double SenderGang<SenderType, SwitcherType>::next_event_time( const double & tickno )
+double SenderGang<SenderType, SwitcherType>::next_event_time( const double & tickno ) const
 {
   double ret = std::numeric_limits<double>::max();
   for ( auto & x : _gang ) {

@@ -79,7 +79,7 @@ vector < SenderDataPoint > SenderGangofGangs<Gang1Type,Gang2Type>::statistics_fo
 }
 
 template <class Gang1Type, class Gang2Type>
-double SenderGangofGangs<Gang1Type, Gang2Type>::next_event_time( const double & tickno )
+double SenderGangofGangs<Gang1Type, Gang2Type>::next_event_time( const double & tickno ) const
 {
   return min( gang1_.next_event_time( tickno ), gang2_.next_event_time( tickno ) );
 }

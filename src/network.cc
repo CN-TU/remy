@@ -5,8 +5,8 @@
 #include "stochastic-loss.hh"
 
 template <class Gang1Type, class Gang2Type>
-Network<Gang1Type, Gang2Type>::Network( typename Gang1Type::Sender & example_sender1,
-					typename Gang2Type::Sender & example_sender2,
+Network<Gang1Type, Gang2Type>::Network( const typename Gang1Type::Sender & example_sender1,
+					const typename Gang2Type::Sender & example_sender2,
 					PRNG & s_prng,
 					const NetConfig & config )
   : _prng( s_prng ),
@@ -21,7 +21,7 @@ Network<Gang1Type, Gang2Type>::Network( typename Gang1Type::Sender & example_sen
 }
 
 template <class Gang1Type, class Gang2Type>
-Network<Gang1Type, Gang2Type>::Network( typename Gang1Type::Sender & example_sender1,
+Network<Gang1Type, Gang2Type>::Network( const typename Gang1Type::Sender & example_sender1,
 					PRNG & s_prng,
 					const NetConfig & config )
   : _prng( s_prng ),
@@ -117,6 +117,8 @@ void Network<Gang1Type, Gang2Type>::run_simulation_with_logging( const double & 
     }
 
   }
+
+  puts("Loop in network is over");
 }
 
 template <class Gang1Type, class Gang2Type>

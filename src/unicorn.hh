@@ -40,7 +40,7 @@ protected:
   // long unsigned int _previous_attempts;
   // long unsigned int _previous_attempts_acknowledged;
   // void put_lost_rewards();
-  void get_action(const double& tickno, const int& packets_sent_in_previous_episode=0);
+  void get_action(const double& tickno);
   void finishFlow();
   long unsigned int _put_actions;
   long unsigned int _put_rewards;
@@ -69,6 +69,7 @@ public:
   Unicorn(const bool& cooperative, const double& delay_delta = 1);
   ~Unicorn();
 
+  bool packets_lost( const std::vector< remy::Packet > & packets );
   void packets_received( const std::vector< remy::Packet > & packets );
   void reset( const double & tickno ); /* start new flow */
 
@@ -80,7 +81,7 @@ public:
 	// Unicorn(Unicorn const&) = delete;
 	void operator=(Unicorn const&) = delete;
 
-  double next_event_time( const double & tickno );
+  double next_event_time( const double & tickno ) const;
 
   const long unsigned int & packets_sent( void ) const { return _packets_sent; }
 

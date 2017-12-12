@@ -11,7 +11,7 @@ tiny = 1e-10
 def inverse_softplus(x):
 	return math.log(math.exp(x) - 1)
 
-LOCAL_T_MAX = 20 # repeat step size
+LOCAL_T_MAX = 10 # repeat step size
 RMSP_ALPHA = 0.99 # decay parameter for RMSProp
 RMSP_EPSILON = 0.1 # epsilon parameter for RMSProp
 # CHECKPOINT_DIR = 'checkpoints'
@@ -27,9 +27,9 @@ else:
 logging.info(" ".join(map(str,("CHECKPOINT_DIR:",CHECKPOINT_DIR))))
 
 LOG_FILE = ABSOLUTE_PATH+'tmp/a3c_log'
-ACTOR_FACTOR = 1e0
+ACTOR_FACTOR = 1e-1
 VALUE_FACTOR = 1e0
-GENERAL_FACTOR = 1e-5
+GENERAL_FACTOR = 1e-4
 # INITIAL_ALPHA_LOW = 1e-2*GENERAL_FACTOR   # log_uniform low limit for learning rate
 # INITIAL_ALPHA_HIGH = 1e0*GENERAL_FACTOR   # log_uniform high limit for learning rate
 INITIAL_RATE = GENERAL_FACTOR
@@ -70,9 +70,11 @@ SENT_OFFSET = inverse_softplus(BIAS_OFFSET)
 INITIAL_WINDOW_INCREASE_BIAS_OFFSET = 0
 INITIAL_WINDOW_INCREASE_WEIGHT_FACTOR = 1e-1
 
-STATE_SIZE = int(environ.get('state_size')) if environ.get('state_size') is not None else 12
+STATE_SIZE = int(environ.get('state_size')) if environ.get('state_size') is not None else 13
 HIDDEN_SIZE = int(environ.get('hidden_size')) if environ.get('hidden_size') is not None else 32
 # ACTION_SIZE = 1 # action size
 LAYER_NORMALIZATION = False
 
 SIGMOID_ALPHA = 100.0
+
+MAX_WINDOW = 100

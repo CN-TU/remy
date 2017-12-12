@@ -87,11 +87,10 @@ Evaluator< WhiskerTree >::Outcome Evaluator< WhiskerTree >::score( WhiskerTree &
 
   /* run tests */
   Evaluator::Outcome the_outcome;
-  Rat sample = Rat( run_whiskers, trace );
   for ( auto &x : configs ) {
     /* run once */
     Network<SenderGang<Rat, TimeSwitchedSender<Rat>>,
-      SenderGang<Rat, TimeSwitchedSender<Rat>>> network1( sample, run_prng, x );
+      SenderGang<Rat, TimeSwitchedSender<Rat>>> network1( Rat( run_whiskers, trace ), run_prng, x );
     network1.run_simulation( ticks_to_run );
 
     the_outcome.score += network1.senders().utility();
@@ -117,11 +116,10 @@ Evaluator< FinTree >::Outcome Evaluator< FinTree >::score( FinTree & run_fins,
 
   /* run tests */
   Evaluator::Outcome the_outcome;
-  Fish sample = Fish( run_fins, fish_prng_seed, trace );
   for ( auto &x : configs ) {
     /* run once */
     Network<SenderGang<Fish, TimeSwitchedSender<Fish>>,
-      SenderGang<Fish, TimeSwitchedSender<Fish>>> network1( sample, run_prng, x );
+      SenderGang<Fish, TimeSwitchedSender<Fish>>> network1( Fish( run_fins, fish_prng_seed, trace ), run_prng, x );
     network1.run_simulation( ticks_to_run );
 
     the_outcome.score += network1.senders().utility();

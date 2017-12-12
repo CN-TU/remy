@@ -32,6 +32,32 @@ Unicorn::Unicorn(const bool& cooperative, const double& delay_delta)
   // puts("Creating a Unicorn");
 }
 
+bool Unicorn::packets_lost( const std::vector< remy::Packet > & packets ) {
+  // printf("~~~%lu: Oh my god, I received %lu packet!\n", _thread_id, packets.size());
+  assert(packets.size() == 1);
+
+  // So this should only happen after a reset, when a packet arrives very late...
+  // assert (_largest_ack < packets.at( packets.size() - 1 ).seq_num);
+  // const int previous_largest_ack = _largest_ack;
+
+  // _largest_ack = max( (int) packets.at( packets.size() - 1 ).seq_num, _largest_ack );
+
+  for ( auto const &packet : packets ) {
+    if (_id_to_sent_during_flow[packet.seq_num] == _flow_id && (_active_flows.find(_id_to_sent_during_flow[packet.seq_num]) != _active_flows.end())) {
+      const unsigned int lost_since_last_time = (unsigned int) max(packet.seq_num-_largest_ack-1, (long) 0);
+      if (lost_since_last_time > 0) {
+        _packets_lost += 1;
+        _memory.lost(1);
+        // _the_window = std::max(_the_window - 1, MIN_WINDOW_UNICORN);
+        get_action(packet.tick_received);
+        _largest_ack += 1;
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
   // printf("~~~%lu: Oh my god, I received %lu packet!\n", _thread_id, packets.size());
   assert(packets.size() == 1);
@@ -47,12 +73,6 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
     //   continue;
     // }
 
-    if (_id_to_sent_during_flow[packet.seq_num] == _flow_id) {
-      const unsigned int lost_since_last_time = (unsigned int) max(packet.seq_num-_largest_ack-1, (long) 0);
-      _packets_lost += lost_since_last_time;
-      _memory.lost(lost_since_last_time);
-    }
-
     for (auto it=_id_to_sent_during_action.begin(); it!=_id_to_sent_during_action.lower_bound(packet.seq_num); it++) {
       _id_to_sent_during_action.erase(it->first);
       for (auto inner_it=_flow_to_last_received.begin(); inner_it!=_flow_to_last_received.lower_bound(_id_to_sent_during_flow[it->first]);) {
@@ -61,9 +81,9 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
       _id_to_sent_during_flow.erase(it->first);
     }
 
-    int packets_sent_in_this_episode = 1;
+    // int packets_sent_in_this_episode = 1;
     // if (!packet.first) {
-      packets_sent_in_this_episode = (int) _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["sent"];
+      // packets_sent_in_this_episode = (int) _outstanding_rewards[_id_to_sent_during_action[packet.seq_num]]["sent"];
 
       const double delay = packet.tick_received - packet.tick_sent;
 
@@ -75,8 +95,6 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
         const double duration = it->second["interreceive_duration_acc"];
         const double sent_final = it->second["sent"];
         if (_training) {
-          // FIXME: A debugging hack to assert that no packets get lost when using infinitely sized buffers
-          // assert(it->second["received"] == it->second["sent"]);
           _rainbow.put_reward(_thread_id, throughput_final, delay_final, duration, sent_final);
         }
         _put_rewards += 1;
@@ -105,7 +123,7 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
       _memory.packets_received(packet_for_memory_update, _flow_id, _largest_ack );
 
       // printf("%lu: Yeah, getting action after receiving a packet...\n", _thread_id);
-      get_action(packet.tick_received, packets_sent_in_this_episode);
+      get_action(packet.tick_received);
     }
 
     _largest_ack = max(packet.seq_num, _largest_ack);
@@ -140,7 +158,7 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
 
 void Unicorn::reset(const double & tickno)
 {
-  // printf("%lu: Fucking resetting\n", _thread_id);
+  printf("%lu: Fucking resetting\n", _thread_id);
   _rainbow._training = _training;
   // assert(false);
   // printf("%lu: Resetting\n", _thread_id);
@@ -200,46 +218,53 @@ void Unicorn::reset(const double & tickno)
   // _intersend_time = current_whisker.intersend();
 }
 
-double Unicorn::next_event_time( const double & tickno )
+double Unicorn::next_event_time( const double & tickno ) const
 {
   // return tickno;
   if (int(_packets_sent) < _largest_ack + 1 + (int) floor(_the_window) ) {
     return tickno;
-  } else if (_last_send_time > 0 && tickno - _last_send_time >= TIMEOUT_THRESHOLD) {
-    printf("%lu: timeout occurred!\n", _thread_id);
-    reset(tickno);
-    return tickno;
+  // } else if (_last_send_time > 0 && tickno - _last_send_time >= TIMEOUT_THRESHOLD) {
+  //   printf("%lu: timeout occurred!\n", _thread_id);
+  //   reset(tickno);
+  //   return tickno;
   } else {
     /* window is currently closed */
-    return std::numeric_limits<double>::max();
+    // return std::numeric_limits<double>::max();
+    // FIXME: Is that necessary?
+    if (_last_send_time + TIMEOUT_THRESHOLD < tickno) {
+      return _last_send_time + TIMEOUT_THRESHOLD;
+    } else {
+      return std::numeric_limits<double>::max();
+    }
   }
 }
 
 const double NORMALIZER = 1e-2;
 
-void Unicorn::get_action(const double& tickno, const int& packets_sent_in_this_episode) {
+void Unicorn::get_action(const double& tickno) {
 
   // FIXME: HACK!!!
   // (void) packets_sent_in_this_episode;
   const double action = _rainbow.get_action(
     _thread_id,
     {
-      _memory.field(0)*NORMALIZER,
-      _memory.field(1)*NORMALIZER,
-      _memory.field(2),
-      _memory.field(3)*NORMALIZER,
-      _memory.field(4)*NORMALIZER,
-      _memory.field(6)*NORMALIZER,
+      _memory._rec_send_ewma*NORMALIZER,
+      _memory._rec_rec_ewma*NORMALIZER,
+      _memory._rtt_ratio,
+      _memory._slow_rec_rec_ewma*NORMALIZER,
+      _memory._rtt_diff*NORMALIZER,
+      _memory._slow_rec_send_ewma*NORMALIZER,
       (_memory._last_tick_received - _memory._last_tick_sent)*NORMALIZER,
       (double) _the_window,
       // _memory.field(6), // loss rate
       // (double) tickno - _memory._last_tick_sent, // time since last send
       // (double) tickno - _memory._last_tick_received, // time since last receive
       // (double) _memory._lost_since_last_time, // losses since last receive
-      (double) packets_sent_in_this_episode,
       _memory._send*NORMALIZER,
       _memory._rec*NORMALIZER,
-      (double) _memory._lost_since_last_time,
+      (double) _memory._loss,
+      (double) _memory._loss_ewma,
+      (double) _memory._slow_loss_ewma,
       // _memory.field(2),
       // _memory.field(4),
       // (double) _the_window,
@@ -297,7 +322,7 @@ void Unicorn::finishFlow() {
 // }
 
 Unicorn::~Unicorn() {
-  // printf("Destroying Unicorn with thread id %lu\n", _thread_id);
+  printf("Destroying Unicorn with thread id %lu\n", _thread_id);
   if (_thread_id > 0) {
     // printf("%lu: Lost rewards at destruction\n", _thread_id);
     // put_lost_rewards(_packets_sent-_largest_ack);
