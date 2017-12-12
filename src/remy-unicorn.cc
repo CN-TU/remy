@@ -44,12 +44,14 @@ void signal_handler_just_save(int s) {
 void unicorn_thread(const size_t thread_id, const BreederOptionsUnicorn options, const size_t iterations_per_thread) {
   printf("Creating thread no %zd\n", thread_id);
   UnicornBreeder breeder(options, thread_id);
-  auto outcome = breeder.run(iterations_per_thread);
-  printf("thread = %u, score = %f\n", (unsigned int) thread_id, outcome.score);
+  breeder.run(iterations_per_thread);
+  // printf("thread = %u, score = %f\n", (unsigned int) thread_id, outcome.score);
 }
 
 int main( int argc, char *argv[] )
 {
+  setlinebuf(stdout);
+  setlinebuf(stderr);
   // WhiskerTree whiskers;
   BreederOptionsUnicorn options;
   // FIXME: Unused. Might be useful to compare to original Remy...

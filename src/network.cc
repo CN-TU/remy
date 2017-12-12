@@ -117,6 +117,8 @@ void Network<Gang1Type, Gang2Type>::run_simulation_with_logging( const double & 
     }
 
   }
+
+  puts("Loop in network is over");
 }
 
 template <class Gang1Type, class Gang2Type>

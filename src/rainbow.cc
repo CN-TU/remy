@@ -95,11 +95,17 @@ Rainbow::Rainbow(const bool& cooperative) :
 	puts("Yeah, loaded the a3c module");
 
 	pActionFunc = PyObject_GetAttrString(pModule, pActionFuncName);
+	if (pActionFunc == NULL) {PyErr_Print();}
 	pRewardFunc = PyObject_GetAttrString(pModule, pRewardFuncName);
+	if (pRewardFunc == NULL) {PyErr_Print();}
 	pCreateFunc = PyObject_GetAttrString(pModule, pCreateFuncName);
+	if (pCreateFunc == NULL) {PyErr_Print();}
 	pDeleteFunc = PyObject_GetAttrString(pModule, pDeleteFuncName);
+	if (pDeleteFunc == NULL) {PyErr_Print();}
 	pFinishFunc = PyObject_GetAttrString(pModule, pFinishFuncName);
+	if (pFinishFunc == NULL) {PyErr_Print();}
 	pSaveFunc = PyObject_GetAttrString(pModule, pSaveFuncName);
+	if (pSaveFunc == NULL) {PyErr_Print();}
 }
 
 double Rainbow::get_action(const long unsigned int thread_id, const vector<double> state, const double& tickno, const double& window) {
@@ -126,10 +132,10 @@ double Rainbow::get_action(const long unsigned int thread_id, const vector<doubl
 	return action;
 }
 
-void Rainbow::put_reward(const long unsigned int thread_id, const double reward_throughput, const double reward_delay, const double duration, const double lost) {
+void Rainbow::put_reward(const long unsigned int thread_id, const double reward_throughput, const double reward_delay, const double duration, const double sent) {
 	lock_guard<mutex> guard(global_lock);
 
-	PyObject* pRewardArgs = Py_BuildValue("(iffff)", (long) thread_id, reward_throughput, reward_delay, duration, lost);
+	PyObject* pRewardArgs = Py_BuildValue("(iffff)", (long) thread_id, reward_throughput, reward_delay, duration, sent);
 	PyObject* pReturnValue = PyObject_CallObject(pRewardFunc, pRewardArgs);
 	if (pReturnValue == NULL) {
 		PyErr_Print();

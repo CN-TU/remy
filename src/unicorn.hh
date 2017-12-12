@@ -21,6 +21,8 @@
 #define MIN_WINDOW_UNICORN 1.0
 #define MAX_WINDOW_UNICORN 1000.0
 
+#define TIMEOUT_THRESHOLD 1000
+
 class Unicorn
 {
 protected:
@@ -38,7 +40,7 @@ protected:
   // long unsigned int _previous_attempts;
   // long unsigned int _previous_attempts_acknowledged;
   // void put_lost_rewards();
-  void get_action(const double& tickno, const int& packets_sent_in_previous_episode=0);
+  void get_action(const double& tickno);
   void finishFlow();
   long unsigned int _put_actions;
   long unsigned int _put_rewards;
@@ -67,6 +69,7 @@ public:
   Unicorn(const bool& cooperative, const double& delay_delta = 1);
   ~Unicorn();
 
+  bool packets_lost( const std::vector< remy::Packet > & packets );
   void packets_received( const std::vector< remy::Packet > & packets );
   void reset( const double & tickno ); /* start new flow */
 

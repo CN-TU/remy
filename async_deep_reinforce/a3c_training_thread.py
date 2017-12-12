@@ -8,25 +8,32 @@ import random
 import time
 import sys
 import math
+from functools import reduce
 
 from game_ac_network import GameACLSTMNetwork
 
-from constants import GAMMA
+# from constants import GAMMA
+from constants import GAMMA_FACTOR
 # gamma_current, gamma_future = 1./(1+GAMMA), GAMMA/(1.+GAMMA)
 from constants import LOCAL_T_MAX
 from constants import LOG_LEVEL
 from constants import SECONDS_NORMALIZER
 from constants import STATE_SIZE
 from constants import SIGMOID_ALPHA
+from constants import MAX_WINDOW
 
 import logging
 
 logging.basicConfig(level=LOG_LEVEL)
 
 LOG_INTERVAL = 200
+# LOG_INTERVAL = 5
 
 def inverse_sigmoid(x):
-  return 1/(1+math.exp(x))
+  return 1/(1+math.exp(SIGMOID_ALPHA*x))
+
+# def inverse_sigmoid(x):
+#   return min(1-x, 1)
 
 class A3CTrainingThread(object):
   def __init__(self,
@@ -95,7 +102,18 @@ class A3CTrainingThread(object):
     summary_writer.add_summary(summary_str, global_t)
     summary_writer.flush()
 
+  def start_anew(self):
+    assert(len(self.windows) > 0)
+
+    current_index = 0
+    while current_index < len(self.windows):
+      if current_index + math.floor(A3CTrainingThread.get_actual_window(self.windows[current_index]+self.actions[current_index])) == len(self.windows):
+        return True
+      current_index = current_index + math.floor(A3CTrainingThread.get_actual_window(self.windows[current_index]+self.actions[current_index]))
+    return False
+
   def action_step(self, sess, state, tickno, window):
+    # print(self.thread_index, "in action")
     # Run this still with the old weights, before syncing them
     # print("state", state)
     assert(np.all(np.isfinite(np.array(state, dtype=np.float32))))
@@ -104,7 +122,12 @@ class A3CTrainingThread(object):
     if self.training:
       self.estimated_values.append(self.local_network.run_value(sess, state))
 
-      if len(self.actions) % LOCAL_T_MAX == 0:
+      # if len(self.actions) % LOCAL_T_MAX == 0:
+      if not (len(self.start_lstm_states) == 0) == (len(self.actions) == 0):
+        print("Oh no, something went pretty wrong:", self.start_lstm_states, self.actions)
+      assert((len(self.start_lstm_states) == 0) == (len(self.actions) == 0))
+      if ('LOCAL_T_MAX' in globals() and len(self.actions) % globals()["LOCAL_T_MAX"] == 0) or (not 'LOCAL_T_MAX' in globals() and (len(self.actions) == 0 or self.start_anew())):
+        # print("Starting new period")
         self.time_differences.append(None)
         # Sync for the next iteration
         sess.run( self.sync )
@@ -127,21 +150,30 @@ class A3CTrainingThread(object):
     # if self.local_t % LOG_INTERVAL == 0:
     #   logging.debug("{}: pi={}".format(self.thread_index, pi_))
     #   logging.debug("{}: V={}".format(self.thread_index, value_))
-    return action[0]
+    # print(self.thread_index, action[0])
+    return action
 
-  def reward_step(self, sess, global_t, summary_writer, summary_op, summary_inputs, reward_throughput, reward_delay, duration, lost):
+  def reward_step(self, sess, global_t, summary_writer, summary_op, summary_inputs, reward_throughput, reward_delay, duration, sent):
+    # print(self.thread_index, "in reward")
     assert(reward_throughput >= 0)
     assert(reward_delay >= 0)
     # print("duration", duration)
     # assert(duration > 0)
-    assert(lost>= 0)
-    self.rewards.append((reward_throughput, reward_delay, duration, lost))
+    assert(sent>= 0)
 
-    if len(self.rewards)>=LOCAL_T_MAX or (len([item for item in self.actions[:LOCAL_T_MAX] if item is not None]) == len(self.rewards) and len(self.rewards) > 0 and self.time_differences[0] is not None):
+    # assert(sent == reward_throughput)
+    self.rewards.append((reward_throughput, reward_delay, duration, sent))
+
+    # if len(self.rewards)>=LOCAL_T_MAX or (len([item for item in self.actions[:LOCAL_T_MAX] if item is not None]) == len(self.rewards) and len(self.rewards) > 0 and self.time_differences[0] is not None):
+    if ('LOCAL_T_MAX' in globals() and (len(self.rewards)>=globals()["LOCAL_T_MAX"] or (len([item for item in self.actions[:globals()["LOCAL_T_MAX"]] if item is not None]) == len(self.rewards) and len(self.rewards) > 0 and self.time_differences[0] is not None))) or (not 'LOCAL_T_MAX' in globals() and len(self.rewards)>=math.floor(A3CTrainingThread.get_actual_window(self.windows[0]+self.actions[0]))):
+      if not 'LOCAL_T_MAX' in globals():
+        assert(len(self.rewards) == math.floor(A3CTrainingThread.get_actual_window(self.windows[0]+self.actions[0])))
       # print(self.thread_index, "rewards", self.rewards, "actions", self.actions, "time_diffs", self.time_differences)
-      assert(len(self.rewards) <= LOCAL_T_MAX)
+      # assert(len(self.rewards) <= LOCAL_T_MAX)
       # print(len([item for item in self.actions[:LOCAL_T_MAX] if item is not None]), len(self.rewards[:LOCAL_T_MAX]))
-      assert(len([item for item in self.actions[:LOCAL_T_MAX] if item is not None]) == len(self.rewards[:LOCAL_T_MAX]))
+
+      # assert(len([item for item in self.actions[:LOCAL_T_MAX] if item is not None]) == len(self.rewards[:LOCAL_T_MAX]))
+      assert(len([item for item in self.actions[:len(self.rewards)] if item is not None]) == len(self.rewards[:len(self.rewards)]))
       result = self.process(sess, global_t, summary_writer, summary_op, summary_inputs, self.time_differences[0])
       return result
     else:
@@ -170,20 +202,21 @@ class A3CTrainingThread(object):
         # self.windows = self.windows[:-1]
         # self.windows.append(window)
 
-        nones_to_add = [None] * ((LOCAL_T_MAX - (len(self.actions) % LOCAL_T_MAX)) % LOCAL_T_MAX)
-        self.actions += nones_to_add
-        self.states += nones_to_add
-        self.values += nones_to_add
-        self.estimated_values += nones_to_add
-        self.windows += nones_to_add
-        self.ticknos += nones_to_add
+        if 'LOCAL_T_MAX' in globals():
+          nones_to_add = [None] * ((LOCAL_T_MAX - (len(self.actions) % LOCAL_T_MAX)) % LOCAL_T_MAX)
+          self.actions += nones_to_add
+          self.states += nones_to_add
+          self.values += nones_to_add
+          self.estimated_values += nones_to_add
+          self.windows += nones_to_add
+          self.ticknos += nones_to_add
       # TODO: Is this useful? I guess only the `local_t' is actually needed...
       else:
         self.local_t = 0
         self.episode_count += 1
         self.episode_reward_throughput = 0
         self.episode_reward_delay = 0
-        self.episode_reward_lost = 0
+        self.episode_reward_sent = 0
 
     # If, for some strange reason, absolutely nothing happened in this episode, don't do anything...
     # Or if you're actually in testing mode :)
@@ -203,7 +236,18 @@ class A3CTrainingThread(object):
     sess.run( self.sync )
     self.reset_state_and_reinitialize(sess)
 
+  @staticmethod
+  def get_actual_window(x):
+    return max(min(x, MAX_WINDOW), 1)
+
   def process(self, sess, global_t, summary_writer, summary_op, summary_inputs, time_difference=None):
+    # print(self.thread_index, "in process")
+    assert(len(self.rewards) > 0)
+
+    if not len(self.start_lstm_states) <= len(self.actions):
+      print(len(self.start_lstm_states), len(self.actions))
+    assert(len(self.start_lstm_states) <= len(self.actions))
+
     if self.local_t <= 0:
       self.start_time = time.time()
 
@@ -213,12 +257,20 @@ class A3CTrainingThread(object):
 
     # logging.debug(" ".join(map(str,(self.thread_index, "In process: len(rewards)", len(self.rewards), "len(states)", len(self.states), "len(actions)", len(self.actions), "len(values)", len(self.values)))))
 
-    actions = [item for item in self.actions[:LOCAL_T_MAX] if item is not None]
-    ticknos = [item for item in self.ticknos[:LOCAL_T_MAX] if item is not None]
-    windows = [item for item in self.windows[:LOCAL_T_MAX] if item is not None]
-    states = [item for item in self.states[:LOCAL_T_MAX] if item is not None]
-    rewards = [item for item in self.rewards[:LOCAL_T_MAX] if item is not None]
-    values = [item for item in self.values[:LOCAL_T_MAX] if item is not None]
+    if 'LOCAL_T_MAX' in globals():
+      actions = [item for item in self.actions[:LOCAL_T_MAX] if item is not None]
+      ticknos = [item for item in self.ticknos[:LOCAL_T_MAX] if item is not None]
+      windows = [item for item in self.windows[:LOCAL_T_MAX] if item is not None]
+      states = [item for item in self.states[:LOCAL_T_MAX] if item is not None]
+      rewards = [item for item in self.rewards[:LOCAL_T_MAX] if item is not None]
+      values = [item for item in self.values[:LOCAL_T_MAX] if item is not None]
+    else:
+      actions = self.actions[:len(self.rewards)]
+      ticknos = self.ticknos[:len(self.rewards)]
+      windows = self.windows[:len(self.rewards)]
+      states = self.states[:len(self.rewards)]
+      values = self.values[:len(self.rewards)]
+      rewards = self.rewards[:len(self.rewards)]
 
     assert(len(actions) > 0)
     assert(len(ticknos) > 0)
@@ -233,6 +285,9 @@ class A3CTrainingThread(object):
       print(actions, ticknos, windows, states, rewards, values)
     assert(len(actions) == len(ticknos) == len(windows) == len(states) == len(rewards) == len(values))
 
+    # if not len(self.actions) == len(self.ticknos) == len(self.windows) == len(self.states) == len(self.values) == len(self.estimated_values):
+    #   print("In thread:", self.thread_index, "rewards:", len(self.rewards), ";", len(self.actions), len(self.ticknos), len(self.windows), len(self.states), len(self.values), len(self.estimated_values))
+    # print("In thread:", self.thread_index, "rewards:", len(self.rewards), ";", len(self.actions), "lstm_states:", len(self.start_lstm_states))
     assert(len(self.actions) == len(self.ticknos) == len(self.windows) == len(self.states) == len(self.values) == len(self.estimated_values))
     assert(len(self.time_differences) == len(self.start_lstm_states) == len(self.variable_snapshots))
 
@@ -242,20 +297,22 @@ class A3CTrainingThread(object):
     # assert((not len(self.estimated_values) <= len(rewards)) or final)
     # print("self.estimated_values", self.estimated_values)
     # print("Spam and eggs")
-    R_packets, R_accumulated_delay, R_duration, R_lost = self.estimated_values[len(rewards)] if self.estimated_values[len(rewards)] is not None and not final else self.estimated_values[len(rewards)-1]
+    R_packets, R_accumulated_delay, R_duration, R_sent = self.estimated_values[len(rewards)] if self.estimated_values[len(rewards)] is not None and not final else self.estimated_values[len(rewards)-1]
 
-    R_packets_initial, R_accumulated_delay_initial, R_duration_initial, R_lost_initial = R_packets, R_accumulated_delay, R_duration, R_lost
+    R_packets_initial, R_accumulated_delay_initial, R_duration_initial, R_sent_initial = R_packets, R_accumulated_delay, R_duration, R_sent
 
-    # R_packets, R_accumulated_delay, R_duration, R_lost = (R_packets)/(1-GAMMA), (R_accumulated_delay)/(1-GAMMA), (R_duration)/(1-GAMMA), (R_lost)/(1-GAMMA)
+    # R_packets, R_accumulated_delay, R_duration, R_sent = (R_packets)/(1-GAMMA), (R_accumulated_delay)/(1-GAMMA), (R_duration)/(1-GAMMA), (R_sent)/(1-GAMMA)
     # logging.debug(" ".join(map(str,("exp(R_packets)", R_packets, "exp(R_accumulated_delay)", R_accumulated_delay, "exp(R_duration)", R_duration))))
     assert(np.isfinite(R_duration))
     assert(np.isfinite(R_packets))
     assert(np.isfinite(R_accumulated_delay))
+    assert(np.isfinite(R_sent))
 
     actions.reverse()
     states.reverse()
     rewards.reverse()
     values.reverse()
+    windows.reverse()
     # logging.debug(" ".join(map(str,("values", values))))
 
     batch_si = []
@@ -264,21 +321,25 @@ class A3CTrainingThread(object):
     batch_R_duration = []
     batch_R_packets = []
     batch_R_accumulated_delay = []
-    batch_R_lost = []
+    batch_R_sent = []
 
     # compute and accmulate gradients
-    for(ai, ri, si, Vi) in zip(actions, rewards, states, values):
+    for(ai, ri, si, Vi, wi) in zip(actions, rewards, states, values, windows):
       # FIXME: Make sure that it actually works with how the roll-off factor gets normalized.
-      assert(false)
+      # assert(False)
+      # The GAMMA_FACTOR increases the influence that following observations have on this one.
+      GAMMA = (1 - 2/(A3CTrainingThread.get_actual_window(wi+ai) + 2))
 
-      R_duration = (ri[2]*SECONDS_NORMALIZER + GAMMA*R_duration)*(1-GAMMA)
+      # R_duration = ((1-GAMMA)*ri[2]*SECONDS_NORMALIZER + GAMMA*R_duration)
+      # R_packets = ((1-GAMMA)*ri[0] + GAMMA*R_packets)
+      # R_sent = ((1-GAMMA)*ri[3] + GAMMA*R_sent)
+      # R_accumulated_delay = ((1-GAMMA)*ri[1]*SECONDS_NORMALIZER + GAMMA*R_accumulated_delay)
 
-      R_packets = (ri[0] + GAMMA*R_packets)*(1-GAMMA)
-      R_lost = (ri[3] + GAMMA*R_lost)*(1-GAMMA)
-      # TODO: In theory it should be np.log(R_bytes/R_duration) but remy doesn't have bytes
-      # td = (np.log(R_packets/R_duration) - np.log(Vi[0]/Vi[2]))
+      R_duration = ((1-GAMMA)*ri[2]*SECONDS_NORMALIZER + GAMMA*R_duration)
+      R_packets = ((1-GAMMA)*ri[0] + GAMMA*R_packets)
+      R_sent = ((1-GAMMA)*ri[3] + GAMMA*R_sent)
+      R_accumulated_delay = ((1-GAMMA)*ri[1]*SECONDS_NORMALIZER + GAMMA*R_accumulated_delay)
 
-      R_accumulated_delay = (ri[1]*SECONDS_NORMALIZER + GAMMA*R_accumulated_delay)*(1-GAMMA)
       # R_delay = R_accumulated_delay/R_packets
       # td_delay = -(np.log(R_accumulated_delay/R_packets/DELAY_MULTIPLIER) - np.log(Vi[1]/Vi[0]/DELAY_MULTIPLIER))
       # td -= self.delay_delta/SECONDS_NORMALIZER*(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
@@ -287,39 +348,47 @@ class A3CTrainingThread(object):
       # Doesn't work...
       # td = R_packets/R_duration/(R_accumulated_delay/R_packets+self.delay_delta) - Vi[0]/Vi[2]/(Vi[1]/Vi[0]+self.delay_delta)
 
-      # td = R_packets - Vi[0] - self.delay_delta*(R_lost - Vi[3]) # - self.delay_delta*(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+      # td = R_packets - Vi[0] - self.delay_delta*(R_sent - Vi[3]) # - self.delay_delta*(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
       # td = R_packets/R_duration - Vi[0]/Vi[2] - self.delay_delta*(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
-      # td = R_packets/R_duration - Vi[0]/(Vi[2]) - self.delay_delta*(R_accumulated_delay/R_packets - Vi[1]/Vi[0]) - (R_lost/R_duration - Vi[3]/(Vi[2]))
-      # td = inverse_sigmoid(self.delay_delta, R_lost/(R_packets+R_lost))*R_packets/R_duration - inverse_sigmoid(self.delay_delta, Vi[3]/(Vi[0]+Vi[3]))*Vi[0]/Vi[2] - (R_lost/R_duration - Vi[3]/(Vi[2]))
+      # td = R_packets/R_duration - Vi[0]/(Vi[2]) - self.delay_delta*(R_accumulated_delay/R_packets - Vi[1]/Vi[0]) - (R_sent/R_duration - Vi[3]/(Vi[2]))
+      # td = inverse_sigmoid(self.delay_delta, R_sent/(R_packets+R_sent))*R_packets/R_duration - inverse_sigmoid(self.delay_delta, Vi[3]/(Vi[0]+Vi[3]))*Vi[0]/Vi[2] - (R_sent/R_duration - Vi[3]/(Vi[2]))
 
-      # td = inverse_sigmoid(self.delay_delta, R_lost/(R_packets+R_lost) - 0.05)*R_packets/R_duration - inverse_sigmoid(self.delay_delta, Vi[3]/(Vi[0]+Vi[3]) - 0.05)*Vi[0]/Vi[2] - (R_lost/R_duration - Vi[3]/(Vi[2])) - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
-      # td = inverse_sigmoid(self.delay_delta, R_lost/(R_packets+R_lost))*R_packets/R_duration - inverse_sigmoid(self.delay_delta, Vi[3]/(Vi[0]+Vi[3]))*Vi[0]/Vi[2] - (R_lost/R_duration - Vi[3]/(Vi[2])) - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+      # td = inverse_sigmoid(self.delay_delta, R_sent/(R_packets+R_sent) - 0.05)*R_packets/R_duration - inverse_sigmoid(self.delay_delta, Vi[3]/(Vi[0]+Vi[3]) - 0.05)*Vi[0]/Vi[2] - (R_sent/R_duration - Vi[3]/(Vi[2])) - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
-      # td = R_packets*(1-GAMMA)*inverse_sigmoid(SIGMOID_ALPHA * R_lost/(R_packets+R_lost) - self.delay_delta) - Vi[0]*inverse_sigmoid(SIGMOID_ALPHA * Vi[3]/(Vi[0]+Vi[3]) - self.delay_delta) - (R_lost*(1-GAMMA) - Vi[3]) - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
-      td = R_packets*inverse_sigmoid(SIGMOID_ALPHA * R_lost/(R_packets+R_lost) - self.delay_delta) - Vi[0]*inverse_sigmoid(SIGMOID_ALPHA * Vi[3]/(Vi[0]+Vi[3]) - self.delay_delta) - (R_lost - Vi[3])# - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+      # PCC
+      td = inverse_sigmoid(((R_sent - R_packets)/R_sent) - self.delay_delta)*R_packets/R_duration - inverse_sigmoid(((Vi[3]-Vi[0])/Vi[3]) - self.delay_delta)*Vi[0]/Vi[2] - ((R_sent - R_packets)/R_duration - (Vi[3] - Vi[0])/Vi[2]) #- (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+
+      # td = R_packets*(1-GAMMA)*inverse_sigmoid(SIGMOID_ALPHA * R_sent/(R_packets+R_sent) - self.delay_delta) - Vi[0]*inverse_sigmoid(SIGMOID_ALPHA * Vi[3]/(Vi[0]+Vi[3]) - self.delay_delta) - (R_sent*(1-GAMMA) - Vi[3]) - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+
+      # PCC modified
+      # td = R_packets*inverse_sigmoid(SIGMOID_ALPHA * R_sent/(R_packets+R_sent) - self.delay_delta) - Vi[0]*inverse_sigmoid(SIGMOID_ALPHA * Vi[3]/(Vi[0]+Vi[3]) - self.delay_delta) - (R_sent - Vi[3])# - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
       # td = R_packets/R_duration/(R_accumulated_delay/R_packets) - Vi[0]/Vi[2]/(Vi[1]/Vi[0]) - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
       # td = (np.log(R_packets/R_duration) - np.log(Vi[0]/Vi[2])) - self.delay_delta/SECONDS_NORMALIZER*(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
+      # R_packets, R_accumulated_delay, R_duration, R_sent = (R_packets)/(1-GAMMA), (R_accumulated_delay)/(1-GAMMA), (R_duration)/(1-GAMMA), (R_sent)/(1-GAMMA)
+
       batch_si.append(si)
       batch_ai.append(ai)
       batch_td.append(td)
-      batch_R_duration.append((R_duration))
+      batch_R_duration.append(R_duration)
       batch_R_packets.append(R_packets)
       batch_R_accumulated_delay.append(R_accumulated_delay)
-      batch_R_lost.append(R_lost)
-      # batch_R_duration.append(R_duration)
-      # batch_R_packets.append(R_packets)
-      # batch_R_accumulated_delay.append(R_accumulated_delay)
-      # batch_R_lost.append(R_lost)
+      batch_R_sent.append(R_sent)
+
+      # batch_R_duration.append(R_duration/(1-GAMMA))
+      # batch_R_packets.append(R_packets/(1-GAMMA))
+      # batch_R_accumulated_delay.append(R_accumulated_delay/(1-GAMMA))
+      # batch_R_sent.append(R_sent/(1-GAMMA))
 
       # logging.debug(" ".join(map(str,("batch_td_throughput[-1]", batch_td_throughput[-1], "batch_td_delay[-1]", batch_td_delay[-1], "batch_R_packets[-1]", batch_R_packets[-1], "batch_R_accumulated_delay[-1]", batch_R_accumulated_delay[-1], "batch_R_duration[-1]", batch_R_duration[-1]))))
 
       self.episode_reward_throughput += ri[0]
-      self.episode_reward_lost += ri[3]
+      self.episode_reward_sent += ri[3]
       self.episode_reward_delay += ri[1]
 
+    old_local_t = self.local_t
     self.local_t += len(rewards)
 
     # if final or self.local_t % LOG_INTERVAL == 0:
@@ -331,7 +400,7 @@ class A3CTrainingThread(object):
 
     cur_learning_rate = self._anneal_learning_rate(global_t)
 
-    # logging.debug(" ".join(map(str,("All the batch stuff", "batch_si", batch_si, "batch_ai", batch_ai,"batch_R_packets", batch_R_packets, "batch_R_accumulated_delay", batch_R_accumulated_delay, "batch_R_duration", batch_R_duration))))
+    # logging.info(" ".join(map(str,("All the batch stuff", "batch_si", batch_si, "batch_ai", batch_ai,"batch_R_packets", batch_R_packets, "batch_R_accumulated_delay", batch_R_accumulated_delay, "batch_R_duration", batch_R_duration))))
 
     self.backup_vars()
 
@@ -341,7 +410,8 @@ class A3CTrainingThread(object):
     batch_R_duration.reverse()
     batch_R_packets.reverse()
     batch_R_accumulated_delay.reverse()
-    batch_R_lost.reverse()
+    batch_R_sent.reverse()
+    windows.reverse()
 
     feed_dict = {
       self.local_network.s: batch_si,
@@ -350,7 +420,7 @@ class A3CTrainingThread(object):
       self.local_network.r_duration: batch_R_duration,
       self.local_network.r_packets: batch_R_packets,
       self.local_network.r_accumulated_delay: batch_R_accumulated_delay,
-      self.local_network.r_lost: batch_R_lost,
+      self.local_network.r_sent: batch_R_sent,
       self.local_network.initial_lstm_state_action: self.start_lstm_states[0][0],
       self.local_network.initial_lstm_state_value: self.start_lstm_states[0][1],
       self.local_network.step_size : [len(batch_ai)],
@@ -364,7 +434,9 @@ class A3CTrainingThread(object):
 
     # if len(ticknos) == 0:
     #   print(self.thread_index, "actions", self.actions, "rewards", self.rewards, "values", self.values, "estimated_values", self.estimated_values, "ticknos", self.ticknos)
-    if final or self.local_t % LOG_INTERVAL == 0:
+
+    # if final or self.local_t % LOG_INTERVAL == 0:
+    if final or (self.local_t >= math.floor(self.local_t/LOG_INTERVAL)*LOG_INTERVAL and old_local_t < math.floor(self.local_t/LOG_INTERVAL)*LOG_INTERVAL):
     # if final:
       # if ticknos[-1]-ticknos[0] > 0 and self.episode_reward_throughput > 0:
       if self.episode_reward_throughput > 0:
@@ -373,12 +445,12 @@ class A3CTrainingThread(object):
         # normalized_final_score_throughput = self.episode_reward_throughput/(ticknos[-1]-ticknos[0])
         # logging.info("{}: self.episode_reward_throughput={}, time_difference={}".format(self.thread_index, self.episode_reward_throughput, time_difference))
         normalized_final_score_delay = self.episode_reward_delay/self.episode_reward_throughput
-        loss_score = self.episode_reward_lost/(self.episode_reward_lost+self.episode_reward_throughput)
+        loss_score = (self.episode_reward_sent - self.episode_reward_throughput)/self.episode_reward_sent
         # print(self.windows)
 
         # logging.info("{}: score_throughput={}, score_delay={}, measured throughput beginning={}, measured delay beginning={}, measured throughput end={}, measured delay end={}".format(self.thread_index, normalized_final_score_throughput, normalized_final_score_delay, batch_R_packets[0]/batch_R_duration[0]*SECONDS_NORMALIZER, batch_R_accumulated_delay[0]/batch_R_packets[0]/SECONDS_NORMALIZER, batch_R_packets[-1]/batch_R_duration[-1]*SECONDS_NORMALIZER, batch_R_accumulated_delay[-1]/batch_R_packets[-1]/SECONDS_NORMALIZER))
         # logging.info("{}: score_delay={}, measured throughput beginning={}, measured delay beginning={}, measured throughput end={}, measured delay end={} {}".format(self.thread_index, normalized_final_score_delay, batch_R_packets[0]/batch_R_duration[0]*SECONDS_NORMALIZER, batch_R_accumulated_delay[0]/batch_R_packets[0]/SECONDS_NORMALIZER, batch_R_packets[-1]/batch_R_duration[-1]*SECONDS_NORMALIZER, batch_R_accumulated_delay[-1]/batch_R_packets[-1]/SECONDS_NORMALIZER, ("final:"+str(final)+", delta:"+str(self.delay_delta)+"; "+" ".join(map(str,("R_packets", R_packets_initial, "R_accumulated_delay", R_accumulated_delay_initial/SECONDS_NORMALIZER, "R_duration", R_duration_initial/SECONDS_NORMALIZER))), "state", batch_si[0], "action", batch_ai[0][0])))
-        logging.info("{}: score_delay={}, measured throughput beginning={}, measured delay beginning={} {}".format(self.thread_index, normalized_final_score_delay, batch_R_packets[0]/batch_R_duration[0]*SECONDS_NORMALIZER, batch_R_accumulated_delay[0]/batch_R_packets[0]/SECONDS_NORMALIZER, ("final:"+str(final)+", delta:"+str(self.delay_delta)+"; "+" ".join(map(str,("R_packets", R_packets_initial, "R_accumulated_delay", R_accumulated_delay_initial/SECONDS_NORMALIZER, "R_duration", R_duration_initial/SECONDS_NORMALIZER, "R_lost", R_lost_initial))), "state", batch_si[0], "action", batch_ai[0][0])))
+        logging.info("{}: score_delay={}, measured throughput beginning={}, measured delay beginning={} {}".format(self.thread_index, normalized_final_score_delay, batch_R_packets[0]/batch_R_duration[0]*SECONDS_NORMALIZER, batch_R_accumulated_delay[0]/batch_R_packets[0]/SECONDS_NORMALIZER, ("final:"+str(final)+", delta:"+str(self.delay_delta)+"; "+" ".join(map(str,("R_packets", R_packets_initial, "R_accumulated_delay", R_accumulated_delay_initial/SECONDS_NORMALIZER, "R_duration", R_duration_initial/SECONDS_NORMALIZER, "R_sent", R_sent_initial))), "state", batch_si[0], "action", batch_ai[0])))
 
 
         # time_difference > 0 because of a bug in Unicorn.cc that makes it possible for time_difference to be smaller than 0.
@@ -394,7 +466,7 @@ class A3CTrainingThread(object):
           self.local_network.r_duration: [batch_R_duration[0]],
           self.local_network.r_packets: [batch_R_packets[0]],
           self.local_network.r_accumulated_delay: [batch_R_accumulated_delay[0]],
-          self.local_network.r_lost: batch_R_lost,
+          self.local_network.r_sent: [batch_R_sent[0]],
           self.local_network.initial_lstm_state_action: self.start_lstm_states[0][0],
           self.local_network.initial_lstm_state_value: self.start_lstm_states[0][1],
           self.local_network.step_size : [1]
@@ -407,12 +479,13 @@ class A3CTrainingThread(object):
           # "score_throughput": normalized_final_score_throughput,
           "estimated_throughput": batch_R_packets[0]/batch_R_duration[0]*SECONDS_NORMALIZER,
           "estimated_delay": batch_R_accumulated_delay[0]/batch_R_packets[0]/SECONDS_NORMALIZER,
-          "estimated_loss_rate": batch_R_lost[0]/(batch_R_lost[0] + batch_R_packets[0]),
+          "estimated_loss_rate": (batch_R_sent[0] - batch_R_packets[0])/batch_R_sent[0],
           "R_duration": batch_R_duration[0]/SECONDS_NORMALIZER,
           "R_packets": batch_R_packets[0],
           "R_accumulated_delay": batch_R_accumulated_delay[0]/SECONDS_NORMALIZER,
-          "R_lost": batch_R_lost[0],
+          "R_sent": batch_R_sent[0],
           "score_delay": normalized_final_score_delay,
+          "score_lost": loss_score,
           "actor_loss": actor_loss.item(),
           "value_loss": value_loss,
           "entropy": entropy.item(),
@@ -430,17 +503,26 @@ class A3CTrainingThread(object):
       self.local_t = 0
       self.episode_reward_throughput = 0
       self.episode_reward_delay = 0
-      self.episode_reward_lost = 0
+      self.episode_reward_sent = 0
 
     self.restore_backup()
 
-    self.actions = self.actions[LOCAL_T_MAX:]
-    self.ticknos = self.ticknos[LOCAL_T_MAX:]
-    self.windows = self.windows[LOCAL_T_MAX:]
-    self.states = self.states[LOCAL_T_MAX:]
-    self.values = self.values[LOCAL_T_MAX:]
-    self.rewards = self.rewards[LOCAL_T_MAX:]
-    self.estimated_values = self.estimated_values[LOCAL_T_MAX:]
+    if 'LOCAL_T_MAX' in globals():
+      self.actions = self.actions[LOCAL_T_MAX:]
+      self.ticknos = self.ticknos[LOCAL_T_MAX:]
+      self.windows = self.windows[LOCAL_T_MAX:]
+      self.states = self.states[LOCAL_T_MAX:]
+      self.values = self.values[LOCAL_T_MAX:]
+      self.rewards = self.rewards[LOCAL_T_MAX:]
+      self.estimated_values = self.estimated_values[LOCAL_T_MAX:]
+    else:
+      self.actions = self.actions[len(rewards):]
+      self.ticknos = self.ticknos[len(rewards):]
+      self.windows = self.windows[len(rewards):]
+      self.states = self.states[len(rewards):]
+      self.values = self.values[len(rewards):]
+      self.estimated_values = self.estimated_values[len(rewards):]
+      self.rewards = self.rewards[len(rewards):]
     self.time_differences = self.time_differences[1:]
     self.start_lstm_states = self.start_lstm_states[1:]
     self.variable_snapshots = self.variable_snapshots[1:]

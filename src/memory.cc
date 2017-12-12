@@ -12,8 +12,11 @@ static const double slow_alpha = 1.0 / 256.0;
 
 void Memory::lost(const int lost) {
   // printf("lost: %d\n", lost);
+  assert(lost==1);
   for (auto i=0; i<lost; i++) {
-    _loss = (1 - alpha) * _loss + alpha * 1;
+    _loss = 1;
+    _loss_ewma = (1 - alpha) * _loss_ewma + alpha * 1;
+    _slow_loss_ewma = (1 - slow_alpha) * _slow_loss_ewma + slow_alpha * 1;
   }
   _lost_since_last_time = lost;
 }
@@ -57,7 +60,10 @@ void Memory::packets_received( const vector< remy::Packet > & packets, const uns
       assert( _rtt_ratio >= 1.0 );
       assert( _rtt_diff >= 0 );
       _queueing_delay = _rec_rec_ewma * pkt_outstanding;
-      _loss = (1 - alpha) * _loss + alpha * 0;
+
+      _loss = 0;
+      _loss_ewma = (1 - alpha) * _loss_ewma + alpha * 0;
+      _slow_loss_ewma = (1 - slow_alpha) * _slow_loss_ewma + slow_alpha * 0;
     }
   }
 }
@@ -126,6 +132,8 @@ Memory::Memory( const bool is_lower_limit, const RemyBuffers::Memory & dna )
     _queueing_delay( get_val_or_default( dna, queueing_delay, is_lower_limit ) ),
     _slow_rec_send_ewma( 0 ),
     _loss(0), //FIXME: Should change "DNA" at some point
+    _loss_ewma(0),
+    _slow_loss_ewma(0),
     _last_tick_sent( 0 ),
     _last_tick_received( 0 ),
     _min_rtt( 0 ),

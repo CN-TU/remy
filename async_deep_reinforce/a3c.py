@@ -140,11 +140,13 @@ else:
   logging.info("Could not find old checkpoint")
   # set wall time
   wall_t = 0.0
-  current_datetime = datetime.datetime.now().isoformat()[:-7]
+  # current_datetime = datetime.datetime.now().isoformat()[:-7]
+  current_datetime = datetime.datetime.now().isoformat()
 
 # summary for tensorboard
 with tf.device(device):
-  score_throughput = tf.placeholder(PRECISION)
+  # score_throughput = tf.placeholder(PRECISION)
+  score_lost = tf.placeholder(PRECISION)
   score_delay = tf.placeholder(PRECISION)
   entropy = tf.placeholder(PRECISION)
   actor_loss = tf.placeholder(PRECISION)
@@ -156,13 +158,14 @@ with tf.device(device):
   R_duration = tf.placeholder(PRECISION)
   R_packets = tf.placeholder(PRECISION)
   R_accumulated_delay = tf.placeholder(PRECISION)
-  R_lost = tf.placeholder(PRECISION)
+  R_sent = tf.placeholder(PRECISION)
   estimated_throughput = tf.placeholder(PRECISION)
   estimated_delay = tf.placeholder(PRECISION)
   estimated_loss_rate = tf.placeholder(PRECISION)
   # speed = tf.placeholder(PRECISION)
   # tf.summary.scalar("score_throughput", score_throughput)
   tf.summary.scalar("score_delay", score_delay)
+  tf.summary.scalar("score_lost", score_lost)
   tf.summary.scalar("entropy", entropy)
   tf.summary.scalar("actor_loss", actor_loss)
   tf.summary.scalar("value_loss", value_loss)
@@ -173,7 +176,7 @@ with tf.device(device):
   tf.summary.scalar("R_duration", R_duration)
   tf.summary.scalar("R_packets", R_packets)
   tf.summary.scalar("R_accumulated_delay", R_accumulated_delay)
-  tf.summary.scalar("R_lost", R_lost)
+  tf.summary.scalar("R_sent", R_sent)
   tf.summary.scalar("estimated_throughput", estimated_throughput)
   tf.summary.scalar("estimated_delay", estimated_delay)
   tf.summary.scalar("estimated_loss_rate", estimated_loss_rate)
@@ -182,6 +185,7 @@ with tf.device(device):
   summary_inputs = {
     # "score_throughput": score_throughput,
     "score_delay": score_delay,
+    "score_lost": score_lost,
     "entropy": entropy,
     "actor_loss": actor_loss,
     "value_loss": value_loss,
@@ -192,7 +196,7 @@ with tf.device(device):
     "R_duration": R_duration,
     "R_packets": R_packets,
     "R_accumulated_delay": R_accumulated_delay,
-    "R_lost": R_lost,
+    "R_sent": R_sent,
     "estimated_throughput": estimated_throughput,
     "estimated_delay": estimated_delay,
     "estimated_loss_rate": estimated_loss_rate
@@ -257,7 +261,7 @@ def create_training_thread(training, delay_delta):
   created_thread.local_t = 0
   created_thread.episode_reward_throughput = 0
   created_thread.episode_reward_delay = 0
-  created_thread.episode_reward_lost = 0
+  created_thread.episode_reward_sent = 0
   sess.run( created_thread.sync )
   created_thread.reset_state_and_reinitialize(sess)
 
@@ -276,10 +280,10 @@ def call_process_action(thread_id, state, tickno, window):
   chosen_action = training_threads[thread_id].action_step(sess, state, tickno, window)
   return chosen_action
 
-def call_process_reward(thread_id, reward_throughput, reward_delay, duration, lost):
+def call_process_reward(thread_id, reward_throughput, reward_delay, duration, sent):
   # logging.debug(" ".join(map(str,("call_process_reward", thread_id, reward_throughput, reward_delay, duration))))
   global sess, global_t, summary_writer, summary_op, summary_inputs
-  diff_global_t = training_threads[thread_id].reward_step(sess, global_t, summary_writer, summary_op, summary_inputs, reward_throughput, reward_delay, duration, lost)
+  diff_global_t = training_threads[thread_id].reward_step(sess, global_t, summary_writer, summary_op, summary_inputs, reward_throughput, reward_delay, duration, sent)
   global_t += diff_global_t
   if global_t >= MAX_TIME_STEP:
     logging.info("Reached maximum time step, saving and terminating...")

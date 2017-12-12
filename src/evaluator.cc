@@ -92,7 +92,7 @@ Evaluator< WhiskerTree >::Outcome Evaluator< WhiskerTree >::score( WhiskerTree &
     Network<SenderGang<Rat, TimeSwitchedSender<Rat>>,
       SenderGang<Rat, TimeSwitchedSender<Rat>>> network1( Rat( run_whiskers, trace ), run_prng, x );
     network1.run_simulation( ticks_to_run );
-    
+
     the_outcome.score += network1.senders().utility();
     the_outcome.throughputs_delays.emplace_back( x, network1.senders().throughputs_delays() );
   }
@@ -121,7 +121,7 @@ Evaluator< FinTree >::Outcome Evaluator< FinTree >::score( FinTree & run_fins,
     Network<SenderGang<Fish, TimeSwitchedSender<Fish>>,
       SenderGang<Fish, TimeSwitchedSender<Fish>>> network1( Fish( run_fins, fish_prng_seed, trace ), run_prng, x );
     network1.run_simulation( ticks_to_run );
-    
+
     the_outcome.score += network1.senders().utility();
     the_outcome.throughputs_delays.emplace_back( x, network1.senders().throughputs_delays() );
   }
@@ -170,7 +170,7 @@ AnswerBuffers::Outcome Evaluator< T >::Outcome::DNA( void ) const
 
     for ( const auto & x : run.second ) {
       AnswerBuffers::SenderResults *results = tp_del->add_results();
-      results->set_throughput( x.first ); 
+      results->set_throughput( x.first );
       results->set_delay( x.second );
     }
   }

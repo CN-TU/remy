@@ -127,7 +127,6 @@ UnicornEvaluator::Outcome UnicornEvaluator::score(
 
   vector<NetConfig> shuffled_configs(configs);
   std::shuffle(shuffled_configs.begin(), shuffled_configs.end(), run_prng);
-
   for ( auto &x : shuffled_configs ) {
     printf("Running for %.f ticks\n", x.simulation_ticks);
     /* run once */
