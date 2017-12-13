@@ -356,7 +356,7 @@ class A3CTrainingThread(object):
       # td = inverse_sigmoid(self.delay_delta, R_sent/(R_packets+R_sent) - 0.05)*R_packets/R_duration - inverse_sigmoid(self.delay_delta, Vi[3]/(Vi[0]+Vi[3]) - 0.05)*Vi[0]/Vi[2] - (R_sent/R_duration - Vi[3]/(Vi[2])) - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
       # PCC
-      td = inverse_sigmoid(((R_sent - R_packets)/R_sent) - self.delay_delta)*R_packets/R_duration - inverse_sigmoid(((Vi[3]-Vi[0])/Vi[3]) - self.delay_delta)*Vi[0]/Vi[2] - ((R_sent - R_packets)/R_duration - (Vi[3] - Vi[0])/Vi[2]) #- (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+      # td = inverse_sigmoid(((R_sent - R_packets)/R_sent) - self.delay_delta)*R_packets/R_duration - inverse_sigmoid(((Vi[3]-Vi[0])/Vi[3]) - self.delay_delta)*Vi[0]/Vi[2] - ((R_sent - R_packets)/R_duration - (Vi[3] - Vi[0])/Vi[2]) #- (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
       # td = R_packets*(1-GAMMA)*inverse_sigmoid(SIGMOID_ALPHA * R_sent/(R_packets+R_sent) - self.delay_delta) - Vi[0]*inverse_sigmoid(SIGMOID_ALPHA * Vi[3]/(Vi[0]+Vi[3]) - self.delay_delta) - (R_sent*(1-GAMMA) - Vi[3]) - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
@@ -365,7 +365,9 @@ class A3CTrainingThread(object):
 
       # td = R_packets/R_duration/(R_accumulated_delay/R_packets) - Vi[0]/Vi[2]/(Vi[1]/Vi[0]) - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
-      # td = (np.log(R_packets/R_duration) - np.log(Vi[0]/Vi[2])) - self.delay_delta/SECONDS_NORMALIZER*(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+
+      td = (np.log(R_packets/R_duration) - np.log(Vi[0]/Vi[2])) - self.delay_delta/SECONDS_NORMALIZER*(R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+
 
       # R_packets, R_accumulated_delay, R_duration, R_sent = (R_packets)/(1-GAMMA), (R_accumulated_delay)/(1-GAMMA), (R_duration)/(1-GAMMA), (R_sent)/(1-GAMMA)
 
@@ -496,7 +498,7 @@ class A3CTrainingThread(object):
           # "speed": steps_per_sec
           }
         # logging.debug(" ".join(map(str,("things", things))))
-        self._record_score(sess, summary_writer, summary_op, summary_inputs, things, global_t)
+        self._record_score(sess, summary_writer, summary_op, summary_inputs, things, ticknos[0])
 
       # if final:
       self.episode_count += 1
