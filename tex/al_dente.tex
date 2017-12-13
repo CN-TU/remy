@@ -116,55 +116,58 @@ In the meantime another ACK could have arrived. What do we do? Not defined with 
 \textbf{Key point}: We can update the state without receiving the full reward yet.
 \end{frame}
 
+%\begin{frame}{Asynchronous Actor Critic}
+%\begin{itemize}
+%\item A Deep Learning framework for reinforcement learning. Used for learning how to play video games.
+%\item Maximize long term reward: \begin{align*}
+%R_t = \left(\left(\sum_{i=0}^{k-1} \gamma^ir_{t+i}\right) + \gamma^k V(s_{t+k}; \theta_\text{v})\right),
+%\end{align*}
+%\item The \textbf{Critic} tries to estimate how much (long-term) reward one can expect considering the current state.
+%\end{itemize}
+%\end{frame}
+
 \begin{frame}{Asynchronous Actor Critic}
 \begin{itemize}
 \item A Deep Learning framework for reinforcement learning. Used for learning how to play video games.
-\item Maximize long term reward: \begin{align*}
-R_t = \left(\left(\sum_{i=0}^{k-1} \gamma^ir_{t+i}\right) + \gamma^k V(s_{t+k}; \theta_\text{v})\right),
+\item Maximize expected long term reward: \begin{align*}
+R_t = \gamma r_t + (1-\gamma) R_{t+1}
 \end{align*}
 \item The \textbf{Critic} tries to estimate how much (long-term) reward one can expect considering the current state.
 \end{itemize}
 \end{frame}
 
+\makeatletter
+\begin{frame}{Exponential decay with $\gamma = 0.01$}
+    \global\beamer@shrinktrue
+    \gdef\beamer@shrinkframebox{
+        \setbox\beamer@framebox=\vbox to\beamer@frametextheight{
+            \centering
+            \includegraphics[height=\beamer@frametextheight]{figures/exponential}
+        }
+    }
+\end{frame}
+\makeatother
+
+\begin{frame}{Asynchronous Actor Critic -- How to choose $\gamma$}
+\begin{itemize}
+\item In literature people just set $\gamma = 0.01$. 
+\item Problem: The larger the congestion window the more often we'll receive new packets!
+\item $\frac{2}{k+1}$ is equivalent to a moving average considering the next $k$ elements.
+\item Choose $\frac{2}{w_t+2}$ where $w_t$ is the congestion window at time step $t$.
+\end{itemize}
+\end{frame}
+
 \begin{frame}{Asynchronous Actor Critic -- Actor}
 \begin{itemize}
-\item The \textbf{Actor} tries to perform an action that is better than what the Critic would expect.
+\item Wants to performs an action that are better than what the Critic would expect.
 \item It outputs two things:
 \begin{itemize}
 \item What it thinks is the best action (e.g. increase the window by $0.3$)
 \item A standard deviation to experiment a little bit (e.g. $0.45$)
 \end{itemize}
-\item So the actor outputs a normal distribution from which actions are sampled. Thanks to the standard deviation we experiment and don't get stuck with suboptimal actions. 
+\item So we get a normal distribution from which we sample.
+\item Thanks to the standard deviation we experiment and don't get stuck with suboptimal actions. 
 \end{itemize}
-\end{frame}
-
-\begin{frame}{Preliminary results -- Experiment characteristics}
-\centering
-\begin{tabular}{rll}
-\toprule
-Parameter & Value & Distribution \\
-\midrule
-Two-way RTT when queue is 0 & $150\,$ms & constant \\
-Bottleneck bandwidth & $15\,$Mbit/s & constant \\
-Number of senders & $8$ & constant \\
-Flow length & $100\,$kB & exponential \\
-Time between flows & $0.5\,$s & exponential \\
-Simulation duration & $500\,$s & constant \\
-Buffer size & $100$ packets & constant \\
-Stochastic loss prob. & $0\%$ & constant \\
-\bottomrule
-\end{tabular}
-\end{frame}
-
-\begin{frame}{Preliminary results -- Comparison}
-Stuff goes here!
-
-\end{frame}
-
-\begin{frame}{Petri net}
-
-\input{petri_net.tex}
-
 \end{frame}
 
 \begin{frame}{Neural Network}
@@ -173,10 +176,82 @@ Stuff goes here!
 
 \end{frame}
 
-\begin{frame}{Reward 1}
+\makeatletter
+\begin{frame}{Softplus function}
+    \global\beamer@shrinktrue
+    \gdef\beamer@shrinkframebox{
+        \setbox\beamer@framebox=\vbox to\beamer@frametextheight{
+            \centering
+            \includegraphics[height=\beamer@frametextheight]{figures/softplus}
+        }
+    }
+\end{frame}
+\makeatother
+
+\begin{frame}{Utility function}
 \begin{align*}
-\frac{R_\text{packets}}{R_\text{duration}}\text{Sigmoid}_\alpha\left(\frac{R_\text{lost}}{R_\text{lost} + R_\text{packets}} - 0.05\right) - \frac{R_\text{lost}}{R_\text{duration}} - \frac{R_\text{delay}}{R_\text{packets}}
+U_t = \text{throughput} \cdot \text{Sigmoid}_\alpha\left(\text{loss rate} - 0.05 \right) - \text{sending rate}\cdot\text{loss rate}
 \end{align*}
+\end{frame}
+
+\begin{frame}{Utility function}
+\begin{align*}
+U_t = \frac{r_{\text{received},t}}{r_{\text{duration},t}}\text{Sigmoid}_\alpha\left(\frac{r_{\text{sent},t} - r_{\text{received},t}}{r_{\text{sent},t}} - 0.05\right) - \frac{r_{\text{sent},t} - r_{\text{received},t}}{r_{\text{duration},t}}
+\end{align*}
+\end{frame}
+
+\begin{frame}{Sigmoid function}
+\begin{align*}
+\text{Sigmoid}_\alpha(x) = \frac{1}{1+e^{\alpha (x-0.05)}}
+\end{align*}
+\end{frame}
+
+\makeatletter
+\begin{frame}{Sigmoid function for $\alpha = 100$ with $0.05$ cutoff}
+    \global\beamer@shrinktrue
+    \gdef\beamer@shrinkframebox{
+        \setbox\beamer@framebox=\vbox to\beamer@frametextheight{
+            \centering
+            \includegraphics[height=\beamer@frametextheight]{figures/sigmoid}
+        }
+    }
+\end{frame}
+\makeatother
+
+\begin{frame}{Petri net}
+
+\input{petri_net.tex}
+
+\end{frame}
+
+%\begin{frame}{Preliminary results -- Experiment characteristics}
+%\centering
+%\begin{tabular}{rll}
+%\toprule
+%Parameter & Value & Distribution \\
+%\midrule
+%Two-way RTT when queue is 0 & $150\,$ms & constant \\
+%Bottleneck bandwidth & $15\,$Mbit/s & constant \\
+%Number of senders & $8$ & constant \\
+%Flow length & $100\,$kB & exponential \\
+%Time between flows & $0.5\,$s & exponential \\
+%Simulation duration & $500\,$s & constant \\
+%Buffer size & $100$ packets & constant \\
+%Stochastic loss prob. & $0\%$ & constant \\
+%\bottomrule
+%\end{tabular}
+%\end{frame}
+
+\begin{frame}{Some data}
+\includegraphics[width=\textwidth]{figures/window}
+\end{frame}
+
+\begin{frame}{Some data}
+\includegraphics[width=\textwidth]{figures/score_lost}
+\end{frame}
+
+\begin{frame}{Some data}
+\includegraphics[width=\textwidth]{figures/window_increase}
 \end{frame}
 
 \end{document}
