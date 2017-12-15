@@ -162,6 +162,10 @@ with tf.device(device):
   estimated_throughput = tf.placeholder(PRECISION)
   estimated_delay = tf.placeholder(PRECISION)
   estimated_loss_rate = tf.placeholder(PRECISION)
+  lstm_state_action_mean = tf.placeholder(PRECISION)
+  lstm_state_action_std = tf.placeholder(PRECISION)
+  lstm_state_value_mean = tf.placeholder(PRECISION)
+  lstm_state_value_std = tf.placeholder(PRECISION)
   # speed = tf.placeholder(PRECISION)
   # tf.summary.scalar("score_throughput", score_throughput)
   tf.summary.scalar("score_delay", score_delay)
@@ -180,6 +184,10 @@ with tf.device(device):
   tf.summary.scalar("estimated_throughput", estimated_throughput)
   tf.summary.scalar("estimated_delay", estimated_delay)
   tf.summary.scalar("estimated_loss_rate", estimated_loss_rate)
+  tf.summary.scalar("lstm_state_action_mean", lstm_state_action_mean)
+  tf.summary.scalar("lstm_state_action_std", lstm_state_action_std)
+  tf.summary.scalar("lstm_state_value_mean", lstm_state_value_mean)
+  tf.summary.scalar("lstm_state_value_std", lstm_state_value_std)
 
   # tf.summary.scalar("speed", speed)
   summary_inputs = {
@@ -199,7 +207,11 @@ with tf.device(device):
     "R_sent": R_sent,
     "estimated_throughput": estimated_throughput,
     "estimated_delay": estimated_delay,
-    "estimated_loss_rate": estimated_loss_rate
+    "estimated_loss_rate": estimated_loss_rate,
+    "lstm_state_action_mean": lstm_state_action_mean,
+    "lstm_state_action_std": lstm_state_action_std,
+    "lstm_state_value_mean": lstm_state_value_mean,
+    "lstm_state_value_std": lstm_state_value_std
     # "speed": speed
   }
 

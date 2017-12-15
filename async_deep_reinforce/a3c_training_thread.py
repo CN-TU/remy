@@ -502,6 +502,10 @@ class A3CTrainingThread(object):
           "window_increase": window_increase.item(),
           "window": windows[0],
           "std": std.item(),
+          "lstm_state_action_mean": np.mean(self.start_lstm_states[0][0]),
+          "lst_state_action_std": np.std(self.start_lstm_states[0][0]),
+          "lstm_state_value_mean": np.mean(self.start_lstm_states[0][1]),
+          "lst_state_value_std": np.std(self.start_lstm_states[0][1]),
           # "speed": steps_per_sec
           }
         # logging.debug(" ".join(map(str,("things", things))))
