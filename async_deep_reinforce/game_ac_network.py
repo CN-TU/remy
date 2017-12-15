@@ -83,7 +83,7 @@ class GameACNetwork(object):
 			self.r_sent = tf.placeholder(PRECISION, [None], name="r_sent")
 
 			# value loss (output)
-			order = 2
+			order = 1
 			self.value_loss = VALUE_FACTOR * (tf.norm(self.r_packets - self.v_packets, ord=order) + tf.norm(self.r_accumulated_delay - self.v_accumulated_delay, ord=order) + tf.norm(self.r_duration - self.v_duration, ord=order) + tf.norm(self.r_sent - self.v_sent, ord=order))
 
 			# gradient of policy and value are summed up
