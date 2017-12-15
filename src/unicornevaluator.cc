@@ -94,13 +94,13 @@ pair<UnicornEvaluator::Outcome, SimulationResultsUnicorn> UnicornEvaluator::scor
   vector<NetConfig> shuffled_configs(configs);
   std::shuffle(shuffled_configs.begin(), shuffled_configs.end(), run_prng);
 
-  const double interval = 100000;
+  const double interval = 1000;
   size_t counter = 0;
 
   SimulationResultsUnicorn complete_logging = SimulationResultsUnicorn();
 
   for ( auto &x : shuffled_configs ) {
-    SimulationRunData& logging = complete_logging.add_run_data(x, interval );
+    SimulationRunData& logging = complete_logging.add_run_data(x, interval);
     printf("Running for %.f ticks\n", x.simulation_ticks);
     /* run once */
     Network<SenderGang<Unicorn, ByteSwitchedSender<Unicorn>>,
