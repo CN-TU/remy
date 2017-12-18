@@ -166,6 +166,8 @@ with tf.device(device):
   lstm_state_action_std = tf.placeholder(PRECISION)
   lstm_state_value_mean = tf.placeholder(PRECISION)
   lstm_state_value_std = tf.placeholder(PRECISION)
+  lstm_state_duration_mean = tf.placeholder(PRECISION)
+  lstm_state_duration_std = tf.placeholder(PRECISION)
   # speed = tf.placeholder(PRECISION)
   # tf.summary.scalar("score_throughput", score_throughput)
   tf.summary.scalar("score_delay", score_delay)
@@ -179,15 +181,17 @@ with tf.device(device):
   tf.summary.scalar("std", std)
   tf.summary.scalar("R_duration", R_duration)
   tf.summary.scalar("R_packets", R_packets)
-  tf.summary.scalar("R_accumulated_delay", R_accumulated_delay)
+  # tf.summary.scalar("R_accumulated_delay", R_accumulated_delay)
   tf.summary.scalar("R_sent", R_sent)
   tf.summary.scalar("estimated_throughput", estimated_throughput)
-  tf.summary.scalar("estimated_delay", estimated_delay)
+  # tf.summary.scalar("estimated_delay", estimated_delay)
   tf.summary.scalar("estimated_loss_rate", estimated_loss_rate)
   tf.summary.scalar("lstm_state_action_mean", lstm_state_action_mean)
   tf.summary.scalar("lstm_state_action_std", lstm_state_action_std)
   tf.summary.scalar("lstm_state_value_mean", lstm_state_value_mean)
   tf.summary.scalar("lstm_state_value_std", lstm_state_value_std)
+  tf.summary.scalar("lstm_state_duration_mean", lstm_state_duration_mean)
+  tf.summary.scalar("lstm_state_duration_std", lstm_state_duration_std)
 
   # tf.summary.scalar("speed", speed)
   summary_inputs = {
@@ -203,15 +207,17 @@ with tf.device(device):
     "std": std,
     "R_duration": R_duration,
     "R_packets": R_packets,
-    "R_accumulated_delay": R_accumulated_delay,
+    # "R_accumulated_delay": R_accumulated_delay,
     "R_sent": R_sent,
     "estimated_throughput": estimated_throughput,
-    "estimated_delay": estimated_delay,
+    # "estimated_delay": estimated_delay,
     "estimated_loss_rate": estimated_loss_rate,
     "lstm_state_action_mean": lstm_state_action_mean,
     "lstm_state_action_std": lstm_state_action_std,
     "lstm_state_value_mean": lstm_state_value_mean,
-    "lstm_state_value_std": lstm_state_value_std
+    "lstm_state_value_std": lstm_state_value_std,
+    "lstm_state_duration_mean": lstm_state_duration_mean,
+    "lstm_state_duration_std": lstm_state_duration_std
     # "speed": speed
   }
 

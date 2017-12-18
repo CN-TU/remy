@@ -80,7 +80,7 @@ INITIAL_WINDOW_INCREASE_WEIGHT_FACTOR = 1e-4
 # INITIAL_WINDOW_INCREASE_WEIGHT_FACTOR = 1
 
 STATE_SIZE = int(environ.get('state_size')) if environ.get('state_size') is not None else 13
-HIDDEN_SIZE = int(environ.get('hidden_size')) if environ.get('hidden_size') is not None else 32
+HIDDEN_SIZE = int(environ.get('hidden_size')) if environ.get('hidden_size') is not None else 16
 # ACTION_SIZE = 1 # action size
 LAYER_NORMALIZATION = False
 
