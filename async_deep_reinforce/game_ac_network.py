@@ -58,6 +58,7 @@ class GameACNetwork(object):
 			self.td = tf.placeholder(PRECISION, [None], name="td")
 
 			self.distribution = ds.Normal(loc=self.pi[0], scale=self.pi[1], allow_nan_stats=False, validate_args=True)
+			# self.distribution = ds.Normal(loc=self.pi[0], scale=self.pi[1], allow_nan_stats=False, validate_args=True)
 
 			# normal_variance = tf.log((self.pi[1]*self.pi[1])/(self.pi[0]*self.pi[0])+1.0)
 			# self.distribution = ds.TransformedDistribution(
@@ -83,8 +84,8 @@ class GameACNetwork(object):
 			self.r_sent = tf.placeholder(PRECISION, [None], name="r_sent")
 
 			# value loss (output)
-			order = 1
-			self.value_loss = VALUE_FACTOR * (tf.norm(self.r_packets - self.v_packets, ord=order) + tf.norm(self.r_accumulated_delay - self.v_accumulated_delay, ord=order) + tf.norm(self.r_duration - self.v_duration, ord=order) + tf.norm(self.r_sent - self.v_sent, ord=order))
+			order = 2
+			self.value_loss = VALUE_FACTOR * (tf.norm(self.r_packets - self.v_packets, ord=order) + tf.norm(self.r_accumulated_delay - self.v_accumulated_delay, ord=order) + tf.norm(self.r_sent - self.v_sent, ord=order))# + tf.norm(self.r_duration - self.v_duration, ord=order)
 
 			# gradient of policy and value are summed up
 			self.total_loss = self.policy_loss + self.value_loss
@@ -284,7 +285,7 @@ class GameACLSTMNetwork(GameACNetwork):
 			# policy (output)
 			self.pi = (
 				tf.reshape(raw_pi_mean, [-1]),
-				tf.reshape(tf.nn.softplus(raw_pi_std), [-1])
+				tf.reshape(raw_pi_std, [-1])
 				# tf.constant(0.5, shape=(1,1), dtype=PRECISION)
 				# tf.clip_by_value(raw_pi_mean*0.01, MINIMUM_STD, float("inf"))
 			)
@@ -340,18 +341,31 @@ class GameACLSTMNetwork(GameACNetwork):
 		# pi_out: (1,3), v_out: (1)
 		return (action_out[0],(v_packets_out[0], v_accumulated_delay_out[0], v_duration_out[0], v_sent_out[0]))
 
-	# Misleading name: Actually returns the mean of the distribution returned by the actor.
-	def run_action(self, sess, s_t):
-		# This run_policy_and_value() is used when forward propagating.
-		# so the step size is 1.
-		pi_out, self.lstm_state_out_action = sess.run(
-			[self.pi, self.lstm_state_action],
-			feed_dict = {self.s : [s_t],
-			self.initial_lstm_state_action : self.lstm_state_out_action,
-			self.step_size : [1]}
-		)
-		# pi_out: (1,3), v_out: (1)
-		return pi_out[0]
+	# def run_action_and_value(self, sess, s_t, w_t):
+	# 	# This run_policy_and_value() is used when forward propagating.
+	# 	# so the step size is 1.
+	# 	action_out, v_packets_out, v_accumulated_delay_out, v_duration_out, v_sent_out, self.lstm_state_out_action, self.lstm_state_out_value = sess.run(
+	# 		[self.chosen_action, self.v_packets, self.v_accumulated_delay, self.v_duration, self.v_sent, self.lstm_state_action, self.lstm_state_value],
+	# 		feed_dict = {self.s : [s_t], self.w : [w_t],
+	# 		self.initial_lstm_state_action : self.lstm_state_out_action,
+	# 		self.initial_lstm_state_value : self.lstm_state_out_value,
+	# 		self.step_size : [1]}
+	# 	)
+	# 	# pi_out: (1,3), v_out: (1)
+	# 	return (action_out[0],(v_packets_out[0], v_accumulated_delay_out[0], v_duration_out[0], v_sent_out[0]))
+
+	# # Misleading name: Actually returns the mean of the distribution returned by the actor.
+	# def run_action(self, sess, s_t):
+	# 	# This run_policy_and_value() is used when forward propagating.
+	# 	# so the step size is 1.
+	# 	pi_out, self.lstm_state_out_action = sess.run(
+	# 		[self.pi, self.lstm_state_action],
+	# 		feed_dict = {self.s : [s_t],
+	# 		self.initial_lstm_state_action : self.lstm_state_out_action,
+	# 		self.step_size : [1]}
+	# 	)
+	# 	# pi_out: (1,3), v_out: (1)
+	# 	return pi_out[0]
 
 	def run_value(self, sess, s_t):
 		# This run_value() is used for calculating V for bootstrapping at the

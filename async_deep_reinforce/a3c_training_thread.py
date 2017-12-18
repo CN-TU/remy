@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from os import environ
 import tensorflow as tf
 import numpy as np
 import numpy.random
@@ -137,6 +138,7 @@ class A3CTrainingThread(object):
     if self.training:
       action, value_ = self.local_network.run_action_and_value(sess, state)
     else:
+      assert(False)
       action = self.local_network.run_action(sess, state)
 
     # logging.debug(" ".join(map(str,(self.thread_index,"pi_values:",pi_))))
@@ -329,7 +331,7 @@ class A3CTrainingThread(object):
       # assert(False)
       # The GAMMA_FACTOR increases the influence that following observations have on this one.
 
-      GAMMA = (1 - 2/((GAMMA_FACTOR*A3CTrainingThread.get_actual_window(wi+ai)) + 1))
+      GAMMA = (1 - 2/((GAMMA_FACTOR*A3CTrainingThread.get_actual_window(wi+ai)) + 2))
 
       # R_duration = ((1-GAMMA)*ri[2]*SECONDS_NORMALIZER + GAMMA*R_duration)
       # R_packets = ((1-GAMMA)*ri[0] + GAMMA*R_packets)
@@ -356,14 +358,17 @@ class A3CTrainingThread(object):
 
       # td = inverse_sigmoid(self.delay_delta, R_sent/(R_packets+R_sent) - 0.05)*R_packets/R_duration - inverse_sigmoid(self.delay_delta, Vi[3]/(Vi[0]+Vi[3]) - 0.05)*Vi[0]/Vi[2] - (R_sent/R_duration - Vi[3]/(Vi[2])) - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
-      # # PCC
-      # td = inverse_sigmoid(((R_sent - R_packets)/R_sent) - self.delay_delta)*R_packets/R_duration - inverse_sigmoid(((Vi[3]-Vi[0])/Vi[3]) - self.delay_delta)*Vi[0]/Vi[2] - ((R_sent - R_packets)/R_duration - (Vi[3] - Vi[0])/Vi[2]) #- (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+      if environ.get('reward_type') == "PCC":
+        # PCC
+        td = inverse_sigmoid(((R_sent - R_packets)/R_sent) - self.delay_delta)*R_packets/R_duration - inverse_sigmoid(((Vi[3]-Vi[0])/Vi[3]) - self.delay_delta)*Vi[0]/Vi[2] - ((R_sent - R_packets)/R_duration - (Vi[3] - Vi[0])/Vi[2]) #- (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
-      # # PCC without cutoff
-      # td = R_packets/R_duration - Vi[0]/Vi[2] - ((R_sent - R_packets)/R_duration - (Vi[3] - Vi[0])/Vi[2]) #- (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+      elif environ.get('reward_type') == "no_cutoff":
+        # PCC without cutoff
+        td = R_packets/R_duration - Vi[0]/Vi[2] - ((R_sent - R_packets)/R_duration - (Vi[3] - Vi[0])/Vi[2]) #- (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
-      # PCC modified
-      td = (1 - (R_sent - R_packets)/R_sent)*R_packets/R_duration - (1 - (Vi[3]-Vi[0])/Vi[3])*Vi[0]/Vi[2] - ((R_sent - R_packets)/R_duration - (Vi[3] - Vi[0])/Vi[2]) #- (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+      elif environ.get('reward_type') == "modified":
+        # PCC modified
+        td = (1 - (R_sent - R_packets)/R_sent)*R_packets/R_duration - (1 - (Vi[3]-Vi[0])/Vi[3])*Vi[0]/Vi[2] - ((R_sent - R_packets)/R_duration - (Vi[3] - Vi[0])/Vi[2]) #- (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
       # td = R_packets*(1-GAMMA)*inverse_sigmoid(SIGMOID_ALPHA * R_sent/(R_packets+R_sent) - self.delay_delta) - Vi[0]*inverse_sigmoid(SIGMOID_ALPHA * Vi[3]/(Vi[0]+Vi[3]) - self.delay_delta) - (R_sent*(1-GAMMA) - Vi[3]) - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
@@ -503,9 +508,9 @@ class A3CTrainingThread(object):
           "window": windows[0],
           "std": std.item(),
           "lstm_state_action_mean": np.mean(self.start_lstm_states[0][0]),
-          "lst_state_action_std": np.std(self.start_lstm_states[0][0]),
+          "lstm_state_action_std": np.std(self.start_lstm_states[0][0]),
           "lstm_state_value_mean": np.mean(self.start_lstm_states[0][1]),
-          "lst_state_value_std": np.std(self.start_lstm_states[0][1]),
+          "lstm_state_value_std": np.std(self.start_lstm_states[0][1]),
           # "speed": steps_per_sec
           }
         # logging.debug(" ".join(map(str,("things", things))))

@@ -14,6 +14,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <limits>
+#include <cassert>
 
 #include <unistd.h>
 
@@ -154,11 +155,14 @@ int main( int argc, char *argv[] )
   cooperative = options.config_range.cooperative;
   printf( "#######################\n" );
 
-  // Allocates storage
   char* number_of_threads_string = (char*) malloc(2048 * sizeof(char));
-  // Prints "Hello world!" on hello_world
   sprintf(number_of_threads_string, "num_threads=%u", options.config_range.num_threads*(uint32_t) options.config_range.num_senders.high);
   putenv(number_of_threads_string);
+
+  assert(options.config_range.rtt.low == options.config_range.rtt.high);
+  char* rtt_string = (char*) malloc(2048 * sizeof(char));
+  sprintf(rtt_string, "rtt=%f", options.config_range.rtt.high);
+  putenv(rtt_string);
 
   const size_t iterations_per_thread = options.config_range.iterations <= 0 ? std::numeric_limits<size_t>::max() : options.config_range.iterations;
 
