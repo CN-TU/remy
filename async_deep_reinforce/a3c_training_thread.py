@@ -160,7 +160,7 @@ class A3CTrainingThread(object):
     assert(reward_throughput >= 0)
     assert(reward_delay >= 0)
     # print("duration", duration)
-    # assert(duration > 0)
+    assert(duration >= 0)
     assert(sent>= 0)
 
     # assert(sent == reward_throughput)

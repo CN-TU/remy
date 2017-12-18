@@ -304,7 +304,7 @@ class GameACLSTMNetwork(GameACNetwork):
 			# policy (output)
 			self.pi = (
 				tf.reshape(raw_pi_mean, [-1]),
-				tf.reshape(raw_pi_std, [-1])
+				tf.nn.softplus(tf.reshape(raw_pi_std, [-1]))
 				# tf.constant(0.5, shape=(1,1), dtype=PRECISION)
 				# tf.clip_by_value(raw_pi_mean*0.01, MINIMUM_STD, float("inf"))
 			)
@@ -312,13 +312,13 @@ class GameACLSTMNetwork(GameACNetwork):
 			# value (output)
 			# TODO: should you use clipping to avoid zero values?
 			v_packets_ = tf.matmul(lstm_outputs_value, self.W_hidden_to_value_packets_fc) + self.b_hidden_to_value_packets_fc
-			self.v_packets = tf.reshape( v_packets_, [-1] )
+			self.v_packets = tf.nn.softplus(tf.reshape( v_packets_, [-1] ))
 
 			v_duration_ = tf.matmul(lstm_outputs_duration, self.W_hidden_to_value_duration_fc) + self.b_hidden_to_value_duration_fc
-			self.v_duration = tf.reshape( v_duration_, [-1] )
+			self.v_duration = tf.nn.softplus(tf.reshape( v_duration_, [-1] ))
 
 			v_sent_ = tf.matmul(lstm_outputs_value, self.W_hidden_to_value_sent_fc) + self.b_hidden_to_value_sent_fc
-			self.v_sent = tf.reshape( v_sent_, [-1] )
+			self.v_sent = tf.nn.softplus(tf.reshape( v_sent_, [-1] ))
 
 			scope.reuse_variables()
 

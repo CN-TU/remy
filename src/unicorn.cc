@@ -93,6 +93,7 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
         // const double duration = it->second["end_time"] - it->second["start_time"];
         // const double duration = it->second["intersend_duration_acc"];
         const double duration = it->second["interreceive_duration_acc"];
+        assert(duration >= 0);
         const double sent_final = it->second["sent"];
         if (_training) {
           _rainbow.put_reward(_thread_id, throughput_final, delay_final, duration, sent_final);
