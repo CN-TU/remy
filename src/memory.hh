@@ -1,6 +1,9 @@
 #ifndef MEMORY_HH
 #define MEMORY_HH
 
+#define MIN_WINDOW_UNICORN 1.0
+#define MAX_WINDOW_UNICORN 1000.0
+
 #include <vector>
 #include <string>
 
@@ -30,6 +33,12 @@ public:
   double _send;
   double _rec;
   int _lost_since_last_time;
+  DataType _rtt;
+  DataType _rtt_ewma;
+  DataType _slow_rtt_ewma;
+  DataType _window;
+  DataType _window_ewma;
+  DataType _slow_window_ewma;
 
   Memory( const std::vector< DataType > & s_data )
     : _rec_send_ewma( s_data.at( 0 ) ),
@@ -47,7 +56,13 @@ public:
       _min_rtt( 0 ),
       _send (0),
       _rec(0),
-      _lost_since_last_time(0)
+      _lost_since_last_time(0),
+      _rtt(0),
+      _rtt_ewma(0),
+      _slow_rtt_ewma(0),
+      _window(0),
+      _window_ewma(0),
+      _slow_window_ewma(0)
   {}
 
   Memory()
@@ -66,10 +81,16 @@ public:
       _min_rtt( 0 ),
       _send(0),
       _rec(0),
-      _lost_since_last_time(0)
+      _lost_since_last_time(0),
+      _rtt(0),
+      _rtt_ewma(0),
+      _slow_rtt_ewma(0),
+      _window(0),
+      _window_ewma(0),
+      _slow_window_ewma(0)
   {}
 
-  void reset( void ) { _rec_send_ewma = _rec_rec_ewma = _rtt_ratio = _slow_rec_rec_ewma = _slow_rec_send_ewma = _rtt_diff = _queueing_delay = _last_tick_sent = _last_tick_received = _min_rtt = _loss = _loss_ewma = _slow_loss_ewma = _send = _rec = _lost_since_last_time = 0; }
+  void reset( void ) { _rec_send_ewma = _rec_rec_ewma = _rtt_ratio = _slow_rec_rec_ewma = _slow_rec_send_ewma = _rtt_diff = _queueing_delay = _last_tick_sent = _last_tick_received = _min_rtt = _loss = _loss_ewma = _slow_loss_ewma = _send = _rec = _lost_since_last_time = _rtt = _rtt_ewma = _slow_rtt_ewma = _window = _window_ewma = _slow_window_ewma = 0; _window = _window_ewma = _slow_window_ewma = MIN_WINDOW_UNICORN; }
 
   static const unsigned int datasize = 6;
 
@@ -79,6 +100,7 @@ public:
   void packet_sent( const remy::Packet & packet __attribute((unused)) ) {}
   void packets_received( const std::vector< remy::Packet > & packets, const unsigned int flow_id, const int largest_ack );
   void lost(const int lost);
+  void window(const double& s_window);
   void advance_to( const unsigned int tickno __attribute((unused)) ) {}
 
   std::string str( void ) const;

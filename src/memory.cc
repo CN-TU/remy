@@ -21,6 +21,13 @@ void Memory::lost(const int lost) {
   _lost_since_last_time = lost;
 }
 
+void Memory::window(const double& s_window) {
+  // printf("lost: %d\n", lost);
+  _window = s_window;
+  _window_ewma = (1 - alpha) * _window_ewma + alpha * _window;
+  _slow_window_ewma = (1 - slow_alpha) * _slow_window_ewma + slow_alpha * _window;
+}
+
 void Memory::packets_received( const vector< remy::Packet > & packets, const unsigned int,
   const int largest_ack )
 {
@@ -31,6 +38,7 @@ void Memory::packets_received( const vector< remy::Packet > & packets, const uns
     // }
     // puts("I'm going through the freaking loop in RemyMemory when receiving a packet...");
     const double rtt = x.tick_received - x.tick_sent;
+    _rtt = rtt;
     int pkt_outstanding = 1;
     if ( x.seq_num > largest_ack ) {
       pkt_outstanding = x.seq_num - largest_ack;
@@ -64,6 +72,9 @@ void Memory::packets_received( const vector< remy::Packet > & packets, const uns
       _loss = 0;
       _loss_ewma = (1 - alpha) * _loss_ewma + alpha * 0;
       _slow_loss_ewma = (1 - slow_alpha) * _slow_loss_ewma + slow_alpha * 0;
+
+      _rtt_ewma = (1 - alpha) * _rtt_ewma + alpha * rtt;
+      _slow_rtt_ewma = (1 - slow_alpha) * _slow_rtt_ewma + slow_alpha * rtt;
     }
   }
 }
@@ -139,7 +150,13 @@ Memory::Memory( const bool is_lower_limit, const RemyBuffers::Memory & dna )
     _min_rtt( 0 ),
     _send(0),
     _rec(0),
-    _lost_since_last_time(0)
+    _lost_since_last_time(0),
+    _rtt(0),
+    _rtt_ewma(0),
+    _slow_rtt_ewma(0),
+    _window(0),
+    _window_ewma(0),
+    _slow_window_ewma(0)
 {
   assert(false);
 }

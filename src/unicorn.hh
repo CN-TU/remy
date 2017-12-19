@@ -17,7 +17,6 @@
 
 #include "simulationresults.pb.h"
 
-// #define MAX_WINDOW 1000000
 #define MIN_WINDOW_UNICORN 1.0
 #define MAX_WINDOW_UNICORN 1000.0
 

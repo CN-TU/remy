@@ -48,6 +48,7 @@ bool Unicorn::packets_lost( const std::vector< remy::Packet > & packets ) {
       if (lost_since_last_time > 0) {
         _packets_lost += 1;
         _memory.lost(1);
+        _memory.window(_the_window);
         // _the_window = std::max(_the_window - 1, MIN_WINDOW_UNICORN);
         get_action(packet.tick_received);
         _largest_ack += 1;
@@ -122,6 +123,7 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
       vector<remy::Packet> packet_for_memory_update;
       packet_for_memory_update.push_back(packet);
       _memory.packets_received(packet_for_memory_update, _flow_id, _largest_ack );
+      _memory.window(_the_window);
 
       // printf("%lu: Yeah, getting action after receiving a packet...\n", _thread_id);
       get_action(packet.tick_received);
@@ -251,12 +253,14 @@ void Unicorn::get_action(const double& tickno) {
     {
       _memory._rec_send_ewma*NORMALIZER,
       _memory._rec_rec_ewma*NORMALIZER,
-      _memory._rtt_ratio,
+      // _memory._rtt_ratio,
       _memory._slow_rec_rec_ewma*NORMALIZER,
-      _memory._rtt_diff*NORMALIZER,
+      // _memory._rtt_diff*NORMALIZER,
       _memory._slow_rec_send_ewma*NORMALIZER,
-      (_memory._last_tick_received - _memory._last_tick_sent)*NORMALIZER,
-      (double) _the_window,
+      (_memory._rtt)*NORMALIZER,
+      (_memory._rtt_ewma)*NORMALIZER,
+      (_memory._slow_rtt_ewma)*NORMALIZER,
+      // (double) _the_window,
       // _memory.field(6), // loss rate
       // (double) tickno - _memory._last_tick_sent, // time since last send
       // (double) tickno - _memory._last_tick_received, // time since last receive
@@ -266,6 +270,9 @@ void Unicorn::get_action(const double& tickno) {
       (double) _memory._loss,
       (double) _memory._loss_ewma,
       (double) _memory._slow_loss_ewma,
+      (double) _memory._window,
+      (double) _memory._window_ewma,
+      (double) _memory._slow_window_ewma,
       // _memory.field(2),
       // _memory.field(4),
       // (double) _the_window,
