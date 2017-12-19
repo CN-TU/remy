@@ -27,9 +27,9 @@ else:
 logging.info(" ".join(map(str,("CHECKPOINT_DIR:",CHECKPOINT_DIR))))
 
 LOG_FILE = ABSOLUTE_PATH+'tmp/a3c_log'
-ACTOR_FACTOR = 1e-2
+ACTOR_FACTOR = 1e-1
 VALUE_FACTOR = 1e0
-GENERAL_FACTOR = 1e-3
+GENERAL_FACTOR = 1e-4
 # INITIAL_ALPHA_LOW = 1e-2*GENERAL_FACTOR   # log_uniform low limit for learning rate
 # INITIAL_ALPHA_HIGH = 1e0*GENERAL_FACTOR   # log_uniform high limit for learning rate
 INITIAL_RATE = GENERAL_FACTOR
@@ -49,12 +49,8 @@ MAX_TIME_STEP = 1e8
 USE_GPU = False # To use GPU, set True
 N_LSTM_LAYERS = int(environ.get('layers')) if environ.get('layers') is not None else 2
 
-# Don't know if this normalization stuff makes sense. Better disable it when possible...
-# SECONDS_NORMALIZER = 1e-2
-SECONDS_NORMALIZER = 1
-
 assert(environ.get('rtt') is not None)
-DELAY = float(environ.get('rtt'))*SECONDS_NORMALIZER
+DELAY = float(environ.get('rtt'))
 BIAS_OFFSET = 1
 PACKETS_BIAS_OFFSET = inverse_softplus(BIAS_OFFSET)
 DELAY_BIAS_OFFSET = inverse_softplus(DELAY)

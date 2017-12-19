@@ -242,8 +242,6 @@ double Unicorn::next_event_time( const double & tickno ) const
   }
 }
 
-const double NORMALIZER = 1;
-
 void Unicorn::get_action(const double& tickno) {
 
   // FIXME: HACK!!!
@@ -251,32 +249,25 @@ void Unicorn::get_action(const double& tickno) {
   const double action = _rainbow.get_action(
     _thread_id,
     {
-      _memory._rec_send_ewma*NORMALIZER,
-      _memory._rec_rec_ewma*NORMALIZER,
-      // _memory._rtt_ratio,
-      _memory._slow_rec_rec_ewma*NORMALIZER,
-      // _memory._rtt_diff*NORMALIZER,
-      _memory._slow_rec_send_ewma*NORMALIZER,
-      (_memory._rtt)*NORMALIZER,
-      (_memory._rtt_ewma)*NORMALIZER,
-      (_memory._slow_rtt_ewma)*NORMALIZER,
-      // (double) _the_window,
-      // _memory.field(6), // loss rate
-      // (double) tickno - _memory._last_tick_sent, // time since last send
-      // (double) tickno - _memory._last_tick_received, // time since last receive
-      // (double) _memory._lost_since_last_time, // losses since last receive
-      _memory._send*NORMALIZER,
-      _memory._rec*NORMALIZER,
-      (double) _memory._loss,
-      (double) _memory._loss_ewma,
-      (double) _memory._slow_loss_ewma,
-      (double) _memory._window,
-      (double) _memory._window_ewma,
-      (double) _memory._slow_window_ewma,
-      // _memory.field(2),
-      // _memory.field(4),
-      // (double) _the_window,
-      // (double) tickno - _last_send_time
+      _memory._send,
+      _memory._rec_send_ewma,
+      _memory._slow_rec_send_ewma,
+
+      _memory._rec,
+      _memory._rec_rec_ewma,
+      _memory._slow_rec_rec_ewma,
+
+      _memory._rtt,
+      _memory._rtt_ewma,
+      _memory._slow_rtt_ewma,
+
+      _memory._loss,
+      _memory._loss_ewma,
+      _memory._slow_loss_ewma,
+
+      _memory._window,
+      _memory._window_ewma,
+      _memory._slow_window_ewma,
     },
     tickno,
     _the_window
