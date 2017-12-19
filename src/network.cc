@@ -3,6 +3,7 @@
 #include "sendergangofgangs.cc"
 #include "link-templates.cc"
 #include "stochastic-loss.hh"
+#include <cmath>
 
 template <class Gang1Type, class Gang2Type>
 Network<Gang1Type, Gang2Type>::Network( const typename Gang1Type::Sender & example_sender1,
@@ -97,6 +98,7 @@ void Network<Gang1Type, Gang2Type>::run_simulation_with_logging( const double & 
 
   double next_log_time = interval;
 
+  // double prev_tickno = _tickno;
   while ( _tickno < duration ) {
     /* find element with soonest event */
     _tickno = min( min( _senders.next_event_time( _tickno ),
@@ -113,9 +115,9 @@ void Network<Gang1Type, Gang2Type>::run_simulation_with_logging( const double & 
       SimulationRunDataPoint & datum = run_data.add_datum( _tickno / 1000.0 );
       datum.add_sender_data( _senders.statistics_for_log() );
       datum.add_network_data( packets_in_flight() );
-      next_log_time += interval;
+      next_log_time = ceil(_tickno/interval)*interval;
     }
-
+    // prev_tickno = _tickno;
   }
 
   puts("Loop in network is over");

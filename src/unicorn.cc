@@ -242,7 +242,7 @@ double Unicorn::next_event_time( const double & tickno ) const
   }
 }
 
-const double NORMALIZER = 1e-2;
+const double NORMALIZER = 1;
 
 void Unicorn::get_action(const double& tickno) {
 

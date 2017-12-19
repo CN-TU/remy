@@ -7,7 +7,6 @@ from constants import STATE_SIZE
 from constants import HIDDEN_SIZE
 from constants import N_LSTM_LAYERS
 from constants import PRECISION
-from constants import LAYER_NORMALIZATION
 from constants import ENTROPY_BETA
 from constants import STD_BIAS_OFFSET
 from constants import ACTOR_FACTOR
@@ -177,39 +176,27 @@ class GameACNetwork(object):
 
 def lstm_state_tuple(use_np=False):
 	if not use_np:
-		return tuple([tf.contrib.rnn.LSTMStateTuple(tf.placeholder(PRECISION, [1, HIDDEN_SIZE]),tf.placeholder(PRECISION, [1, HIDDEN_SIZE]))  for _ in range(N_LSTM_LAYERS)])
+		return tuple([tf.placeholder(PRECISION, [1, HIDDEN_SIZE]) for _ in range(N_LSTM_LAYERS)])
 	else:
-		return tuple([tf.contrib.rnn.LSTMStateTuple(np.zeros([1, HIDDEN_SIZE]),np.zeros([1, HIDDEN_SIZE]))  for _ in range(N_LSTM_LAYERS)])
+		return tuple([np.zeros([1, HIDDEN_SIZE]) for _ in range(N_LSTM_LAYERS)])
 
 # Actor-Critic LSTM Network
 class GameACLSTMNetwork(GameACNetwork):
 
-	layer_normalization_params = [
-		"/layer_norm_basic_lstm_cell/kernel",
-		"/layer_norm_basic_lstm_cell/input/gamma",
-		"/layer_norm_basic_lstm_cell/input/beta",
-		"/layer_norm_basic_lstm_cell/transform/gamma",
-		"/layer_norm_basic_lstm_cell/transform/beta",
-		"/layer_norm_basic_lstm_cell/forget/gamma",
-		"/layer_norm_basic_lstm_cell/forget/beta",
-		"/layer_norm_basic_lstm_cell/output/gamma",
-		"/layer_norm_basic_lstm_cell/output/beta",
-		"/layer_norm_basic_lstm_cell/state/gamma",
-		"/layer_norm_basic_lstm_cell/state/beta"
+	params = [
+		"/gru_cell/gates/kernel",
+		"/gru_cell/gates/bias",
+		"/gru_cell/candidate/kernel",
+		"/gru_cell/candidate/bias",
 	]
-	params = ["/basic_lstm_cell/kernel",
-		"/basic_lstm_cell/bias"]
 
 	@staticmethod
-	def get_weight_names(layer_normalization):
-		return GameACLSTMNetwork.layer_normalization_params if layer_normalization else GameACLSTMNetwork.params
+	def get_weight_names():
+		return GameACLSTMNetwork.params
 
 	@staticmethod
-	def create_cell(n_hidden, layer_normalization):
-		if layer_normalization:
-			return tf.contrib.rnn.LayerNormBasicLSTMCell(n_hidden, dropout_keep_prob=1.0)
-		else:
-			return tf.contrib.rnn.BasicLSTMCell(n_hidden)
+	def create_cell(n_hidden, ):
+		return tf.contrib.rnn.GRUCell(n_hidden)
 
 	def __init__(self,
 							 thread_index, # -1 for global
@@ -225,11 +212,11 @@ class GameACLSTMNetwork(GameACNetwork):
 
 			# lstm
 			with tf.variable_scope("lstm_cell_0") as inner_scope_action:
-				self.lstm_action = tf.contrib.rnn.MultiRNNCell([GameACLSTMNetwork.create_cell(HIDDEN_SIZE, LAYER_NORMALIZATION) for i in range(N_LSTM_LAYERS)], state_is_tuple=True)
+				self.lstm_action = tf.contrib.rnn.MultiRNNCell([GameACLSTMNetwork.create_cell(HIDDEN_SIZE) for i in range(N_LSTM_LAYERS)], state_is_tuple=True)
 			with tf.variable_scope("lstm_cell_1") as inner_scope_value:
-				self.lstm_value = tf.contrib.rnn.MultiRNNCell([GameACLSTMNetwork.create_cell(HIDDEN_SIZE, LAYER_NORMALIZATION) for i in range(N_LSTM_LAYERS)], state_is_tuple=True)
+				self.lstm_value = tf.contrib.rnn.MultiRNNCell([GameACLSTMNetwork.create_cell(HIDDEN_SIZE) for i in range(N_LSTM_LAYERS)], state_is_tuple=True)
 			with tf.variable_scope("lstm_cell_2") as inner_scope_duration:
-				self.lstm_duration = tf.contrib.rnn.MultiRNNCell([GameACLSTMNetwork.create_cell(HIDDEN_SIZE, LAYER_NORMALIZATION) for i in range(N_LSTM_LAYERS)], state_is_tuple=True)
+				self.lstm_duration = tf.contrib.rnn.MultiRNNCell([GameACLSTMNetwork.create_cell(HIDDEN_SIZE) for i in range(N_LSTM_LAYERS)], state_is_tuple=True)
 
 			# weight for policy output layer
 			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=INITIAL_WINDOW_INCREASE_WEIGHT_FACTOR, bias_offset=INITIAL_WINDOW_INCREASE_BIAS_OFFSET, bias_range=(0.0, 0.0))
@@ -304,25 +291,25 @@ class GameACLSTMNetwork(GameACNetwork):
 			# policy (output)
 			self.pi = (
 				tf.reshape(raw_pi_mean, [-1]),
-				tf.nn.softplus(tf.reshape(raw_pi_std, [-1]))
+				tf.reshape(tf.nn.softplus(raw_pi_std), [-1])
 				# tf.constant(0.5, shape=(1,1), dtype=PRECISION)
 				# tf.clip_by_value(raw_pi_mean*0.01, MINIMUM_STD, float("inf"))
 			)
 
 			# value (output)
 			# TODO: should you use clipping to avoid zero values?
-			v_packets_ = tf.matmul(lstm_outputs_value, self.W_hidden_to_value_packets_fc) + self.b_hidden_to_value_packets_fc
-			self.v_packets = tf.nn.softplus(tf.reshape( v_packets_, [-1] ))
+			v_packets_ = tf.nn.softplus(tf.matmul(lstm_outputs_value, self.W_hidden_to_value_packets_fc) + self.b_hidden_to_value_packets_fc)
+			self.v_packets = tf.reshape( v_packets_, [-1] ))
 
-			v_duration_ = tf.matmul(lstm_outputs_duration, self.W_hidden_to_value_duration_fc) + self.b_hidden_to_value_duration_fc
-			self.v_duration = tf.nn.softplus(tf.reshape( v_duration_, [-1] ))
+			v_duration_ = tf.nn.softplus(tf.matmul(lstm_outputs_duration, self.W_hidden_to_value_duration_fc) + self.b_hidden_to_value_duration_fc)
+			self.v_duration = tf.reshape( v_duration_, [-1] ))
 
-			v_sent_ = tf.matmul(lstm_outputs_value, self.W_hidden_to_value_sent_fc) + self.b_hidden_to_value_sent_fc
-			self.v_sent = tf.nn.softplus(tf.reshape( v_sent_, [-1] ))
+			v_sent_ = tf.nn.softplus(tf.matmul(lstm_outputs_value, self.W_hidden_to_value_sent_fc) + self.b_hidden_to_value_sent_fc)
+			self.v_sent = tf.reshape( v_sent_, [-1] ))
 
 			scope.reuse_variables()
 
-			all_weight_names = ["lstm_cell_"+str(network_index)+"/multi_rnn_cell/cell_"+str(index)+item for network_index, index, item in itertools.product((0,1), range(N_LSTM_LAYERS), GameACLSTMNetwork.get_weight_names(LAYER_NORMALIZATION))]
+			all_weight_names = ["lstm_cell_"+str(network_index)+"/multi_rnn_cell/cell_"+str(index)+item for network_index, index, item in itertools.product((0,1), range(N_LSTM_LAYERS), GameACLSTMNetwork.get_weight_names())]
 
 			self.LSTM_variables = [tf.get_variable(weight_name, dtype=PRECISION) for weight_name in all_weight_names]
 

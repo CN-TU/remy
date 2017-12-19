@@ -27,7 +27,7 @@ else:
 logging.info(" ".join(map(str,("CHECKPOINT_DIR:",CHECKPOINT_DIR))))
 
 LOG_FILE = ABSOLUTE_PATH+'tmp/a3c_log'
-ACTOR_FACTOR = 1e0
+ACTOR_FACTOR = 1e-2
 VALUE_FACTOR = 1e0
 GENERAL_FACTOR = 1e-3
 # INITIAL_ALPHA_LOW = 1e-2*GENERAL_FACTOR   # log_uniform low limit for learning rate
@@ -38,10 +38,10 @@ PRECISION = tf.float32
 
 INITIAL_ALPHA_LOG_RATE = 0.4226 # log_uniform interpolate rate for learning rate (around 7 * 10^-4)
 GAMMA = 0.999 # discount factor for rewards
-GAMMA_FACTOR = 10
+GAMMA_FACTOR = 1
 ENTROPY_BETA = 1e-4
 # STD_BIAS_OFFSET = 0.3
-STD_BIAS_OFFSET = inverse_softplus(0.5)
+STD_BIAS_OFFSET = inverse_softplus(0.3)
 # STD_BIAS_OFFSET = inverse_softplus(0.1)
 # STD_BIAS_OFFSET = 0
 MAX_TIME_STEP = 1e8
@@ -76,13 +76,12 @@ SENT_OFFSET = inverse_softplus(BIAS_OFFSET)
 # INTER_PACKET_ARRIVAL_TIME_OFFSET = 0
 
 INITIAL_WINDOW_INCREASE_BIAS_OFFSET = 0
-INITIAL_WINDOW_INCREASE_WEIGHT_FACTOR = 1e-4
+INITIAL_WINDOW_INCREASE_WEIGHT_FACTOR = 1e-3
 # INITIAL_WINDOW_INCREASE_WEIGHT_FACTOR = 1
 
 STATE_SIZE = int(environ.get('state_size')) if environ.get('state_size') is not None else 15
 HIDDEN_SIZE = int(environ.get('hidden_size')) if environ.get('hidden_size') is not None else 32
 # ACTION_SIZE = 1 # action size
-LAYER_NORMALIZATION = False
 
 SIGMOID_ALPHA = 100.0
 
