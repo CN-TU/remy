@@ -9,6 +9,7 @@ from constants import N_LSTM_LAYERS
 from constants import PRECISION
 from constants import ENTROPY_BETA
 from constants import STD_BIAS_OFFSET
+from constants import STD_BIAS_MINIMUM
 from constants import ACTOR_FACTOR
 from constants import VALUE_FACTOR
 from constants import PACKETS_BIAS_OFFSET
@@ -17,6 +18,7 @@ from constants import INTER_PACKET_ARRIVAL_TIME_OFFSET
 from constants import INITIAL_WINDOW_INCREASE_BIAS_OFFSET
 from constants import SENT_OFFSET
 from constants import INITIAL_WINDOW_INCREASE_WEIGHT_FACTOR
+from constants import DURATION_FACTOR
 
 import math
 import numpy as np
@@ -112,7 +114,6 @@ class GameACNetwork(object):
 			self.lstm_state_out_action = self.backup_lstm_state_action
 			self.lstm_state_out_value = self.backup_lstm_state_value
 			self.lstm_state_out_duration = self.backup_lstm_state_duration
-
 		return restore_backup_inner_function
 
 	# def backup_vars(self, name=None):
@@ -220,12 +221,11 @@ class GameACLSTMNetwork(GameACNetwork):
 
 			# weight for policy output layer
 			self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=INITIAL_WINDOW_INCREASE_WEIGHT_FACTOR, bias_offset=INITIAL_WINDOW_INCREASE_BIAS_OFFSET, bias_range=(0.0, 0.0))
-			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=1.0, bias_offset=STD_BIAS_OFFSET)
+			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, 1], bias_offset=STD_BIAS_OFFSET, bias_range=(0.0, 0.0))
 
 			# weight for value output layer
 			self.W_hidden_to_value_packets_fc, self.b_hidden_to_value_packets_fc = self._fc_variable([HIDDEN_SIZE, 1], bias_offset=PACKETS_BIAS_OFFSET, bias_range=(0.0, 0.0))
-			self.W_hidden_to_value_delay_fc, self.b_hidden_to_value_delay_fc = self._fc_variable([HIDDEN_SIZE, 1], bias_offset=DELAY_BIAS_OFFSET, bias_range=(0.0, 0.0))
-			self.W_hidden_to_value_duration_fc, self.b_hidden_to_value_duration_fc = self._fc_variable([HIDDEN_SIZE, 1], bias_offset=INTER_PACKET_ARRIVAL_TIME_OFFSET, bias_range=(0.0, 0.0))
+			self.W_hidden_to_value_duration_fc, self.b_hidden_to_value_duration_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=INTER_PACKET_ARRIVAL_TIME_OFFSET, bias_offset=INTER_PACKET_ARRIVAL_TIME_OFFSET, bias_range=(0.0, 0.0))
 			self.W_hidden_to_value_sent_fc, self.b_hidden_to_value_sent_fc = self._fc_variable([HIDDEN_SIZE, 1], bias_offset=SENT_OFFSET, bias_range=(0.0, 0.0))
 
 			# state (input)
@@ -291,21 +291,22 @@ class GameACLSTMNetwork(GameACNetwork):
 			# policy (output)
 			self.pi = (
 				tf.reshape(raw_pi_mean, [-1]),
-				tf.reshape(tf.nn.softplus(raw_pi_std), [-1])
+				tf.nn.softplus(tf.reshape(raw_pi_std, [-1]))
 				# tf.constant(0.5, shape=(1,1), dtype=PRECISION)
 				# tf.clip_by_value(raw_pi_mean*0.01, MINIMUM_STD, float("inf"))
 			)
 
 			# value (output)
 			# TODO: should you use clipping to avoid zero values?
-			v_packets_ = tf.nn.softplus(tf.matmul(lstm_outputs_value, self.W_hidden_to_value_packets_fc) + self.b_hidden_to_value_packets_fc)
-			self.v_packets = tf.reshape( v_packets_, [-1] ))
+			v_packets_ = tf.matmul(lstm_outputs_value, self.W_hidden_to_value_packets_fc) + self.b_hidden_to_value_packets_fc
+			self.v_packets = (tf.reshape( v_packets_, [-1] ))
 
-			v_duration_ = tf.nn.softplus(tf.matmul(lstm_outputs_duration, self.W_hidden_to_value_duration_fc) + self.b_hidden_to_value_duration_fc)
-			self.v_duration = tf.reshape( v_duration_, [-1] ))
+			v_duration_ = tf.matmul(lstm_outputs_duration, self.W_hidden_to_value_duration_fc) + self.b_hidden_to_value_duration_fc
+			# MAXIMUM_BANDWIDTH = 100.0 # 1 Gbit/s
+			self.v_duration = (tf.reshape(v_duration_, [-1] ))
 
-			v_sent_ = tf.nn.softplus(tf.matmul(lstm_outputs_value, self.W_hidden_to_value_sent_fc) + self.b_hidden_to_value_sent_fc)
-			self.v_sent = tf.reshape( v_sent_, [-1] ))
+			v_sent_ = tf.matmul(lstm_outputs_value, self.W_hidden_to_value_sent_fc) + self.b_hidden_to_value_sent_fc
+			self.v_sent = (tf.reshape( v_sent_, [-1] ))
 
 			scope.reuse_variables()
 
@@ -413,6 +414,5 @@ class GameACLSTMNetwork(GameACNetwork):
 						self.W_hidden_to_action_mean_fc, self.b_hidden_to_action_mean_fc,
 						self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc,
 						self.W_hidden_to_value_packets_fc, self.b_hidden_to_value_packets_fc,
-						self.W_hidden_to_value_delay_fc, self.b_hidden_to_value_delay_fc,
 						self.W_hidden_to_value_duration_fc, self.b_hidden_to_value_duration_fc,
 						self.W_hidden_to_value_sent_fc, self.b_hidden_to_value_sent_fc] + self.LSTM_variables

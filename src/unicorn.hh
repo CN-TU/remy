@@ -15,7 +15,9 @@
 #include "rainbow.hh"
 #include <cmath>
 
-#include "simulationresults.pb.h"
+// #include "simulationresults.hh"
+
+#include "../protobufs/simulationresults.pb.h"
 
 #define MIN_WINDOW_UNICORN 1.0
 #define MAX_WINDOW_UNICORN 1000.0
@@ -85,18 +87,6 @@ public:
   const long unsigned int & packets_sent( void ) const { return _packets_sent; }
 
   SimulationResultBuffers::SenderState state_DNA() const;
-
-  // SimulationResultBuffers::SenderState state_DNA() const;
-  // double window(
-  //   const double previous_window,
-  //   const double window_increment,
-  //   const double window_multiple
-  // ) const {
-  //   double new_window = std::min(std::max(previous_window * window_multiple + window_increment, MIN_WINDOW), MAX_WINDOW);
-  //   printf("%lu: new_window %f\n", _thread_id, new_window);
-  //   return new_window;
-  // }
-  // const double & intersend( void ) const { return _intersend; }
 };
 
 #endif

@@ -41,7 +41,8 @@ GAMMA = 0.999 # discount factor for rewards
 GAMMA_FACTOR = 1
 ENTROPY_BETA = 1e-4
 # STD_BIAS_OFFSET = 0.3
-STD_BIAS_OFFSET = inverse_softplus(0.3)
+STD_BIAS_OFFSET = inverse_softplus(0.5)
+STD_BIAS_MINIMUM = 0.0
 # STD_BIAS_OFFSET = inverse_softplus(0.1)
 # STD_BIAS_OFFSET = 0
 MAX_TIME_STEP = 1e8
@@ -52,15 +53,17 @@ N_LSTM_LAYERS = int(environ.get('layers')) if environ.get('layers') is not None 
 assert(environ.get('rtt') is not None)
 DELAY = float(environ.get('rtt'))
 BIAS_OFFSET = 1
-PACKETS_BIAS_OFFSET = inverse_softplus(BIAS_OFFSET)
-DELAY_BIAS_OFFSET = inverse_softplus(DELAY)
-INTER_PACKET_ARRIVAL_TIME_OFFSET = inverse_softplus(DELAY)
-SENT_OFFSET = inverse_softplus(BIAS_OFFSET)
+# PACKETS_BIAS_OFFSET = inverse_softplus(BIAS_OFFSET)
+# DELAY_BIAS_OFFSET = inverse_softplus(DELAY)
+# INTER_PACKET_ARRIVAL_TIME_OFFSET = inverse_softplus(1.0/DELAY)
+# SENT_OFFSET = inverse_softplus(BIAS_OFFSET)
 
-# PACKETS_BIAS_OFFSET = BIAS_OFFSET
-# DELAY_BIAS_OFFSET = DELAY
-# INTER_PACKET_ARRIVAL_TIME_OFFSET = DELAY
-# SENT_OFFSET = BIAS_OFFSET
+DURATION_FACTOR = 100
+
+PACKETS_BIAS_OFFSET = BIAS_OFFSET
+DELAY_BIAS_OFFSET = DELAY
+INTER_PACKET_ARRIVAL_TIME_OFFSET = 1/DELAY
+SENT_OFFSET = BIAS_OFFSET
 
 # PACKETS_BIAS_OFFSET = inverse_softplus(BIAS_OFFSET/(1-GAMMA))
 # DELAY_BIAS_OFFSET = inverse_softplus(DELAY/(1-GAMMA))
@@ -79,7 +82,7 @@ STATE_SIZE = int(environ.get('state_size')) if environ.get('state_size') is not 
 HIDDEN_SIZE = int(environ.get('hidden_size')) if environ.get('hidden_size') is not None else 32
 # ACTION_SIZE = 1 # action size
 
-SIGMOID_ALPHA = 100.0
+SIGMOID_ALPHA = 10.0
 
 MIN_WINDOW = 1
 MAX_WINDOW = 1000

@@ -157,11 +157,14 @@ with tf.device(device):
   std = tf.placeholder(PRECISION)
   R_duration = tf.placeholder(PRECISION)
   R_packets = tf.placeholder(PRECISION)
-  R_accumulated_delay = tf.placeholder(PRECISION)
   R_sent = tf.placeholder(PRECISION)
+  v_duration = tf.placeholder(PRECISION)
+  v_packets = tf.placeholder(PRECISION)
+  v_sent = tf.placeholder(PRECISION)
   estimated_throughput = tf.placeholder(PRECISION)
-  estimated_delay = tf.placeholder(PRECISION)
   estimated_loss_rate = tf.placeholder(PRECISION)
+  v_estimated_throughput = tf.placeholder(PRECISION)
+  v_estimated_loss_rate = tf.placeholder(PRECISION)
   lstm_state_action_mean = tf.placeholder(PRECISION)
   lstm_state_action_std = tf.placeholder(PRECISION)
   lstm_state_value_mean = tf.placeholder(PRECISION)
@@ -181,11 +184,14 @@ with tf.device(device):
   tf.summary.scalar("std", std)
   tf.summary.scalar("R_duration", R_duration)
   tf.summary.scalar("R_packets", R_packets)
-  # tf.summary.scalar("R_accumulated_delay", R_accumulated_delay)
   tf.summary.scalar("R_sent", R_sent)
+  tf.summary.scalar("v_duration", v_duration)
+  tf.summary.scalar("v_packets", v_packets)
+  tf.summary.scalar("v_sent", v_sent)
   tf.summary.scalar("estimated_throughput", estimated_throughput)
-  # tf.summary.scalar("estimated_delay", estimated_delay)
   tf.summary.scalar("estimated_loss_rate", estimated_loss_rate)
+  tf.summary.scalar("v_estimated_throughput", v_estimated_throughput)
+  tf.summary.scalar("v_estimated_loss_rate", v_estimated_loss_rate)
   tf.summary.scalar("lstm_state_action_mean", lstm_state_action_mean)
   tf.summary.scalar("lstm_state_action_std", lstm_state_action_std)
   tf.summary.scalar("lstm_state_value_mean", lstm_state_value_mean)
@@ -207,11 +213,14 @@ with tf.device(device):
     "std": std,
     "R_duration": R_duration,
     "R_packets": R_packets,
-    # "R_accumulated_delay": R_accumulated_delay,
     "R_sent": R_sent,
     "estimated_throughput": estimated_throughput,
-    # "estimated_delay": estimated_delay,
     "estimated_loss_rate": estimated_loss_rate,
+    "v_duration": v_duration,
+    "v_packets": v_packets,
+    "v_sent": v_sent,
+    "v_estimated_throughput": v_estimated_throughput,
+    "v_estimated_loss_rate": v_estimated_loss_rate,
     "lstm_state_action_mean": lstm_state_action_mean,
     "lstm_state_action_std": lstm_state_action_std,
     "lstm_state_value_mean": lstm_state_value_mean,
