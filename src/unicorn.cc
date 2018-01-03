@@ -96,6 +96,7 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
         const double duration = it->second["interreceive_duration_acc"];
         assert(duration >= 0);
         const double sent_final = it->second["sent"];
+        assert(throughput_final <= sent_final);
         if (_training) {
           _rainbow.put_reward(_thread_id, throughput_final, delay_final, duration, sent_final);
         }
@@ -210,7 +211,7 @@ void Unicorn::reset(const double & tickno)
 
   if (_thread_id == 0) {
     _thread_id = _rainbow.create_thread(_delay_delta);
-    // printf("Assigned thread id %lu to Unicorn\n", _thread_id);
+    printf("Assigned thread id %lu to Unicorn\n", _thread_id);
   }
   // printf("%lu: Starting\n", _thread_id);
   get_action(tickno);
@@ -254,6 +255,10 @@ void Unicorn::get_action(const double& tickno) {
       _memory._rec,
       _memory._rec_rec_ewma,
       _memory._slow_rec_rec_ewma,
+
+      // _memory._rec > 0 ? 1.0/_memory._rec : _memory._rec,
+      // _memory._rec_rec_ewma > 0 ? 1.0/_memory._rec_rec_ewma : _memory._rec_rec_ewma,
+      // _memory._slow_rec_rec_ewma > 0 ? 1.0/_memory._slow_rec_rec_ewma : _memory._slow_rec_rec_ewma,
 
       _memory._rtt,
       _memory._rtt_ewma,

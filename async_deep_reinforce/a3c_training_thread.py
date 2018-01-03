@@ -16,11 +16,12 @@ from game_ac_network import GameACLSTMNetwork
 from constants import GAMMA
 from constants import GAMMA_FACTOR
 # gamma_current, gamma_future = 1./(1+GAMMA), GAMMA/(1.+GAMMA)
-from constants import LOCAL_T_MAX
+# from constants import LOCAL_T_MAX
 from constants import LOG_LEVEL
 from constants import STATE_SIZE
 from constants import SIGMOID_ALPHA
 from constants import MAX_WINDOW
+from constants import MIN_WINDOW
 
 import logging
 
@@ -162,6 +163,8 @@ class A3CTrainingThread(object):
     assert(duration >= 0)
     assert(sent>= 0)
 
+    assert(len(self.rewards) <= 2*MAX_WINDOW)
+
     # assert(sent == reward_throughput)
     self.rewards.append((reward_throughput, reward_delay, duration, sent))
 
@@ -239,11 +242,13 @@ class A3CTrainingThread(object):
 
   @staticmethod
   def get_actual_window(x):
-    return max(min(x, MAX_WINDOW), 1)
+    return max(min(x, MAX_WINDOW), MIN_WINDOW)
 
   def process(self, sess, global_t, summary_writer, summary_op, summary_inputs, time_difference=None):
     # print(self.thread_index, "in process")
     assert(len(self.rewards) > 0)
+
+    # print(len(self.rewards))
 
     if not len(self.start_lstm_states) <= len(self.actions):
       print(len(self.start_lstm_states), len(self.actions))
@@ -332,7 +337,7 @@ class A3CTrainingThread(object):
       # assert(False)
       # The GAMMA_FACTOR increases the influence that following observations have on this one.
 
-      GAMMA = (1 - 2/((GAMMA_FACTOR*A3CTrainingThread.get_actual_window(wi+ai)) + 2))
+      GAMMA = (1 - 2/(GAMMA_FACTOR*A3CTrainingThread.get_actual_window(wi+ai) + 1))
 
       # R_duration = ((1-GAMMA)*ri[2] + GAMMA*R_duration)
       # R_packets = ((1-GAMMA)*ri[0] + GAMMA*R_packets)
@@ -428,13 +433,14 @@ class A3CTrainingThread(object):
     batch_R_sent.reverse()
     windows.reverse()
 
+    # print([A3CTrainingThread.get_actual_window(w+a) for w, a in zip(windows, batch_ai)])
     feed_dict = {
       self.local_network.s: batch_si,
       self.local_network.a: batch_ai,
       self.local_network.td: batch_td,
+      self.local_network.w: [A3CTrainingThread.get_actual_window(w+a) for w, a in zip(windows, batch_ai)],
       self.local_network.r_duration: batch_R_duration,
       self.local_network.r_packets: batch_R_packets,
-      # self.local_network.r_accumulated_delay: batch_R_accumulated_delay,
       self.local_network.r_sent: batch_R_sent,
       self.local_network.initial_lstm_state_action: self.start_lstm_states[0][0],
       self.local_network.initial_lstm_state_value: self.start_lstm_states[0][1],
@@ -475,13 +481,14 @@ class A3CTrainingThread(object):
         # steps_per_sec = self.local_t / elapsed_time
         # logging.info("### {}: Performance: {} STEPS in {:.0f} sec. {:.0f} STEPS/sec. {:.2f}M STEPS/hour".format(self.thread_index, self.local_t, elapsed_time, steps_per_sec, steps_per_sec * 3600 / 1000000.))
 
+        # print([[A3CTrainingThread.get_actual_window(w+a) for w, a in zip(windows, batch_ai)][0]])
         feed_dict = {
           self.local_network.s: [batch_si[0]],
           self.local_network.a: [batch_ai[0]],
           self.local_network.td: [batch_td[0]],
+          self.local_network.w: [[A3CTrainingThread.get_actual_window(w+a) for w, a in zip(windows, batch_ai)][0]],
           self.local_network.r_duration: [batch_R_duration[0]],
           self.local_network.r_packets: [batch_R_packets[0]],
-          # self.local_network.r_accumulated_delay: [batch_R_accumulated_delay[0]],
           self.local_network.r_sent: [batch_R_sent[0]],
           self.local_network.initial_lstm_state_action: self.start_lstm_states[0][0],
           self.local_network.initial_lstm_state_value: self.start_lstm_states[0][1],
@@ -491,6 +498,8 @@ class A3CTrainingThread(object):
         feed_dict.update(var_dict)
 
         entropy, actor_loss, value_loss, total_loss, window_increase, std = self.local_network.run_loss(sess, feed_dict)
+
+        # print(entropy, actor_loss, value_loss, total_loss, window_increase, std)
 
         things = {
           "estimated_throughput": batch_R_packets[0]/(1/batch_R_duration[0]),

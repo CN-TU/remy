@@ -18,7 +18,7 @@ from constants import INTER_PACKET_ARRIVAL_TIME_OFFSET
 from constants import INITIAL_WINDOW_INCREASE_BIAS_OFFSET
 from constants import SENT_OFFSET
 from constants import INITIAL_WINDOW_INCREASE_WEIGHT_FACTOR
-from constants import DURATION_FACTOR
+from constants import PACKET_FACTOR
 
 import math
 import numpy as np
@@ -55,6 +55,8 @@ class GameACNetwork(object):
 			# taken action (input for policy)
 			self.a = tf.placeholder(PRECISION, [None], name="a")
 
+			self.w = tf.placeholder(PRECISION, [None], name="w")
+
 			# temporary difference (R-V) (input for policy)
 			self.td = tf.placeholder(PRECISION, [None], name="td")
 
@@ -73,7 +75,8 @@ class GameACNetwork(object):
 			# policy entropy
 			# self.entropy = ENTROPY_BETA * tf.reduce_sum(self.distribution.distribution.mean() + 0.5 * tf.log(2.0*math.pi*math.e*self.distribution.distribution.variance()), axis=1)
 			self.entropy = ENTROPY_BETA * 0.5 * tf.log(2.0*math.pi*math.e*self.pi[1]*self.pi[1])
-			self.actor_loss = ACTOR_FACTOR * self.distribution.log_prob(self.a) * (self.td)
+			# self.actor_loss = ACTOR_FACTOR * tf.multiply((1.0/self.w), self.distribution.log_prob(self.a) * (self.td))
+			self.actor_loss = ACTOR_FACTOR * (self.distribution.log_prob(self.a) * (self.td))
 			# self.actor_loss = tf.reduce_sum(tf.log(self.distribution.cdf(self.a) - self.distribution.cdf(tf.clip_by_value(self.a - 1.0, tiny, float("inf")))), axis=1) * (self.td_throughput + self.td_delay)
 
 			self.policy_loss = - tf.reduce_sum(self.actor_loss + self.entropy)
@@ -84,8 +87,8 @@ class GameACNetwork(object):
 			self.r_sent = tf.placeholder(PRECISION, [None], name="r_sent")
 
 			# value loss (output)
-			order = 2
-			self.value_loss = VALUE_FACTOR * (tf.norm(self.r_packets - self.v_packets, ord=order) + tf.norm(self.r_sent - self.v_sent, ord=order)) + tf.norm(self.r_duration - self.v_duration, ord=order)
+			# self.value_loss = VALUE_FACTOR * tf.reduce_sum(tf.multiply((1.0/self.w), (self.r_packets - self.v_packets)**2 + (self.r_sent - self.v_sent)**2 + (self.r_duration - self.v_duration)**2))
+			self.value_loss = VALUE_FACTOR * tf.reduce_sum(tf.norm(self.r_packets - self.v_packets) + tf.norm(self.r_sent - self.v_sent) + tf.norm(self.r_duration - self.v_duration))
 
 			# gradient of policy and value are summed up
 			self.total_loss = self.policy_loss + self.value_loss
@@ -224,9 +227,9 @@ class GameACLSTMNetwork(GameACNetwork):
 			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, 1], bias_offset=STD_BIAS_OFFSET, bias_range=(0.0, 0.0))
 
 			# weight for value output layer
-			self.W_hidden_to_value_packets_fc, self.b_hidden_to_value_packets_fc = self._fc_variable([HIDDEN_SIZE, 1], bias_offset=PACKETS_BIAS_OFFSET, bias_range=(0.0, 0.0))
-			self.W_hidden_to_value_duration_fc, self.b_hidden_to_value_duration_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=INTER_PACKET_ARRIVAL_TIME_OFFSET, bias_offset=INTER_PACKET_ARRIVAL_TIME_OFFSET, bias_range=(0.0, 0.0))
-			self.W_hidden_to_value_sent_fc, self.b_hidden_to_value_sent_fc = self._fc_variable([HIDDEN_SIZE, 1], bias_offset=SENT_OFFSET, bias_range=(0.0, 0.0))
+			self.W_hidden_to_value_packets_fc, self.b_hidden_to_value_packets_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=PACKET_FACTOR, bias_range=(0.0, 0.0))
+			self.W_hidden_to_value_duration_fc, self.b_hidden_to_value_duration_fc = self._fc_variable([HIDDEN_SIZE, 1], bias_range=(0.0, 0.0))
+			self.W_hidden_to_value_sent_fc, self.b_hidden_to_value_sent_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=PACKET_FACTOR, bias_range=(0.0, 0.0))
 
 			# state (input)
 			self.s = tf.placeholder(PRECISION, [None, STATE_SIZE])
@@ -297,20 +300,18 @@ class GameACLSTMNetwork(GameACNetwork):
 			)
 
 			# value (output)
-			# TODO: should you use clipping to avoid zero values?
-			v_packets_ = tf.matmul(lstm_outputs_value, self.W_hidden_to_value_packets_fc) + self.b_hidden_to_value_packets_fc
+			v_packets_ = tf.nn.softplus(tf.matmul(lstm_outputs_value, self.W_hidden_to_value_packets_fc) + self.b_hidden_to_value_packets_fc)
 			self.v_packets = (tf.reshape( v_packets_, [-1] ))
 
-			v_duration_ = tf.matmul(lstm_outputs_duration, self.W_hidden_to_value_duration_fc) + self.b_hidden_to_value_duration_fc
-			# MAXIMUM_BANDWIDTH = 100.0 # 1 Gbit/s
+			v_duration_ = tf.nn.softplus(tf.matmul(lstm_outputs_duration, self.W_hidden_to_value_duration_fc) + self.b_hidden_to_value_duration_fc)
 			self.v_duration = (tf.reshape(v_duration_, [-1] ))
 
-			v_sent_ = tf.matmul(lstm_outputs_value, self.W_hidden_to_value_sent_fc) + self.b_hidden_to_value_sent_fc
+			v_sent_ = tf.nn.softplus(tf.matmul(lstm_outputs_value, self.W_hidden_to_value_sent_fc) + self.b_hidden_to_value_sent_fc)
 			self.v_sent = (tf.reshape( v_sent_, [-1] ))
 
 			scope.reuse_variables()
 
-			all_weight_names = ["lstm_cell_"+str(network_index)+"/multi_rnn_cell/cell_"+str(index)+item for network_index, index, item in itertools.product((0,1), range(N_LSTM_LAYERS), GameACLSTMNetwork.get_weight_names())]
+			all_weight_names = ["lstm_cell_"+str(network_index)+"/multi_rnn_cell/cell_"+str(index)+item for network_index, index, item in itertools.product((0,1,2), range(N_LSTM_LAYERS), GameACLSTMNetwork.get_weight_names())]
 
 			self.LSTM_variables = [tf.get_variable(weight_name, dtype=PRECISION) for weight_name in all_weight_names]
 

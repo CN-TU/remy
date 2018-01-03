@@ -19,8 +19,8 @@
 
 #include "../protobufs/simulationresults.pb.h"
 
-#define MIN_WINDOW_UNICORN 1.0
-#define MAX_WINDOW_UNICORN 1000.0
+// #define MIN_WINDOW_UNICORN 1.0
+// #define MAX_WINDOW_UNICORN 500.0
 
 #define TIMEOUT_THRESHOLD 1000
 
