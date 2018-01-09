@@ -24,6 +24,9 @@ if environ.get('checkpoints') is not None:
 	CHECKPOINT_DIR = ABSOLUTE_PATH+environ.get('checkpoints')
 else:
 	CHECKPOINT_DIR = ABSOLUTE_PATH+'checkpoints'
+if not os.path.exists(CHECKPOINT_DIR):
+	os.makedirs(CHECKPOINT_DIR)
+
 logging.info(" ".join(map(str,("CHECKPOINT_DIR:",CHECKPOINT_DIR))))
 
 LOG_FILE = ABSOLUTE_PATH+'tmp/a3c_log'
