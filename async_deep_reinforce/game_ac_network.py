@@ -13,12 +13,13 @@ from constants import STD_BIAS_MINIMUM
 from constants import ACTOR_FACTOR
 from constants import VALUE_FACTOR
 from constants import PACKETS_BIAS_OFFSET
-from constants import DELAY_BIAS_OFFSET
+# from constants import DELAY_BIAS_OFFSET
 from constants import INTER_PACKET_ARRIVAL_TIME_OFFSET
 from constants import INITIAL_WINDOW_INCREASE_BIAS_OFFSET
 from constants import SENT_OFFSET
 from constants import INITIAL_WINDOW_INCREASE_WEIGHT_FACTOR
 from constants import PACKET_FACTOR
+from constants import DURATION_FACTOR
 
 import math
 import numpy as np
@@ -77,7 +78,6 @@ class GameACNetwork(object):
 			self.entropy = ENTROPY_BETA * 0.5 * tf.log(2.0*math.pi*math.e*self.pi[1]*self.pi[1])
 			# self.actor_loss = - ACTOR_FACTOR * tf.reduce_sum(tf.multiply((1.0/self.w), self.distribution.log_prob(self.a) * self.td + self.entropy))
 			self.actor_loss = - ACTOR_FACTOR * tf.reduce_sum(self.distribution.log_prob(self.a) * self.td + self.entropy)
-			# self.actor_loss = tf.reduce_sum(tf.log(self.distribution.cdf(self.a) - self.distribution.cdf(tf.clip_by_value(self.a - 1.0, tiny, float("inf")))), axis=1) * (self.td_throughput + self.td_delay)
 
 			# R (input for value)
 			self.r_packets = tf.placeholder(PRECISION, [None], name="r_packets")
@@ -225,9 +225,9 @@ class GameACLSTMNetwork(GameACNetwork):
 			self.W_hidden_to_action_std_fc, self.b_hidden_to_action_std_fc = self._fc_variable([HIDDEN_SIZE, 1], bias_offset=STD_BIAS_OFFSET, bias_range=(0.0, 0.0))
 
 			# weight for value output layer
-			self.W_hidden_to_value_packets_fc, self.b_hidden_to_value_packets_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=PACKET_FACTOR, bias_range=(0.0, 0.0))
-			self.W_hidden_to_value_duration_fc, self.b_hidden_to_value_duration_fc = self._fc_variable([HIDDEN_SIZE, 1], bias_range=(0.0, 0.0))
-			self.W_hidden_to_value_sent_fc, self.b_hidden_to_value_sent_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=PACKET_FACTOR, bias_range=(0.0, 0.0))
+			self.W_hidden_to_value_packets_fc, self.b_hidden_to_value_packets_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=PACKET_FACTOR, bias_offset=PACKETS_BIAS_OFFSET, bias_range=(0.0, 0.0))
+			self.W_hidden_to_value_duration_fc, self.b_hidden_to_value_duration_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=DURATION_FACTOR, bias_offset=INTER_PACKET_ARRIVAL_TIME_OFFSET, bias_range=(0.0, 0.0))
+			self.W_hidden_to_value_sent_fc, self.b_hidden_to_value_sent_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=PACKET_FACTOR, bias_offset=SENT_OFFSET, bias_range=(0.0, 0.0))
 
 			# state (input)
 			self.s = tf.placeholder(PRECISION, [None, STATE_SIZE])

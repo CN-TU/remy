@@ -27,7 +27,7 @@ AC_SUBST([PYTHON_LIBS])
 AC_SUBST([PYTHON_CFLAGS])
 
 # Add compiler flags
-CXX11_FLAGS="-std=c++11 -pthread -Og"
+CXX11_FLAGS="-std=c++11 -pthread -O3"
 AC_SUBST([CXX11_FLAGS])
 
 PICKY_CXXFLAGS="-Wall -Wpedantic -Wextra -Weffc++ -Werror"

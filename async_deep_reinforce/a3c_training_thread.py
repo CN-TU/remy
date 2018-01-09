@@ -27,7 +27,7 @@ import logging
 
 logging.basicConfig(level=LOG_LEVEL)
 
-LOG_INTERVAL = 1000
+LOG_INTERVAL = 100
 # LOG_INTERVAL = 5
 
 # def inverse_sigmoid(x):
