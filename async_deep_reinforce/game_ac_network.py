@@ -298,13 +298,13 @@ class GameACLSTMNetwork(GameACNetwork):
 			)
 
 			# value (output)
-			v_packets_ = tf.nn.softplus(tf.matmul(lstm_outputs_value, self.W_hidden_to_value_packets_fc) + self.b_hidden_to_value_packets_fc)
+			v_packets_ = tf.matmul(lstm_outputs_value, self.W_hidden_to_value_packets_fc) + self.b_hidden_to_value_packets_fc
 			self.v_packets = (tf.reshape( v_packets_, [-1] ))
 
-			v_duration_ = tf.nn.softplus(tf.matmul(lstm_outputs_duration, self.W_hidden_to_value_duration_fc) + self.b_hidden_to_value_duration_fc)
+			v_duration_ = tf.matmul(lstm_outputs_duration, self.W_hidden_to_value_duration_fc) + self.b_hidden_to_value_duration_fc
 			self.v_duration = (tf.reshape(v_duration_, [-1] ))
 
-			v_sent_ = tf.nn.softplus(tf.matmul(lstm_outputs_value, self.W_hidden_to_value_sent_fc) + self.b_hidden_to_value_sent_fc)
+			v_sent_ = tf.matmul(lstm_outputs_value, self.W_hidden_to_value_sent_fc) + self.b_hidden_to_value_sent_fc
 			self.v_sent = (tf.reshape( v_sent_, [-1] ))
 
 			scope.reuse_variables()

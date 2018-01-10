@@ -248,11 +248,11 @@ void Unicorn::get_action(const double& tickno) {
   const double action = _rainbow.get_action(
     _thread_id,
     {
-      // // _memory._send,
+      // // // _memory._send,
       // _memory._rec_send_ewma,
       // _memory._slow_rec_send_ewma,
 
-      // // _memory._rec,
+      // // // _memory._rec,
       // _memory._rec_rec_ewma,
       // _memory._slow_rec_rec_ewma,
 
