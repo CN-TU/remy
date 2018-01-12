@@ -248,11 +248,11 @@ void Unicorn::get_action(const double& tickno) {
   const double action = _rainbow.get_action(
     _thread_id,
     {
-      // // // _memory._send,
+      _memory._send,
       _memory._rec_send_ewma,
       _memory._slow_rec_send_ewma,
 
-      // // // _memory._rec,
+      _memory._rec,
       _memory._rec_rec_ewma,
       _memory._slow_rec_rec_ewma,
 
@@ -260,15 +260,15 @@ void Unicorn::get_action(const double& tickno) {
       // _memory._rec_rec_ewma > 0 ? 1.0/_memory._rec_rec_ewma : _memory._rec_rec_ewma,
       // _memory._slow_rec_rec_ewma > 0 ? 1.0/_memory._slow_rec_rec_ewma : _memory._slow_rec_rec_ewma,
 
-      // _memory._rtt,
+      _memory._rtt,
       _memory._rtt_ewma,
       _memory._slow_rtt_ewma,
 
-      // _memory._loss,
+      _memory._loss,
       _memory._loss_ewma,
       _memory._slow_loss_ewma,
 
-      // _memory._window,
+      _memory._window,
       _memory._window_ewma,
       _memory._slow_window_ewma,
     },
