@@ -226,7 +226,7 @@ class GameACLSTMNetwork(GameACNetwork):
 
 			# weight for value output layer
 			self.W_hidden_to_value_packets_fc, self.b_hidden_to_value_packets_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=PACKET_FACTOR, bias_offset=PACKETS_BIAS_OFFSET, bias_range=(0.0, 0.0))
-			self.W_hidden_to_value_duration_fc, self.b_hidden_to_value_duration_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=DURATION_FACTOR*INTER_PACKET_ARRIVAL_TIME_OFFSET, bias_offset=INTER_PACKET_ARRIVAL_TIME_OFFSET, bias_range=(0.0, 0.0))
+			self.W_hidden_to_value_duration_fc, self.b_hidden_to_value_duration_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=DURATION_FACTOR, bias_offset=INTER_PACKET_ARRIVAL_TIME_OFFSET, bias_range=(0.0, 0.0))
 			self.W_hidden_to_value_sent_fc, self.b_hidden_to_value_sent_fc = self._fc_variable([HIDDEN_SIZE, 1], factor=PACKET_FACTOR, bias_offset=SENT_OFFSET, bias_range=(0.0, 0.0))
 
 			# state (input)

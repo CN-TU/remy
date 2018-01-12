@@ -49,7 +49,7 @@ bool Unicorn::packets_lost( const std::vector< remy::Packet > & packets ) {
         _packets_lost += 1;
         _memory.lost(1);
         _memory.window(_the_window);
-        _the_window = std::max(_the_window - 1, MIN_WINDOW_UNICORN);
+        // _the_window = std::max(_the_window - 1, MIN_WINDOW_UNICORN);
         get_action(packet.tick_received);
         _largest_ack += 1;
         return true;
@@ -249,16 +249,16 @@ void Unicorn::get_action(const double& tickno) {
     _thread_id,
     {
       // // // _memory._send,
-      // _memory._rec_send_ewma,
-      // _memory._slow_rec_send_ewma,
+      _memory._rec_send_ewma,
+      _memory._slow_rec_send_ewma,
 
       // // // _memory._rec,
-      // _memory._rec_rec_ewma,
-      // _memory._slow_rec_rec_ewma,
+      _memory._rec_rec_ewma,
+      _memory._slow_rec_rec_ewma,
 
       // _memory._rec > 0 ? 1.0/_memory._rec : _memory._rec,
-      _memory._rec_rec_ewma > 0 ? 1.0/_memory._rec_rec_ewma : _memory._rec_rec_ewma,
-      _memory._slow_rec_rec_ewma > 0 ? 1.0/_memory._slow_rec_rec_ewma : _memory._slow_rec_rec_ewma,
+      // _memory._rec_rec_ewma > 0 ? 1.0/_memory._rec_rec_ewma : _memory._rec_rec_ewma,
+      // _memory._slow_rec_rec_ewma > 0 ? 1.0/_memory._slow_rec_rec_ewma : _memory._slow_rec_rec_ewma,
 
       // _memory._rtt,
       _memory._rtt_ewma,

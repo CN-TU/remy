@@ -29,12 +29,12 @@ void UnicornBreeder::run(const size_t iterations)
 
     string csv_stuff = "";
 
-    csv_stuff += "time,sender_number,packets_received,sending_duration,total_delay\n";
+    csv_stuff += "time,sender_number,packets_received,packets_sent,sending_duration,total_delay\n";
     for (vector<SimulationRunData>::const_iterator it = logging.data().begin(); it != logging.data().end(); ++it) {
       for (vector<SimulationRunDataPoint>::const_iterator inner_it = (*it).data().begin(); inner_it != (*it).data().end(); ++inner_it) {
         size_t sender_index = 0;
         for (vector<SenderDataPoint>::const_iterator sender_it = (*inner_it).sender_data().begin(); sender_it != (*inner_it).sender_data().end(); ++sender_it) {
-          csv_stuff += to_string((*inner_it).seconds()) + "," + to_string(sender_index) + "," + to_string((*sender_it).utility_data.packets_received()) + "," + to_string((*sender_it).utility_data.sending_duration()) + "," + to_string((*sender_it).utility_data.total_delay()) + "\n";
+          csv_stuff += to_string((*inner_it).seconds()) + "," + to_string(sender_index) + "," + to_string((*sender_it).utility_data.packets_received()) + "," + to_string((*sender_it).sender_state.packets_sent()) + "," + to_string((*sender_it).utility_data.sending_duration()) + "," + to_string((*sender_it).utility_data.total_delay()) + "\n";
           sender_index += 1;
         }
       }

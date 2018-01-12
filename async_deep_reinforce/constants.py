@@ -70,7 +70,7 @@ SENT_OFFSET = inverse_softplus(BIAS_OFFSET)
 
 PACKETS_BIAS_OFFSET = BIAS_OFFSET
 # DELAY_BIAS_OFFSET = inverse_softplus(DELAY)
-INTER_PACKET_ARRIVAL_TIME_OFFSET = 1/DELAY
+INTER_PACKET_ARRIVAL_TIME_OFFSET = 0
 SENT_OFFSET = BIAS_OFFSET
 
 # PACKETS_BIAS_OFFSET = inverse_softplus(BIAS_OFFSET/(1-GAMMA))
@@ -88,7 +88,7 @@ DURATION_FACTOR = 1e-2
 # PACKET_FACTOR = 1
 # DURATION_FACTOR = 1
 
-STATE_SIZE = int(environ.get('state_size')) if environ.get('state_size') is not None else 8
+STATE_SIZE = int(environ.get('state_size')) if environ.get('state_size') is not None else 10
 HIDDEN_SIZE = int(environ.get('hidden_size')) if environ.get('hidden_size') is not None else 16
 # ACTION_SIZE = 1 # action size
 
