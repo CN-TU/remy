@@ -20,9 +20,8 @@ RMSP_EPSILON = 0.1 # epsilon parameter for RMSProp
 # FIXME: Super ugly to hardcode the path!!!
 # ABSOLUTE_PATH = os.path.join(os.path.expanduser('~'),"repos/remy/")
 ABSOLUTE_PATH = os.path.join(os.getcwd())
-from os import environ
-if environ.get('checkpoints') is not None:
-	CHECKPOINT_DIR = os.path.join(ABSOLUTE_PATH,environ.get('checkpoints'))
+if os.environ.get('checkpoints') is not None:
+	CHECKPOINT_DIR = os.path.join(ABSOLUTE_PATH,os.environ.get('checkpoints'))
 else:
 	CHECKPOINT_DIR = os.path.join(ABSOLUTE_PATH,'checkpoints')
 if not os.path.exists(CHECKPOINT_DIR):
@@ -30,7 +29,7 @@ if not os.path.exists(CHECKPOINT_DIR):
 
 logging.info(" ".join(map(str,("CHECKPOINT_DIR:",CHECKPOINT_DIR))))
 
-LOG_FILE = os.path.join(ABSOLUTE_PATH,'tmp/a3c_log')
+LOG_FILE = os.path.join(ABSOLUTE_PATH,'a3c_log')
 logging.info(" ".join(map(str,("LOG_DIR:",LOG_FILE))))
 ACTOR_FACTOR = 1e0
 VALUE_FACTOR = 1e0
@@ -42,8 +41,6 @@ INITIAL_RATE = GENERAL_FACTOR
 PRECISION = tf.float32
 
 INITIAL_ALPHA_LOG_RATE = 0.4226 # log_uniform interpolate rate for learning rate (around 7 * 10^-4)
-GAMMA = 0.99 # discount factor for rewards
-GAMMA_FACTOR = 1
 ENTROPY_BETA = 1e-4
 # STD_BIAS_OFFSET = 0.3
 STD_BIAS_OFFSET = inverse_softplus(0.5)
@@ -53,10 +50,10 @@ STD_BIAS_MINIMUM = 0.0
 MAX_TIME_STEP = 1e8
 # GRAD_NORM_CLIP = 40.0 # gradient norm clipping
 USE_GPU = False # To use GPU, set True
-N_LSTM_LAYERS = int(environ.get('layers')) if environ.get('layers') is not None else 2
+N_LSTM_LAYERS = int(os.environ.get('layers')) if os.environ.get('layers') is not None else 2
 
-assert(environ.get('rtt') is not None)
-DELAY = float(environ.get('rtt'))
+assert(os.environ.get('rtt') is not None)
+DELAY = float(os.environ.get('rtt'))
 BIAS_OFFSET = 1
 # PACKETS_BIAS_OFFSET = inverse_softplus(BIAS_OFFSET)
 # DELAY_BIAS_OFFSET = inverse_softplus(DELAY)
@@ -70,7 +67,7 @@ SENT_OFFSET = inverse_softplus(BIAS_OFFSET)
 
 PACKETS_BIAS_OFFSET = BIAS_OFFSET
 # DELAY_BIAS_OFFSET = inverse_softplus(DELAY)
-INTER_PACKET_ARRIVAL_TIME_OFFSET = 0
+INTER_PACKET_ARRIVAL_TIME_OFFSET = 1/DELAY
 SENT_OFFSET = BIAS_OFFSET
 
 # PACKETS_BIAS_OFFSET = inverse_softplus(BIAS_OFFSET/(1-GAMMA))
@@ -88,8 +85,8 @@ DURATION_FACTOR = 1e-2
 # PACKET_FACTOR = 1
 # DURATION_FACTOR = 1
 
-STATE_SIZE = int(environ.get('state_size')) if environ.get('state_size') is not None else 10
-HIDDEN_SIZE = int(environ.get('hidden_size')) if environ.get('hidden_size') is not None else 16
+STATE_SIZE = int(os.environ.get('state_size')) if os.environ.get('state_size') is not None else 15
+HIDDEN_SIZE = int(os.environ.get('hidden_size')) if os.environ.get('hidden_size') is not None else 32
 # ACTION_SIZE = 1 # action size
 
 SIGMOID_ALPHA = 10.0
