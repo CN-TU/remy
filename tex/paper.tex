@@ -8,6 +8,8 @@
 \usepackage[inline]{enumitem}
 
 %\usepackage{todonotes}
+\usepackage{graphicx}
+\graphicspath{figures}
 \usepackage{svg}
 
 \def\xcolorversion{2.00}
@@ -103,9 +105,14 @@
 \renewcommand{\shortauthors}{Bachl, Zseby, Fabini}
 
 \begin{abstract}
-This paper provides a sample of a \LaTeX\ document which conforms,
-somewhat loosely, to the formatting guidelines for
-ACM SIG Proceedings.\footnote{This is an abstract footnote}
+This paper proposes a new method of congestion control in packet-switched networks that uses on-line reinforcement learning to determine the optimum congestion window size at a given point in time with respect to a chosen utility function. 
+
+To this end we use an Artificial Neural Network based approach that can be initialized with a previously trained neural network or with random weights (without any preknowledge). When being used without any preknowledge the approach converges to a stable solution within the order of minutes and then outperforms existing congestion control algorithms with respect to throughput. 
+
+As in case of congestion control feedback used for reinforcement learning is naturally always delayed (due to the round trip time), we propose a novel approach to reinforcement learning that can handle delayed rewards as well as rewards that are returned in parts one after another. 
+
+To our knowledge (\todo{Make sure this is really true!})
+
 \end{abstract}
 
 %
