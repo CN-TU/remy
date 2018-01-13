@@ -341,5 +341,6 @@ SimulationResultBuffers::SenderState Unicorn::state_DNA() const
   ret.mutable_memory()->CopyFrom( _memory.DNA() );
   ret.set_window_size( _the_window );
   ret.set_intersend_time( nan("1") );
+  ret.set_packets_sent(_packets_sent);
   return ret;
 }
