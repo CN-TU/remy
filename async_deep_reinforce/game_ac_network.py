@@ -70,7 +70,6 @@ class GameACNetwork(object):
 			# 		bijector=ds.bijectors.Exp(),
 			# 		name="LogNormalTransformedDistribution")
 
-			# self.chosen_action = tf.ceil(self.distribution.sample())
 			self.chosen_action = self.distribution.sample()
 
 			# policy entropy
