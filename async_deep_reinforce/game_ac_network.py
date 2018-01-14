@@ -75,8 +75,8 @@ class GameACNetwork(object):
 			# policy entropy
 			# self.entropy = ENTROPY_BETA * tf.reduce_sum(self.distribution.distribution.mean() + 0.5 * tf.log(2.0*math.pi*math.e*self.distribution.distribution.variance()), axis=1)
 			self.entropy = ENTROPY_BETA * 0.5 * tf.log(2.0*math.pi*math.e*self.pi[1]*self.pi[1])
-			self.actor_loss = - ACTOR_FACTOR * tf.reduce_sum(tf.multiply((1.0/self.w), self.distribution.log_prob(self.a) * self.td + self.entropy))
-			# self.actor_loss = - ACTOR_FACTOR * tf.reduce_sum(self.distribution.log_prob(self.a) * self.td + self.entropy)
+			# self.actor_loss = - ACTOR_FACTOR * tf.reduce_sum(tf.multiply((1.0/self.w), self.distribution.log_prob(self.a) * self.td + self.entropy))
+			self.actor_loss = - ACTOR_FACTOR * tf.reduce_sum(self.distribution.log_prob(self.a) * self.td + self.entropy)
 
 			# R (input for value)
 			self.r_packets = tf.placeholder(PRECISION, [None], name="r_packets")
@@ -84,8 +84,8 @@ class GameACNetwork(object):
 			self.r_sent = tf.placeholder(PRECISION, [None], name="r_sent")
 
 			# value loss (output)
-			self.value_loss = VALUE_FACTOR * tf.reduce_sum(tf.multiply((1.0/self.w), (self.r_packets - self.v_packets)**2 + (self.r_sent - self.v_sent)**2 + (self.r_duration - self.v_duration)**2))
-			# self.value_loss = VALUE_FACTOR * tf.reduce_sum(tf.norm(self.r_packets - self.v_packets) + tf.norm(self.r_sent - self.v_sent) + tf.norm(self.r_duration - self.v_duration))
+			# self.value_loss = VALUE_FACTOR * tf.reduce_sum(tf.multiply((1.0/self.w), (self.r_packets - self.v_packets)**2 + (self.r_sent - self.v_sent)**2 + (self.r_duration - self.v_duration)**2))
+			self.value_loss = VALUE_FACTOR * tf.reduce_sum(tf.norm(self.r_packets - self.v_packets) + tf.norm(self.r_sent - self.v_sent) + tf.norm(self.r_duration - self.v_duration))
 
 			# gradient of policy and value are summed up
 			self.total_loss = self.actor_loss + self.value_loss
