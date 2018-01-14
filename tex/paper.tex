@@ -105,13 +105,11 @@
 \renewcommand{\shortauthors}{Bachl, Zseby, Fabini}
 
 \begin{abstract}
-This paper proposes a new method of congestion control in packet-switched networks that uses on-line reinforcement learning to determine the optimum congestion window size at a given point in time with respect to a chosen utility function. 
+This paper proposes a novel method of Congestion Control that uses on-line Reinforcement Learning (RL) to maintain the optimum congestion window with respect to a given utility function. 
 
-To this end we use an Artificial Neural Network based approach that can be initialized with a previously trained neural network or with random weights (without any preknowledge). When being used without any preknowledge the approach converges to a stable solution within the order of minutes and then outperforms existing congestion control algorithms with respect to throughput. 
+To this end we use an Artificial Neural Network (ANN) based approach that can be initialized with a previously trained neural network or with random weights (without any prior knowledge). As in congestion control the rewards used in the learning process naturally come delayed and bit by bit, we propose a novel formulation of reinforcement learning that allows us to deal with delayed and partial rewards.
 
-As in case of congestion control feedback used for reinforcement learning is naturally always delayed (due to the round trip time), we propose a novel approach to reinforcement learning that can handle delayed rewards as well as rewards that are returned in parts one after another. 
-
-To our knowledge (\todo{Make sure this is really true!})
+We show that our method converges to a stable, close-to-optimum solution within the order of minutes and then commonly outperforms existing congestion control algorithms in typical networks. Thus, for the first time, we demonstrate that ANN based Reinforcement Learning without any preknowledge can feasibly be done on-line and can compete with hand-crafted solutions given long enough episodes. 
 
 \end{abstract}
 
@@ -159,16 +157,36 @@ To our knowledge (\todo{Make sure this is really true!})
 
 \section{Introduction}
 
-In recent years, there have been several approaches to make congestion control learnable, most notably \textit{Remy} \citep{winstein_tcp_2013}, which learns an optimum congestion control w.r.t.~a specific utility function for specified network scenarios in an off-line fashion. Furthermore there is \textit{Performance-oriented Congestion Control} (PCC) \citep{dong_pcc:_2015}, which repeatedly tries different rates during periods of approximately one round-trip time (RTT) and chooses the better rate w.r.t.~a specific utility function. 
+Recent advances in Artificial Neural Network (ANN) based Reinforcement Learning for the purpose of playing video games raise the question if it is also possible to formulate sending Internet data in a fashion similar to a video game. The rules of the ``Game of Congestion Control'' can be summarized approximately as follows: Each player wants to send \begin{enumerate*}
+\item as many packets as possible
+\item with as little delay as possible
+\item while losing as few packets as possible
+\end{enumerate*}. As, for instance, for some applications overall throughput is more important than little packet loss, each application can define preferences using a custom utility function. Clearly, it is also desirable from an overall point of view that all participating players play the game in a way that does not give them an unfair advantage over others. When several players (from now on called senders) share an Internet link under the same conditions, they should receive an equal share of the reward. 
 
-We make use of a new Reinforcement Learning (RL) based approach that can learn a congestion control algorithm on-line and is able to perform actions on a per acknowledgement basis. 
+When performing Congestion Control (CG), each sender uses a set of observed environment conditions to determine what action he should take to maximize his reward in the future. The environment conditions can be any metrics that the sender can obtain from the network, for example the mean round-trip time of the last received packets, the packet loss rate etc. An action is a change to the sending rate: For example, if a sender perceives an increase in the loss rate it might be advisable to lower the sending rate. 
+
+From this formulation of Congestion Control, one can observe a couple of unique features of the problem that seem to prohibit the use of Reinforcement Learning: \begin{itemize}
+\item When playing a video game, if one pushes a button, one can see the consequences of an action immediately. However, in Congestion Control, the rewards are always \textbf{delayed} by one round-trip time.
+\item Due to the delay, by the time an action receives its reward, probably other actions have already been carried out in the mean time. Thus, contrary to classical RL, \textbf{action and rewards are out of sync}. 
+\item \textbf{Actions and rewards are not atomic}: If an action causes three packets to be sent, we consider these three packets being sent three \textit{partial actions}. In case these packets are transmitted correctly, the receiver will send three acknowledgements. Each of these acknowledgements is a \textit{partial reward}, that already unveils new information on the current state of the network and enables the sender to take an action based on this new information. However, only if all partial rewards have been received, the sender can assemble the overall reward of the corresponding action and can perform an update of the underlying Reinforcement Learning logic. 
+\end{itemize}
+
+To address these problems, we develop a new formulation of RL called \textit{Partial Action Learning} (PAL). PAL is a superset of Reinforcement Learning: If one uses PAL for a learning problem without delay, asynchronicity and partial actions/partial rewards, one gets classical RL.
+
+While using PAL to train an optimum congestion control for a specific range of network scenarios in an off-line fashion is possible, it is something that has already been done previously in an approach called \textit{Remy} \citep{winstein_tcp_2013}. The only seizable advantage that PAL could provide here is increased speed. Thus we want to show that it is  not only possible to learn congestion control by using machine learning but that it is even possible on-line and without any preknowledge about the network environment.
+
+\todo{Figures here!}
+
+Using a utility function that encourages high throughput and discourages packet loss (adapted from \citep{dong_pcc:_2015}) we see that our machine learning based approach can learn congestion control that maximizes this objective given a couple of minutes of time (without any pre-training). 
+
+After this initial exploration, our approach can compete with established algorithms and achieve superior throughput while keeping packet loss at an average of less than 1\%. 
 
 \subsection{Actor Critic Learning}
 \label{subsec:ac}
 
-To this end we propose \textit{Partial Action Learning} (PAL) (see \ref{subsec:pal}) which is a modification of the Actor Critic framework for neural networks proposed by \citet{mnih_asynchronous_2016}, which we outline in this section. 
+The \textit{Partial Action Learning} (PAL) (see \ref{subsec:pal}) framework is based on the Actor Critic framework for neural networks proposed by \citet{mnih_asynchronous_2016}, which we outline in this section. 
 
-There are two Artificial Neural Networks (ANNs), the Actor Network and the Value Network (the Critic part in the abbreviation stands for the Value Network). Given a state, the Actor Network outputs what it deems to be the optimum action to perform in that certain state. The Value Network estimates what long-term reward can be expected in this state. So an action is considered good if it achieved a long-term reward that is higher than the long-term reward expected by the Value Network and it is considered bad if the reward was lower than expected. The long-term reward is implemented as a moving average of future rewards. So if a high reward can be achieved right now this is more favorable than if it can be achieved in the future. However it can also be beneficial to get a low reward now and instead get a very large one in the future. 
+There are two Artificial Neural Networks (ANNs), the Actor Network and the Value Network (the Critic part in the abbreviation stands for the Value Network). Given a state, the Actor Network outputs what it deems to be the optimum action to perform in that certain state. The Value Network estimates what long-term reward can be expected in this state. So an action is considered good if it achieved a long-term reward that is higher than the long-term reward expected by the Value Network and it is considered bad if the reward was lower than expected. The long-term reward is implemented as an exponentially weighted moving average of future rewards. So if a high reward can be achieved right now this is more favorable than if it can be achieved in the future. However it can also be beneficial to get a low reward now and instead get a very large one in the future. 
 
 \subsubsection{Value Network}
 \label{subsubsec:genericvalue}
@@ -211,7 +229,7 @@ In \autoref{alg:pal} we show the code that runs in each of the agents (in the co
 
 \begin{figure}
 \begin{minipage}{\columnwidth}
-\includesvg{figures/Reinforcement_learning_diagram}
+\includesvg{Reinforcement_learning_diagram}
 \caption{The classical Reinforcement Learning approach.\protect\footnote{adapted from \url{https://upload.wikimedia.org/wikipedia/commons/1/1b/Reinforcement_learning_diagram.svg}}}
 \label{fig:reinforcement}
 \end{minipage}
@@ -219,7 +237,7 @@ In \autoref{alg:pal} we show the code that runs in each of the agents (in the co
 
 \begin{figure}
 \begin{minipage}{\columnwidth}
-\includesvg{figures/Reinforcement_learning_diagram_PAL}
+\includesvg{Reinforcement_learning_diagram_PAL}
 \caption{Partial Action Learning: An action consists of zero or more partial actions which trigger feedback upon interacting with the environment. Each feedback updates the state. The value and actor networks are updated upon receiving all feedback of one action.\protect\footnote{adapted from \url{https://upload.wikimedia.org/wikipedia/commons/1/1b/Reinforcement_learning_diagram.svg}}}
 \label{fig:pal}
 \end{minipage}

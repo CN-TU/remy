@@ -18,17 +18,17 @@
     
   \path[->] (s1) edge node {} (s2);
     
-    \node [lstm place] (s3) [right of=s2, label={[align=center]below: LSTM (32)}] {};
+    \node [lstm place] (s3) [right of=s2, label={[align=center]below: GRU (32)}] {};
 
   \path[->] (s2) edge node {} (s3); 
   \path[->] (s3) edge [loop above] node {} (s3);   
    
-    \node [lstm place] (s4) [right of=s3, label={[align=center]below: LSTM (32)}] {};    
+    \node [lstm place] (s4) [right of=s3, label={[align=center]below: GRU (32)}] {};    
     
   \path[->] (s3) edge node {} (s4);
   \path[->] (s4) edge [loop above] node {} (s4);
     
-    \node [softplus place] (s7) [right of=s4, label={[align=center]below:{ Softplus}}] {};
+    \node [place] (s7) [right of=s4, label={[align=center]below:{ Linear}}] {};
     
   \path[->] (s4) edge node {} (s7);
     
@@ -49,17 +49,17 @@
   \path[->] (s1) edge node {} (s10);
 
     
-    \node [lstm place] (s11) [right of=s10, label={[align=center]above: LSTM (32)}] {};
+    \node [lstm place] (s11) [right of=s10, label={[align=center]above: GRU (32)}] {};
     
   \path[->] (s10) edge node {} (s11);
   \path[->] (s11) edge [loop below] node {} (s11);
 
-    \node [lstm place] (s12) [right of=s11, label={[align=center]above: LSTM (32)}] {};
+    \node [lstm place] (s12) [right of=s11, label={[align=center]above: GRU (32)}] {};
     
   \path[->] (s11) edge node {} (s12);
   \path[->] (s12) edge [loop below] node {} (s12);
     
-    \node [softplus place] (s13) [right of=s12, label={[align=center]above: Softplus}] {};
+    \node [place] (s13) [right of=s12, label={[align=center]above: Linear}] {};
     
   \path[->] (s12) edge node {} (s13);
 
@@ -67,7 +67,7 @@
     
   \path[->] (s13) edge node {} (s17);
     
-    \node [softplus place] (s15) [below of=s13, label={[align=center]above: Softplus}] {};
+    \node [place] (s15) [below of=s13, label={[align=center]above: Linear}] {};
     
   \path[->] (s12) edge node {} (s15);
 
@@ -75,7 +75,7 @@
     
   \path[->] (s15) edge node {} (s19);    
     
-    \node [softplus place] (s16) [below of=s15, label={[align=center]above: Softplus}] {};
+    \node [place] (s16) [below of=s15, label={[align=center]above: Linear}] {};
     
   \path[->] (s12) edge node {} (s16);    
     
@@ -83,7 +83,7 @@
 
   \path[->] (s16) edge node {} (s20);    
     
-    \node [softplus place] (s14) [below of=s16, label={[align=center]above: Softplus}] {};
+    \node [place] (s14) [below of=s16, label={[align=center]above: Linear}] {};
     
   \path[->] (s12) edge node {} (s14);
     
@@ -91,7 +91,7 @@
     
   \path[->] (s14) edge node {} (s21); 
   
-%    \node [softplus place] (s17) [below of=s14, label={[align=center]above: Softplus}] {};
+%    \node [place] (s17) [below of=s14, label={[align=center]above: Linear}] {};
 %    
 %  \path[->] (s12) edge node {} (s17);
 %    
