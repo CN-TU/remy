@@ -120,36 +120,29 @@ We show that our method converges to a stable, close-to-optimum solution within 
 %
 \begin{CCSXML}
 <ccs2012>
- <concept>
-  <concept_id>10010520.10010553.10010562</concept_id>
-  <concept_desc>Computer systems organization~Embedded systems</concept_desc>
-  <concept_significance>500</concept_significance>
- </concept>
- <concept>
-  <concept_id>10010520.10010575.10010755</concept_id>
-  <concept_desc>Computer systems organization~Redundancy</concept_desc>
-  <concept_significance>300</concept_significance>
- </concept>
- <concept>
-  <concept_id>10010520.10010553.10010554</concept_id>
-  <concept_desc>Computer systems organization~Robotics</concept_desc>
-  <concept_significance>100</concept_significance>
- </concept>
- <concept>
-  <concept_id>10003033.10003083.10003095</concept_id>
-  <concept_desc>Networks~Network reliability</concept_desc>
-  <concept_significance>100</concept_significance>
- </concept>
-</ccs2012>  
+<concept>
+<concept_id>10003033.10003039.10003048</concept_id>
+<concept_desc>Networks~Transport protocols</concept_desc>
+<concept_significance>500</concept_significance>
+</concept>
+<concept>
+<concept_id>10003752.10010070.10010071.10010261.10010275</concept_id>
+<concept_desc>Theory of computation~Multi-agent reinforcement learning</concept_desc>
+<concept_significance>500</concept_significance>
+</concept>
+<concept>
+<concept_id>10010520.10010521.10010542.10010294</concept_id>
+<concept_desc>Computer systems organization~Neural networks</concept_desc>
+<concept_significance>300</concept_significance>
+</concept>
+</ccs2012>
 \end{CCSXML}
 
-\ccsdesc[500]{Computer systems organization~Embedded systems}
-\ccsdesc[300]{Computer systems organization~Redundancy}
-\ccsdesc{Computer systems organization~Robotics}
-\ccsdesc[100]{Networks~Network reliability}
+\ccsdesc[500]{Networks~Transport protocols}
+\ccsdesc[500]{Theory of computation~Multi-agent reinforcement learning}
+\ccsdesc[300]{Computer systems organization~Neural networks}
 
-
-\keywords{Put some comma-separated keywords here}
+\keywords{congestion control, machine learning, reinforcement learning, artificial neural networks}
 
 \settopmatter{printfolios=true}
 
@@ -157,29 +150,49 @@ We show that our method converges to a stable, close-to-optimum solution within 
 
 \section{Introduction}
 
-Recent advances in Artificial Neural Network (ANN) based Reinforcement Learning for the purpose of playing video games raise the question if it is also possible to formulate sending Internet data in a fashion similar to a video game. The rules of the ``Game of Congestion Control'' can be summarized approximately as follows: Each player wants to send \begin{enumerate*}
+Recent advances in Artificial Neural Network (ANN) based Reinforcement Learning (RL) for the purpose of playing video games raise the question if it is also possible to formulate sending Internet data in a fashion similar to a video game. The rules of the ``Game of Congestion Control'' can be summarized approximately as follows: Each player wants to send \begin{enumerate*}
 \item as many packets as possible
 \item with as little delay as possible
 \item while losing as few packets as possible
-\end{enumerate*}. As, for instance, for some applications overall throughput is more important than little packet loss, each application can define preferences using a custom utility function. Clearly, it is also desirable from an overall point of view that all participating players play the game in a way that does not give them an unfair advantage over others. When several players (from now on called senders) share an Internet link under the same conditions, they should receive an equal share of the reward. 
+\end{enumerate*}. As, for instance, for some applications overall throughput is more important than little packet loss, each application can define its preference using a custom utility function. Clearly, it is also desirable from an overall point of view that all participating players play the game in a way that does not give them an unfair advantage over others. When several players (from now on called senders) share an Internet link under the same conditions, they should receive an equal share of the reward. 
 
-When performing Congestion Control (CG), each sender uses a set of observed environment conditions to determine what action he should take to maximize his reward in the future. The environment conditions can be any metrics that the sender can obtain from the network, for example the mean round-trip time of the last received packets, the packet loss rate etc. An action is a change to the sending rate: For example, if a sender perceives an increase in the loss rate it might be advisable to lower the sending rate. 
+When performing Congestion Control (CG) \todo{What should be capitalized and what shouldn't? Capitalize RL, CG, ANN?}, each sender uses a set of observed environment conditions to determine what action he should take to maximize his reward in the future. The environment conditions can be any metrics that the sender can obtain from the network, for example the mean round-trip time of the last received packets, the packet loss rate etc. An action is a change to the sending rate: For example, if a sender perceives an increase in the loss rate it might be advisable to lower the sending rate. 
 
-From this formulation of Congestion Control, one can observe a couple of unique features of the problem that seem to prohibit the use of Reinforcement Learning: \begin{itemize}
+From this formulation of Congestion Control, one can observe a couple of unique features of the problem that seem to prohibit the use of RL: \begin{itemize}
 \item When playing a video game, if one pushes a button, one can see the consequences of an action immediately. However, in Congestion Control, the rewards are always \textbf{delayed} by one round-trip time.
 \item Due to the delay, by the time an action receives its reward, probably other actions have already been carried out in the mean time. Thus, contrary to classical RL, \textbf{action and rewards are out of sync}. 
-\item \textbf{Actions and rewards are not atomic}: If an action causes three packets to be sent, we consider these three packets being sent three \textit{partial actions}. In case these packets are transmitted correctly, the receiver will send three acknowledgements. Each of these acknowledgements is a \textit{partial reward}, that already unveils new information on the current state of the network and enables the sender to take an action based on this new information. However, only if all partial rewards have been received, the sender can assemble the overall reward of the corresponding action and can perform an update of the underlying Reinforcement Learning logic. 
+\item \textbf{Actions and rewards are not atomic}: If an action causes three packets to be sent, we consider these three packets being sent three \textit{partial actions}. In case these packets are transmitted correctly, the receiver will send three acknowledgements. Each of these acknowledgements is a \textit{partial reward} that already unveils new information on the current state of the network and enables the sender to take an action based on this new information. However, only if all partial rewards have been received, the sender can assemble the overall reward of the corresponding action and can perform an update of the underlying RL logic. 
 \end{itemize}
 
 To address these problems, we develop a new formulation of RL called \textit{Partial Action Learning} (PAL). PAL is a superset of Reinforcement Learning: If one uses PAL for a learning problem without delay, asynchronicity and partial actions/partial rewards, one gets classical RL.
 
-While using PAL to train an optimum congestion control for a specific range of network scenarios in an off-line fashion is possible, it is something that has already been done previously in an approach called \textit{Remy} \citep{winstein_tcp_2013}. The only seizable advantage that PAL could provide here is increased speed. Thus we want to show that it is  not only possible to learn congestion control by using machine learning but that it is even possible on-line and without any preknowledge about the network environment.
+While using PAL to train an optimum congestion control for a specific range of network scenarios in an off-line fashion is possible, it is something that has already been done previously in an approach called \textit{Remy} \citep{winstein_tcp_2013}. The only seizable advantage that PAL could provide here is increased training speed. Thus we want to show that it is  not only possible to learn congestion control by using machine learning but that it is even possible to do so on-line and without any preknowledge about the network environment.
 
-\todo{Figures here!}
+Using a utility function that encourages high throughput and discourages packet loss (adapted from \citep{dong_pcc:_2015}) we see that our machine learning based approach can learn congestion control that maximizes this objective given a couple of minutes of time (without any pre-training) \ref{fig:demo}, which -- to our knowledge -- is the first demonstration that neural network based on-line reinforcement learning is possible. 
 
-Using a utility function that encourages high throughput and discourages packet loss (adapted from \citep{dong_pcc:_2015}) we see that our machine learning based approach can learn congestion control that maximizes this objective given a couple of minutes of time (without any pre-training). 
+\begin{figure}
+\begin{minipage}{\columnwidth}
+\includegraphics[width=\columnwidth]{figures/1_4}
+\includegraphics[width=\columnwidth]{figures/2_2}
+\includegraphics[width=\columnwidth]{figures/4_1}
+\caption{The throughput (solid line) and the loss rate (dashed line) when sharing a bottleneck link of 20\,Mbit/s with a two-way end-to-end delay of 50\,ms and a very small buffer of $\frac{1}{10}$ bandwidth delay product between 1, 2 and 4 senders (from top to bottom). One can see that the time to convergence increases as the number of senders increases, which is caused by the fact that the more senders use the link, the fewer packets each sender receives per unit of time for training. Also, the complexity of the learning problem increases with more senders as the environment becomes more dynamic and unpredictable.}
+\label{fig:demo}
+\end{minipage}
+\end{figure}
 
-After this initial exploration, our approach can compete with established algorithms and achieve superior throughput while keeping packet loss at an average of less than 1\%. 
+After having learned how to perform congestion control in a certain network scenario, our approach can compete with established algorithms and achieve superior throughput with packet loss at an average of less than 5\%, while still gradually improving and adapting its way of performing congestion control.
+
+\section{Related Work}
+
+\subsection{Congestion Control}
+
+Congestion control has been implemented in TCP since the 1980s as a series of congestion collapses dramatically decreased applications' throughput in the Internet, which lead to the development of the Tahoe and Reno algorithms \cite{jacobson_congestion_1988}. These approaches as well as most others maintain a congestion window which stands for the maximum amount of data that are allowed to be traveling in the network without having been acknowledged by the receiver. In general, successful transmission and acknowledgement of data leads to the congestion window being increased while packet loss (or an increase in delay as in the Vegas algorithm \cite{brakmo_tcp_1995} \todo{How much detail is necessary in the related work section?}) lead to the congestion window being lowered according to a set of fixed rules. Algorithms such as Cubic and Compound \cite{ha_cubic:_2008, tan_compound_2006} improve congestion control specifically with respect to so-called long fat networks with a high round-trip time and bandwidth. Proportional rate reduction \cite{dukkipati_proportional_2011} aims to make the reduction of the rate that occurs in case of congestion more smooth and steady in time to avoid the bursty behavior that occurred upon loss in previous TCP congestion control variants. On the other hand, BBR \cite{cardwell_bbr:_2016} does not use a set of fixed rules such as previous congestion control algorithms but instead estimates a model of the network path by using measurements of RTT and throughput and then adjusts its sending rate so that it uses the maximum bandwidth according to its network model while trying not to fill up queues. A similar approach is PCC \cite{dong_pcc:_2015}, which also uses measurements to find an optimum sending rate with respect to a defined utility function (e.g. maximizing throughput while minimizing packet loss). 
+
+Besides the aforementioned human-designed algorithms there have been attempts to use machine learning to improve congestion control. \citet{geurts_machine_2004} train a classifier off-line to determine whether packet loss is caused by congestion or by the link layer. If it is caused by the link layer, TCP does not alter the window. Otherwise -- if a packet was lost due to congestion according to the classifier -- it uses a traditional TCP congestion control algorithm. \citet{winstein_tcp_2013} train a machine learning solution called \textit{Remy} that finds an optimum congestion control for a given range of a range of network parameters. For instance, one could find an optimum congestion control for networks with a RTT of 50-100\,ms and link speeds of 100-500\,Mbit/s. After a lengthy training procedure Remy finds an optimum congestion control algorithm for the specified networks on a per acknowledgement basis. 
+
+Our goal is to find an optimum congestion control algorithm on a per acknowledgement basis similar to Remy that, however, can be trained on-line.  Such a solution could be used in a purely on-line fashion, in a off-line fashion like Remy or a combination of both: One pre-trains a generic congestion control algorithm that works reasonably well for every network that then gets refined during on-line training according to the current network circumstances. 
+
+To this end we use Partial Action Learning which is based on the Asynchronous Advantage Actor Critic framework \cite{mnih_asynchronous_2016}, which has been demonstrated to be able to learn a wide range of video games and commonly outperform human players. In particular it is a good choice for congestion control as it can be easily adapted to a wide range of problems and has been proven to deliver good performance. Furthermore, as we will show, it is conceptually possible to use it for on-line training although -- to our knowledge -- this has not been done until now. 
 
 \subsection{Actor Critic Learning}
 \label{subsec:ac}
