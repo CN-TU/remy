@@ -33,7 +33,7 @@ LOG_FILE = os.path.join(ABSOLUTE_PATH,'a3c_log')
 logging.info(" ".join(map(str,("LOG_DIR:",LOG_FILE))))
 ACTOR_FACTOR = 1e0
 VALUE_FACTOR = 1e0
-GENERAL_FACTOR = 10**-4
+GENERAL_FACTOR = 10**-2
 # INITIAL_ALPHA_LOW = 1e-2*GENERAL_FACTOR   # log_uniform low limit for learning rate
 # INITIAL_ALPHA_HIGH = 1e0*GENERAL_FACTOR   # log_uniform high limit for learning rate
 INITIAL_RATE = GENERAL_FACTOR
