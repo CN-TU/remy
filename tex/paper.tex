@@ -67,7 +67,7 @@
 
 
 \begin{document}
-\title{Some title}
+\title{Let's play congestion control}
 \titlenote{Produces the permission block, and
   copyright information}
 \subtitle{Extended Abstract}
@@ -107,7 +107,7 @@
 \begin{abstract}
 This paper proposes a novel method of Congestion Control that uses on-line Reinforcement Learning (RL) to maintain the optimum congestion window with respect to a given utility function. 
 
-To this end we use an Artificial Neural Network (ANN) based approach that can be initialized with a previously trained neural network or with random weights (without any prior knowledge). As in congestion control the rewards used in the learning process naturally come delayed and bit by bit, we propose a novel formulation of reinforcement learning that allows us to deal with delayed and partial rewards.
+To this end we use a neural network based approach that can be initialized with a previously trained neural network or with random weights (without any prior knowledge). As in congestion control the rewards used in the learning process naturally come delayed and bit by bit, we propose a novel formulation of reinforcement learning that allows us to deal with delayed and partial rewards.
 
 We show that our method converges to a stable, close-to-optimum solution within the order of minutes and then commonly outperforms existing congestion control algorithms in typical networks. Thus, for the first time, we demonstrate that ANN based Reinforcement Learning without any preknowledge can feasibly be done on-line and can compete with hand-crafted solutions given long enough episodes. 
 
@@ -150,7 +150,7 @@ We show that our method converges to a stable, close-to-optimum solution within 
 
 \section{Introduction}
 
-Recent advances in Artificial Neural Network (ANN) based Reinforcement Learning (RL) for the purpose of playing video games raise the question if it is also possible to formulate sending Internet data in a fashion similar to a video game. The rules of the ``Game of Congestion Control'' can be summarized approximately as follows: Each player wants to send \begin{enumerate*}
+Recent advances in neural network based Reinforcement Learning (RL) for the purpose of playing video games raise the question if it is also possible to formulate sending Internet data in a fashion similar to a video game. The rules of the ``Game of Congestion Control'' can be summarized approximately as follows: Each player wants to send \begin{enumerate*}
 \item as many packets as possible
 \item with as little delay as possible
 \item while losing as few packets as possible
@@ -175,7 +175,7 @@ Using a utility function that encourages high throughput and discourages packet 
 \includegraphics[width=\columnwidth]{figures/1_4}
 \includegraphics[width=\columnwidth]{figures/2_2}
 \includegraphics[width=\columnwidth]{figures/4_1}
-\caption{The throughput (solid line) and the loss rate (dashed line) when sharing a bottleneck link of 20\,Mbit/s with a two-way end-to-end delay of 50\,ms and a very small buffer of $\frac{1}{10}$ bandwidth delay product between 1, 2 and 4 senders (from top to bottom). One can see that the time to convergence increases as the number of senders increases, which is caused by the fact that the more senders use the link, the fewer packets each sender receives per unit of time for training. Also, the complexity of the learning problem increases with more senders as the environment becomes more dynamic and unpredictable.}
+\caption{\todo{figures don't look that appealing do they?} The throughput (solid line) and the loss rate (dashed line) when sharing a bottleneck link of 20\,Mbit/s with a two-way end-to-end delay of 50\,ms and a very small buffer of $\frac{1}{10}$ bandwidth delay product between 1, 2 and 4 senders (from top to bottom). One can see that the time to convergence increases as the number of senders increases, which is caused by the fact that the more senders use the link, the fewer packets each sender receives per unit of time for training. Also, the complexity of the learning problem increases with more senders as the environment becomes more dynamic and unpredictable.}
 \label{fig:demo}
 \end{minipage}
 \end{figure}
@@ -186,35 +186,39 @@ After having learned how to perform congestion control in a certain network scen
 
 \subsection{Congestion Control}
 
-Congestion control has been implemented in TCP since the 1980s as a series of congestion collapses dramatically decreased applications' throughput in the Internet, which lead to the development of the Tahoe and Reno algorithms \cite{jacobson_congestion_1988}. These approaches as well as most others maintain a congestion window which stands for the maximum amount of data that are allowed to be traveling in the network without having been acknowledged by the receiver. In general, successful transmission and acknowledgement of data leads to the congestion window being increased while packet loss (or an increase in delay as in the Vegas algorithm \cite{brakmo_tcp_1995} \todo{How much detail is necessary in the related work section?}) lead to the congestion window being lowered according to a set of fixed rules. Algorithms such as Cubic and Compound \cite{ha_cubic:_2008, tan_compound_2006} improve congestion control specifically with respect to so-called long fat networks with a high round-trip time and bandwidth. Proportional rate reduction \cite{dukkipati_proportional_2011} aims to make the reduction of the rate that occurs in case of congestion more smooth and steady in time to avoid the bursty behavior that occurred upon loss in previous TCP congestion control variants. On the other hand, BBR \cite{cardwell_bbr:_2016} does not use a set of fixed rules such as previous congestion control algorithms but instead estimates a model of the network path by using measurements of RTT and throughput and then adjusts its sending rate so that it uses the maximum bandwidth according to its network model while trying not to fill up queues. A similar approach is PCC \cite{dong_pcc:_2015}, which also uses measurements to find an optimum sending rate with respect to a defined utility function (e.g. maximizing throughput while minimizing packet loss). 
+Congestion control has been implemented in TCP since the 1980s as a series of congestion collapses dramatically decreased applications' throughput in the Internet, which lead to the development of the Tahoe and Reno algorithms \cite{jacobson_congestion_1988}. These approaches as well as most others maintain a congestion window which stands for the maximum amount of data that are allowed to be traveling in the network without having been acknowledged by the receiver. In general, successful transmission and acknowledgement of data leads to the congestion window being increased while packet loss (or an increase in delay as in the Vegas algorithm \cite{brakmo_tcp_1995} \todo{How much detail is necessary in the related work section?}) lead to the congestion window being lowered according to a set of fixed rules. Algorithms such as Cubic and Compound \cite{ha_cubic:_2008, tan_compound_2006} improve congestion control specifically with respect to so-called long fat networks with a high round-trip time and bandwidth. Proportional rate reduction \cite{dukkipati_proportional_2011} aims to make the reduction of the rate that occurs in case of congestion more smooth and steady in time to avoid the bursty behavior that occurred upon loss in previous TCP congestion control variants. On the other hand, BBR \cite{cardwell_bbr:_2016} does not use a set of fixed rules such as previous congestion control algorithms but instead estimates a model of the network path by using measurements of RTT and throughput and then adjusts its sending rate so that it uses the maximum bandwidth according to its network model while trying not to fill up queues. A similar approach is PCC \cite{dong_pcc:_2015}, which also uses measurements to find an optimum sending rate with respect to a defined utility function (e.g. maximizing throughput while minimizing packet loss). However, PCC doesn't maintain a congestion window but instead modulates the sending rate. 
 
 Besides the aforementioned human-designed algorithms there have been attempts to use machine learning to improve congestion control. \citet{geurts_machine_2004} train a classifier off-line to determine whether packet loss is caused by congestion or by the link layer. If it is caused by the link layer, TCP does not alter the window. Otherwise -- if a packet was lost due to congestion according to the classifier -- it uses a traditional TCP congestion control algorithm. \citet{winstein_tcp_2013} train a machine learning solution called \textit{Remy} that finds an optimum congestion control for a given range of a range of network parameters. For instance, one could find an optimum congestion control for networks with a RTT of 50-100\,ms and link speeds of 100-500\,Mbit/s. After a lengthy training procedure Remy finds an optimum congestion control algorithm for the specified networks on a per acknowledgement basis. 
 
 Our goal is to find an optimum congestion control algorithm on a per acknowledgement basis similar to Remy that, however, can be trained on-line.  Such a solution could be used in a purely on-line fashion, in a off-line fashion like Remy or a combination of both: One pre-trains a generic congestion control algorithm that works reasonably well for every network that then gets refined during on-line training according to the current network circumstances. 
 
-To this end we use Partial Action Learning which is based on the Asynchronous Advantage Actor Critic framework \cite{mnih_asynchronous_2016}, which has been demonstrated to be able to learn a wide range of video games and commonly outperform human players. In particular it is a good choice for congestion control as it can be easily adapted to a wide range of problems and has been proven to deliver good performance. Furthermore, as we will show, it is conceptually possible to use it for on-line training although -- to our knowledge -- this has not been done until now. 
+To this end we use Partial Action Learning which is based on the Asynchronous Advantage Actor Critic framework \cite{mnih_asynchronous_2016}, which has been demonstrated to be able to learn to play a wide range of video games and commonly outperform human players. In particular it is a good choice for congestion control as it can be easily adapted to a wide range of problems and has been proven to deliver good performance. Furthermore, as we will show, it is conceptually possible to use it for on-line training although -- to our knowledge -- this has not been done until now. 
 
 \subsection{Actor Critic Learning}
 \label{subsec:ac}
 
 The \textit{Partial Action Learning} (PAL) (see \ref{subsec:pal}) framework is based on the Actor Critic framework for neural networks proposed by \citet{mnih_asynchronous_2016}, which we outline in this section. 
 
-There are two Artificial Neural Networks (ANNs), the Actor Network and the Value Network (the Critic part in the abbreviation stands for the Value Network). Given a state, the Actor Network outputs what it deems to be the optimum action to perform in that certain state. The Value Network estimates what long-term reward can be expected in this state. So an action is considered good if it achieved a long-term reward that is higher than the long-term reward expected by the Value Network and it is considered bad if the reward was lower than expected. The long-term reward is implemented as an exponentially weighted moving average of future rewards. So if a high reward can be achieved right now this is more favorable than if it can be achieved in the future. However it can also be beneficial to get a low reward now and instead get a very large one in the future. 
+There are two neural networks, the Actor Network and the Value Network (the Critic part in the abbreviation stands for the Value Network). Given a state, the Actor Network outputs what it deems to be the optimum action to perform in that certain state. The Value Network estimates what long-term reward can be expected in this state. So an action is considered good if it achieved a long-term reward that is higher than the long-term reward expected by the Value Network and it is considered bad if the reward was lower than expected. The long-term reward is implemented as an exponentially weighted moving average of future rewards. So if a high reward can be achieved right now this is more favorable than if it can be achieved in the future. However it can also be beneficial to get a low reward now and instead get a very large one in the future. 
 
 \subsubsection{Value Network}
 \label{subsubsec:genericvalue}
 
 The Value Network outputs the expected long-term reward $V(s_{t}; \theta_\text{v})$ given a state $s_t$ at time step $t$ and the parameters (neural network weights) of the value network $\theta_v$.
 
-With $r_t$ being the reward that was received at time $t$ and $\gamma$ being the roll-off factor, which stands for the influence that future reward has on the moving average (commonly set to $0.99$), we define the expected long-term reward as 
+With $r_t$ being the reward that was received at time $t$ and $\gamma$ being a factor with $0 < \gamma \leq 1$, which stands for the influence that future reward has on the moving average, we define the expected long-term reward as 
 \begin{align*}
-R_t = \left(\left(\sum_{i=0}^{k-1} \gamma^ir_{t+i}\right) + \gamma^k V(s_{t+k}; \theta_\text{v})\right)\left( 1-\gamma \right),
+R_t = \gamma r_{t} + (1-\gamma) R_{t+1} ,
+%R_t = \left(\left(\sum_{i=0}^{k-1} \gamma^ir_{t+i}\right) + \gamma^k V(s_{t+k}; \theta_\text{v})\right)\left( 1-\gamma \right),
 \end{align*}
-where $k$ is upper-bounded by $t_\text{max}$ ($t_\text{max}$ is a fixed hyperparameter that indicates how many rewards should be received before updating the neural network). So $R_t$ is simply a moving average of rewards at time step $t$. However, usual moving averages take into account values from the past while this one uses values from the future. In practice this means that we collect $t_\text{max}$ rewards, compute the expected long-term reward starting at each time step, update the neural network and start the same procedure again. 
+
+One can see that to compute $R_t$ at time step $t$ one has to look infinitely far in the future to get all future rewards needed to accurately computer the exponentially weighted moving average at time step $t$. Thus, one usually only carries out $t_\text{max}$ steps (for example 20) and then uses an estimation of $R_{t_\text{max}+1}$ provided by the value network as the continuation \todo{Clearer than before?}. The only exception from this is when the task to carry out is over before reaching $t_\text{max}$. In this case, one can either use a prediction from the value network as usually or simply let the moving average end without continuation (ignoring the term weighted with $(\gamma-1)$ at the last step). 
+
+%where $k$ is upper-bounded by $t_\text{max}$ ($t_\text{max}$ is a fixed hyperparameter that indicates how many rewards should be received before updating the neural network). So $R_t$ is the value of the exponentially weighted average of future rewards at time step $t$. In practice this means that we collect $t_\text{max}$ rewards, compute the expected long-term reward starting at each time step, update the neural network and start the same procedure again. 
 
 %\todo{Explanation not so clear?}
 
-The loss function, which the value network tries to minimize at each time step, is the square of the difference of the actual long-term reward received and the expected long-term reward
+The loss function (not in the sense of packet loss but in the sense of the loss of a machine learning problem), which the value network tries to minimize at each time step, is the square of the difference of the actual long-term reward received and the expected long-term reward
 \begin{align*}
 l_{\text{v},t} = \left(R_t - V(s_t; \theta_\text{v})\right)^2.
 \end{align*}
@@ -255,91 +259,6 @@ In \autoref{alg:pal} we show the code that runs in each of the agents (in the co
 \label{fig:pal}
 \end{minipage}
 \end{figure}
-
-\begin{algorithm}
-\caption{Partial Action Learning -- pseudocode for each agent. It is possible that the agents share the global weights $\theta_{\text{a},\text{g}}$ and $\theta_{\text{v},\text{g}}$, which can be reasonable when learning off-line. Otherwise an individual copy of them is kept by each agent. All weights are initialized randomly in the beginning. LSTM cells are used in both the actor and the value network.}
-\label{alg:pal}
-\begin{algorithmic}[1]
-\Loop
-	\State $l_\text{actions} \gets  [] $
-	\State $l_\text{states} \gets  [] $
-	\State $l_\text{values} \gets  [] $
-	\State $l_\text{rewards} \gets  [] $
-	\State $l_\text{estimatedValues} \gets  [] $
-	\State $l_\text{snapshots} \gets  [] $
-	\State $l_\text{hiddenStates} \gets  [] $
-	\State $t \gets 0$
-	\State $s_0 \gets \text{initialState}()$
-	\State $h_\text{a} \gets \text{initialHiddenState}()$
-	\State $h_\text{v} \gets \text{initialHiddenState}()$
-	\State $\theta_\text{a} \gets \theta_{\text{a},\text{g}}$
-	\State $\theta_\text{v} \gets \theta_{\text{v},\text{g}}$
-	\Repeat
-		\State $l_\text{estimatedValues}.\text{append}(V(s_t; \theta_\text{v}))$
-		\If{$t \bmod t_\text{max} = 0$}
-			\State $\theta_\text{a} \gets \theta_{\text{a},\text{g}}$
-			\State $\theta_\text{v} \gets \theta_{\text{v},\text{g}}$
-			\State $l_\text{snapshots}.\text{append}((\theta_\text{a}, \theta_\text{v}))$
-			\State $l_\text{hiddenStates}.\text{append}((h_\text{a}, h_\text{v}))$
-		\EndIf
-		\State $l_\text{states}.\text{append}(s_t)$
-		\State Sample $a_t$ from the 
-		\StateIndent[3] Actor Network's probability distribution
-		\State $l_\text{actions}.\text{append}(a_t)$
-		\State $l_\text{values}.\text{append}(V(s_t; \theta_\text{v}))$
-		\State $l_{\text{partialActions},t} \gets \text{partialActions}(a_t)$
-		\ForAll{partial actions $a_{{\text{p},i,t}}$ in $l_{\text{partialActions},t}$}
-			\State Take partial action $a_{{\text{p},i,t}}$
-		\EndFor
-		\State Wait for the next feedback $r_{\text{p},j,t'}$
-		\StateIndent[3] where $t' \leq t$ and $0 \leq j \leq\#(l_{\text{partialActions},t'})$
-		\If{all feedback of $a_{t'}$ was received}
-			\State $r_{t'} \gets \text{reward w.r.t all feedback }r_{\text{p},k,t'}$
-					\StateIndent[4] where $0 \leq k \leq\#(l_{\text{partialActions},t'})$
-			\State $l_\text{rewards}.\text{append}(r_{t'})$
-			\If{$\#\left(l_\text{rewards}\right) > t_\text{max}$ or the episode is over}
-				\State \Call{computeGradients}{}
-			\EndIf
-		\EndIf
-		\State Generate $s_{t+1}$ using $r_{\text{p}_{t'}}$
-		\State $t \gets t+1$
-	\Until{reaching the end the episode}
-\EndLoop
-%\algstore{palalg}
-\end{algorithmic}
-\end{algorithm}
-\begin{algorithm}
-\caption{Partial Action Learning -- procedure which computes and applies the gradients.}
-\label{alg:grad}
-\begin{algorithmic}[1]%
-%\algrestore{palalg}
-\Function{computeGradients}{}
-	\State $t_\text{end} = \min\left(t_\text{max}, \#\left( l_\text{rewards} \right)\right)$
-	\State $\theta_\text{backup} \gets \left(\theta_\text{a}, \theta_\text{v}\right)$
-	\State $h_\text{backup} \gets \left(h_\text{a}, h_\text{v}\right)$
-	\State $\theta_\text{a}, \theta_\text{v} \gets l_\text{snapshots}[0]$
-	\State $h_\text{a}, h_\text{v} \gets l_\text{hiddenStates}[0]$
-	\State $R_{i+1} \gets$ last element of $l_\text{estimatedValues}$%
-	\For{$i\gets t_\text{end}-1, 0$}
-		\State $R_i \gets \left(r_i + \gamma R_{i+1}\right)\left(1-\gamma\right)$
-		\State $a \gets l_\text{actions}[i]$
-		\State $s \gets l_\text{states}[i]$
-		\State $v \gets l_\text{values}[i]$
-		\State $d\theta_\text{a} \gets -\frac{\partial\log \left( \pi\left( a \given s; \theta_\text{a} \right)\right)\left(R_i - v\right)}{\partial\theta_a}$
-		\StateIndent[4] $-\frac{\partial\beta H\left( \pi\left( s; \theta_a \right)\right)}{\partial\theta_a}$
-		\State $d\theta_\text{v} \gets \frac{\partial\left(R_i - v\right)}{\partial\theta_v}$
-		\State $\theta_{\text{a},\text{g}} \gets \theta_{\text{a},\text{g}} + d\theta_\text{a}$
-		\State $\theta_{\text{v},\text{g}} \gets \theta_{\text{v},\text{g}} + d\theta_\text{v}$
-	\EndFor
-	\State Remove first $t_\text{end}$ elements from
-	\StateIndent[2] $l_\text{actions}$, $l_\text{states}$, $l_\text{values}$, $l_\text{rewards}$, $l_\text{estimatedValues}$
-	\State Remove the first element from $l_\text{snapshots}$
-	\State Remove the first element from $l_\text{hiddenStates}$
-	\State $\theta_\text{a}, \theta_\text{v} = \theta_\text{backup}$
-	\State $h_\text{a}, h_\text{v} = h_\text{backup}$
-\EndFunction
-\end{algorithmic}
-\end{algorithm}
 
 \subsection{Congestion Control specifics}
 
@@ -469,6 +388,94 @@ In this section, an example of the overall procedure is outlined.
 \end{enumerate}
 
 \end{enumerate}
+
+\section*{Appendix}
+
+\begin{algorithm}[H]
+\caption{Partial Action Learning -- pseudocode for each agent. It is possible that the agents share the global weights $\theta_{\text{a},\text{g}}$ and $\theta_{\text{v},\text{g}}$, which can be reasonable when learning off-line. Otherwise an individual copy of them is kept by each agent. All weights are initialized randomly in the beginning. LSTM cells are used in both the actor and the value network.}
+\label{alg:pal}
+\begin{algorithmic}[1]
+\Loop
+	\State $l_\text{actions} \gets  [] $
+	\State $l_\text{states} \gets  [] $
+	\State $l_\text{values} \gets  [] $
+	\State $l_\text{rewards} \gets  [] $
+	\State $l_\text{estimatedValues} \gets  [] $
+	\State $l_\text{snapshots} \gets  [] $
+	\State $l_\text{hiddenStates} \gets  [] $
+	\State $t \gets 0$
+	\State $s_0 \gets \text{initialState}()$
+	\State $h_\text{a} \gets \text{initialHiddenState}()$
+	\State $h_\text{v} \gets \text{initialHiddenState}()$
+	\State $\theta_\text{a} \gets \theta_{\text{a},\text{g}}$
+	\State $\theta_\text{v} \gets \theta_{\text{v},\text{g}}$
+	\Repeat
+		\State $l_\text{estimatedValues}.\text{append}(V(s_t; \theta_\text{v}))$
+		\If{$t \bmod t_\text{max} = 0$}
+			\State $\theta_\text{a} \gets \theta_{\text{a},\text{g}}$
+			\State $\theta_\text{v} \gets \theta_{\text{v},\text{g}}$
+			\State $l_\text{snapshots}.\text{append}((\theta_\text{a}, \theta_\text{v}))$
+			\State $l_\text{hiddenStates}.\text{append}((h_\text{a}, h_\text{v}))$
+		\EndIf
+		\State $l_\text{states}.\text{append}(s_t)$
+		\State Sample $a_t$ from the 
+		\StateIndent[3] Actor Network's probability distribution
+		\State $l_\text{actions}.\text{append}(a_t)$
+		\State $l_\text{values}.\text{append}(V(s_t; \theta_\text{v}))$
+		\State $l_{\text{partialActions},t} \gets \text{partialActions}(a_t)$
+		\ForAll{partial actions $a_{{\text{p},i,t}}$ in $l_{\text{partialActions},t}$}
+			\State Take partial action $a_{{\text{p},i,t}}$
+		\EndFor
+		\State Wait for the next feedback $r_{\text{p},j,t'}$
+		\StateIndent[3] where $t' \leq t$ and $0 \leq j \leq\#(l_{\text{partialActions},t'})$
+		\If{all feedback of $a_{t'}$ was received}
+			\State $r_{t'} \gets \text{reward w.r.t all feedback }r_{\text{p},k,t'}$
+					\StateIndent[4] where $0 \leq k \leq\#(l_{\text{partialActions},t'})$
+			\State $l_\text{rewards}.\text{append}(r_{t'})$
+			\If{$\#\left(l_\text{rewards}\right) > t_\text{max}$ or the episode is over}
+				\State \Call{computeGradients}{}
+			\EndIf
+		\EndIf
+		\State Generate $s_{t+1}$ using $r_{\text{p}_{t'}}$
+		\State $t \gets t+1$
+	\Until{reaching the end the episode}
+\EndLoop
+%\algstore{palalg}
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+\caption{Partial Action Learning -- procedure which computes and applies the gradients.}
+\label{alg:grad}
+\begin{algorithmic}[1]%
+%\algrestore{palalg}
+\Function{computeGradients}{}
+	\State $t_\text{end} = \min\left(t_\text{max}, \#\left( l_\text{rewards} \right)\right)$
+	\State $\theta_\text{backup} \gets \left(\theta_\text{a}, \theta_\text{v}\right)$
+	\State $h_\text{backup} \gets \left(h_\text{a}, h_\text{v}\right)$
+	\State $\theta_\text{a}, \theta_\text{v} \gets l_\text{snapshots}[0]$
+	\State $h_\text{a}, h_\text{v} \gets l_\text{hiddenStates}[0]$
+	\State $R_{i+1} \gets$ last element of $l_\text{estimatedValues}$%
+	\For{$i\gets t_\text{end}-1, 0$}
+		\State $R_i \gets \left(r_i + \gamma R_{i+1}\right)\left(1-\gamma\right)$
+		\State $a \gets l_\text{actions}[i]$
+		\State $s \gets l_\text{states}[i]$
+		\State $v \gets l_\text{values}[i]$
+		\State $d\theta_\text{a} \gets -\frac{\partial\log \left( \pi\left( a \given s; \theta_\text{a} \right)\right)\left(R_i - v\right)}{\partial\theta_a}$
+		\StateIndent[4] $-\frac{\partial\beta H\left( \pi\left( s; \theta_a \right)\right)}{\partial\theta_a}$
+		\State $d\theta_\text{v} \gets \frac{\partial\left(R_i - v\right)}{\partial\theta_v}$
+		\State $\theta_{\text{a},\text{g}} \gets \theta_{\text{a},\text{g}} + d\theta_\text{a}$
+		\State $\theta_{\text{v},\text{g}} \gets \theta_{\text{v},\text{g}} + d\theta_\text{v}$
+	\EndFor
+	\State Remove first $t_\text{end}$ elements from
+	\StateIndent[2] $l_\text{actions}$, $l_\text{states}$, $l_\text{values}$, $l_\text{rewards}$, $l_\text{estimatedValues}$
+	\State Remove the first element from $l_\text{snapshots}$
+	\State Remove the first element from $l_\text{hiddenStates}$
+	\State $\theta_\text{a}, \theta_\text{v} = \theta_\text{backup}$
+	\State $h_\text{a}, h_\text{v} = h_\text{backup}$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
 
 %\subsection{Convergence}
 %
