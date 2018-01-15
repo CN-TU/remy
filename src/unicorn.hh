@@ -22,7 +22,7 @@
 // #define MIN_WINDOW_UNICORN 1.0
 // #define MAX_WINDOW_UNICORN 500.0
 
-#define TIMEOUT_THRESHOLD 1000
+#define TIMEOUT_THRESHOLD 1000.0
 
 class Unicorn
 {
