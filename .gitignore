@@ -25,7 +25,8 @@ Makefile.in
 *.toc
 *checkpoints*
 core
-/csv
+/a3c_log*
+/csv*
 /logging
 
 /.vscode
