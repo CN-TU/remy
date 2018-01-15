@@ -235,6 +235,7 @@ double Unicorn::next_event_time( const double & tickno ) const
     /* window is currently closed */
     // return std::numeric_limits<double>::max();
     // FIXME: Is that necessary?
+
     if (_last_send_time + TIMEOUT_THRESHOLD > tickno) {
       // printf("%lu: timeout occurred!\n", _thread_id);
       // printf("timeout part: _last_send_time: %f, tickno: %f, window: %f, _packets_sent: %ld, _largest_ack: %ld\n", _last_send_time, tickno, _the_window, _packets_sent, _largest_ack);
@@ -244,6 +245,7 @@ double Unicorn::next_event_time( const double & tickno ) const
       // printf("infinite part: _last_send_time: %f, tickno: %f, window: %f, _packets_sent: %ld, _largest_ack: %ld\n", _last_send_time, tickno, _the_window, _packets_sent, _largest_ack);
       return std::numeric_limits<double>::max();
     }
+    // return std::numeric_limits<double>::max();
   }
 }
 
