@@ -24,8 +24,8 @@ void Memory::lost(const int lost) {
 void Memory::window(const double& s_window) {
   // printf("lost: %d\n", lost);
   _window = s_window;
-  _window_ewma = (1 - alpha) * _window_ewma + alpha * _window;
-  _slow_window_ewma = (1 - slow_alpha) * _slow_window_ewma + slow_alpha * _window;
+  _window_ewma = (1 - alpha) * _window_ewma + alpha * s_window;
+  _slow_window_ewma = (1 - slow_alpha) * _slow_window_ewma + slow_alpha * s_window;
 }
 
 void Memory::packets_received( const vector< remy::Packet > & packets, const unsigned int,

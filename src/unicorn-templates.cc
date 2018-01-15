@@ -18,7 +18,7 @@ void Unicorn::send( const unsigned int id, NextHop & next, const double & tickno
   if (_last_send_time > 0 && tickno - _last_send_time >= TIMEOUT_THRESHOLD) {
     printf("%lu: timeout occurred!\n", _thread_id);
     reset(tickno);
-    return;
+    // return;
   }
 
   // printf("left:%d, right:%d\n",int(_packets_sent),  (int) _largest_ack + 1 + (int) floor(_the_window));

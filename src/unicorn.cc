@@ -192,7 +192,7 @@ void Unicorn::reset(const double & tickno)
   // assert(_sent_packets.size() == 0);
 
   // FIXME: Is this good?
-  // _memory.reset();
+  _memory.reset();
   _memory._lost_since_last_time = 0;
 
   _largest_ack = _packets_sent - 1; /* Assume everything's been delivered */
@@ -228,22 +228,28 @@ double Unicorn::next_event_time( const double & tickno ) const
   if (int(_packets_sent) < _largest_ack + 1 + (int) floor(_the_window) ) {
     return tickno;
   // } else if (_last_send_time > 0 && tickno - _last_send_time >= TIMEOUT_THRESHOLD) {
-  //   printf("%lu: timeout occurred!\n", _thread_id);
+    // printf("%lu: timeout occurred!\n", _thread_id);
   //   reset(tickno);
   //   return tickno;
   } else {
     /* window is currently closed */
     // return std::numeric_limits<double>::max();
     // FIXME: Is that necessary?
-    if (_last_send_time + TIMEOUT_THRESHOLD < tickno) {
+    if (_last_send_time + TIMEOUT_THRESHOLD > tickno) {
+      // printf("%lu: timeout occurred!\n", _thread_id);
+      // printf("timeout part: _last_send_time: %f, tickno: %f, window: %f, _packets_sent: %ld, _largest_ack: %ld\n", _last_send_time, tickno, _the_window, _packets_sent, _largest_ack);
       return _last_send_time + TIMEOUT_THRESHOLD;
+      // return _last_send_time + TIMEOUT_THRESHOLD;
     } else {
+      // printf("infinite part: _last_send_time: %f, tickno: %f, window: %f, _packets_sent: %ld, _largest_ack: %ld\n", _last_send_time, tickno, _the_window, _packets_sent, _largest_ack);
       return std::numeric_limits<double>::max();
     }
   }
 }
 
 void Unicorn::get_action(const double& tickno) {
+
+    assert(_memory._window >= 1 && _memory._window_ewma >= 1 && _memory._slow_window_ewma);
 
   const double action = _rainbow.get_action(
     _thread_id,

@@ -90,7 +90,7 @@ public:
       _slow_window_ewma(0)
   {}
 
-  void reset( void ) { _rec_send_ewma = _rec_rec_ewma = _rtt_ratio = _slow_rec_rec_ewma = _slow_rec_send_ewma = _rtt_diff = _queueing_delay = _last_tick_sent = _last_tick_received = _min_rtt = _loss = _loss_ewma = _slow_loss_ewma = _send = _rec = _lost_since_last_time = _rtt = _rtt_ewma = _slow_rtt_ewma = _window = _window_ewma = _slow_window_ewma = 0; _window = _window_ewma = _slow_window_ewma = MIN_WINDOW_UNICORN; }
+  void reset( void ) { _rec_send_ewma = _rec_rec_ewma = _rtt_ratio = _slow_rec_rec_ewma = _slow_rec_send_ewma = _rtt_diff = _queueing_delay = _last_tick_sent = _last_tick_received = _min_rtt = _loss = _loss_ewma = _slow_loss_ewma = _send = _rec = _lost_since_last_time = _rtt = _rtt_ewma = _slow_rtt_ewma = 0; _window = _window_ewma = _slow_window_ewma = MIN_WINDOW_UNICORN; }
 
   static const unsigned int datasize = 6;
 
