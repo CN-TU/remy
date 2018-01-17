@@ -105,11 +105,11 @@
 \renewcommand{\shortauthors}{Bachl, Zseby, Fabini}
 
 \begin{abstract}
-This paper proposes a novel method of Congestion Control that uses on-line Reinforcement Learning (RL) to maintain the optimum congestion window with respect to a given utility function. 
+This paper proposes a novel method of Congestion Control that uses on-line reinforcement learning (RL) to maintain the optimum congestion window with respect to a given utility function. 
 
 To this end we use a neural network based approach that can be initialized with a previously trained neural network or with random weights (without any prior knowledge). As in congestion control the rewards used in the learning process naturally come delayed and bit by bit, we propose a novel formulation of reinforcement learning that allows us to deal with delayed and partial rewards.
 
-We show that our method converges to a stable, close-to-optimum solution within the order of minutes and then commonly outperforms existing congestion control algorithms in typical networks. Thus, for the first time, we demonstrate that ANN based Reinforcement Learning without any preknowledge can feasibly be done on-line and can compete with hand-crafted solutions given long enough episodes. 
+We show that our method converges to a stable, close-to-optimum solution within the order of minutes and then commonly outperforms existing congestion control algorithms in typical networks. Thus, for the first time, we demonstrate that ANN based reinforcement learning without any preknowledge can feasibly be done on-line and can compete with hand-crafted solutions given long enough episodes. 
 
 \end{abstract}
 
@@ -150,7 +150,7 @@ We show that our method converges to a stable, close-to-optimum solution within 
 
 \section{Introduction}
 
-Recent advances in neural network based Reinforcement Learning (RL) for the purpose of playing video games raise the question if it is also possible to formulate sending Internet data in a fashion similar to a video game. The rules of the ``Game of Congestion Control'' can be summarized approximately as follows: Each player wants to send \begin{enumerate*}
+Recent advances in neural network based reinforcement learning (RL) for the purpose of playing video games raise the question if it is also possible to formulate sending Internet data in a fashion similar to a video game. The rules of the ``Game of Congestion Control'' can be summarized approximately as follows: Each player wants to send \begin{enumerate*}
 \item as many packets as possible
 \item with as little delay as possible
 \item while losing as few packets as possible
@@ -164,7 +164,7 @@ From this formulation of Congestion Control, one can observe a couple of unique 
 \item \textbf{Actions and rewards are not atomic}: If an action causes three packets to be sent, we consider these three packets being sent three \textit{partial actions}. In case these packets are transmitted correctly, the receiver will send three acknowledgements. Each of these acknowledgements is a \textit{partial reward} that already unveils new information on the current state of the network and enables the sender to take an action based on this new information. However, only if all partial rewards have been received, the sender can assemble the overall reward of the corresponding action and can perform an update of the underlying RL logic. 
 \end{itemize}
 
-To address these problems, we develop a new formulation of RL called \textit{Partial Action Learning} (PAL). PAL is a superset of Reinforcement Learning: If one uses PAL for a learning problem without delay, asynchronicity and partial actions/partial rewards, one gets classical RL.
+To address these problems, we develop a new formulation of RL called \textit{Partial Action Learning} (PAL). PAL is a superset of reinforcement learning: If one uses PAL for a learning problem without delay, asynchronicity and partial actions/partial rewards, one gets classical RL.
 
 While using PAL to train an optimum congestion control for a specific range of network scenarios in an off-line fashion is possible, it is something that has already been done previously in an approach called \textit{Remy} \citep{winstein_tcp_2013}. The only seizable advantage that PAL could provide here is increased training speed. Thus we want to show that it is  not only possible to learn congestion control by using machine learning but that it is even possible to do so on-line and without any preknowledge about the network environment.
 
@@ -180,74 +180,76 @@ Using a utility function that encourages high throughput and discourages packet 
 \end{minipage}
 \end{figure}
 
-After having learned how to perform congestion control in a certain network scenario, our approach can compete with established algorithms and achieve superior throughput with packet loss at an average of less than 5\%, while still gradually improving and adapting its way of performing congestion control.
+After spending up to a few minutes with suboptimal performance during initial exploration (if no online pre-training was used), our approach can compete with established algorithms and achieve superior throughput with packet loss at an average of less than 5\%, while still gradually improving and adapting its way of performing congestion control.
 
 \section{Related Work}
 
 \subsection{Congestion Control}
 
-Congestion control has been implemented in TCP since the 1980s as a series of congestion collapses dramatically decreased applications' throughput in the Internet, which lead to the development of the Tahoe and Reno algorithms \cite{jacobson_congestion_1988}. These approaches as well as most others maintain a congestion window which stands for the maximum amount of data that are allowed to be traveling in the network without having been acknowledged by the receiver. In general, successful transmission and acknowledgement of data leads to the congestion window being increased while packet loss (or an increase in delay as in the Vegas algorithm \cite{brakmo_tcp_1995} \todo{How much detail is necessary in the related work section?}) lead to the congestion window being lowered according to a set of fixed rules. Algorithms such as Cubic and Compound \cite{ha_cubic:_2008, tan_compound_2006} improve congestion control specifically with respect to so-called long fat networks with a high round-trip time and bandwidth. Proportional rate reduction \cite{dukkipati_proportional_2011} aims to make the reduction of the rate that occurs in case of congestion more smooth and steady in time to avoid the bursty behavior that occurred upon loss in previous TCP congestion control variants. On the other hand, BBR \cite{cardwell_bbr:_2016} does not use a set of fixed rules such as previous congestion control algorithms but instead estimates a model of the network path by using measurements of RTT and throughput and then adjusts its sending rate so that it uses the maximum bandwidth according to its network model while trying not to fill up queues. A similar approach is PCC \cite{dong_pcc:_2015}, which also uses measurements to find an optimum sending rate with respect to a defined utility function (e.g. maximizing throughput while minimizing packet loss). However, PCC doesn't maintain a congestion window but instead modulates the sending rate. 
+Congestion control has been implemented in TCP since the 1980s as a series of congestion collapses dramatically decreased applications' throughput in the Internet, which lead to the development of the Tahoe and Reno algorithms \cite{jacobson_congestion_1988}. These approaches as well as most others maintain a congestion window which stands for the maximum amount of data that are allowed to be traveling in the network without having been acknowledged by the receiver. In general, receiving acknowledgements of data that were successfully transmitted leads to the congestion window being increased while packet loss (or an increase in delay as in the Vegas algorithm \cite{brakmo_tcp_1995} \todo{How much detail is necessary in the related work section?}) lead to the congestion window being lowered according to a set of fixed rules. Algorithms such as Cubic and Compound \cite{ha_cubic:_2008, tan_compound_2006} improve congestion control specifically with respect to so-called long fat networks with a high round-trip time and bandwidth. Proportional rate reduction \cite{dukkipati_proportional_2011} aims to make the reduction of the rate that occurs in case of congestion more smooth and steady in time to avoid the bursty behavior that occurred upon loss in previous TCP congestion control variants. On the other hand, BBR \cite{cardwell_bbr:_2016} does not use a set of fixed rules such as previous congestion control algorithms but instead estimates a model of the network path by using measurements of RTT and throughput and then adjusts its sending rate so that it uses the maximum bandwidth according to its network model while trying not to fill up queues. A similar approach is PCC \cite{dong_pcc:_2015}, which also uses measurements to find an optimum sending rate with respect to a defined utility function (e.g. maximizing throughput while minimizing packet loss). However, PCC doesn't maintain a congestion window but instead modulates the sending rate. 
 
-Besides the aforementioned human-designed algorithms there have been attempts to use machine learning to improve congestion control. \citet{geurts_machine_2004} train a classifier off-line to determine whether packet loss is caused by congestion or by the link layer. If it is caused by the link layer, TCP does not alter the window. Otherwise -- if a packet was lost due to congestion according to the classifier -- it uses a traditional TCP congestion control algorithm. \citet{winstein_tcp_2013} train a machine learning solution called \textit{Remy} that finds an optimum congestion control for a given range of a range of network parameters. For instance, one could find an optimum congestion control for networks with a RTT of 50-100\,ms and link speeds of 100-500\,Mbit/s. After a lengthy training procedure Remy finds an optimum congestion control algorithm for the specified networks on a per acknowledgement basis. 
+Besides the aforementioned human-designed algorithms there have been attempts to use machine learning to improve congestion control. \citet{geurts_machine_2004} train a classifier off-line to determine whether packet loss is caused by congestion or by the link layer. If it is caused by the link layer, TCP does not alter the window. Otherwise -- if a packet was lost due to congestion according to the classifier -- it uses a traditional TCP congestion control algorithm. \citet{winstein_tcp_2013} train a machine learning solution called \textit{Remy} that finds an optimum congestion control for a given range of network parameters. For instance, one could find an optimum congestion control for networks with an RTT of 50-100\,ms and link speeds of 100-500\,Mbit/s. After a lengthy training procedure Remy finds an optimum congestion control algorithm for the specified networks on a per acknowledgement basis (updating the window upon receiving an acknowledgement alike traditional congestion control algorithms). 
 
-Our goal is to find an optimum congestion control algorithm on a per acknowledgement basis similar to Remy that, however, can be trained on-line.  Such a solution could be used in a purely on-line fashion, in a off-line fashion like Remy or a combination of both: One pre-trains a generic congestion control algorithm that works reasonably well for every network that then gets refined during on-line training according to the current network circumstances. 
+Our goal is to find an optimum congestion control algorithm on a per acknowledgement basis similar to Remy that, however, can be trained on-line.  Such a solution could be used in a purely on-line fashion, in a off-line fashion like Remy or a combination of both: One could pre-train a generic congestion control algorithm that works reasonably well for every network that then gets refined during on-line training according to the current network circumstances. 
 
-To this end we use Partial Action Learning which is based on the Asynchronous Advantage Actor Critic framework \cite{mnih_asynchronous_2016}, which has been demonstrated to be able to learn to play a wide range of video games and commonly outperform human players. In particular it is a good choice for congestion control as it can be easily adapted to a wide range of problems and has been proven to deliver good performance. Furthermore, as we will show, it is conceptually possible to use it for on-line training although -- to our knowledge -- this has not been done until now. 
+To this end we propose Partial Action Learning which is based on the Asynchronous Advantage Actor Critic framework \cite{mnih_asynchronous_2016}, which has been demonstrated to be able to learn to play a wide range of video games and commonly outperform human players. In particular, it is a good choice for congestion control as it has been proven to deliver good performance and high training speed for playing video games and also for networking related tasks such as Adaptive Bitrate Algorithms \cite{mao_neural_2017} \todo{This motivation doesn't sound convincing yet, does it?}. Furthermore, as we will show, it is conceptually possible to use it for on-line training although -- to our knowledge -- this has not been done until now. 
 
 \subsection{Actor Critic Learning}
 \label{subsec:ac}
 
-The \textit{Partial Action Learning} (PAL) (see \ref{subsec:pal}) framework is based on the Actor Critic framework for neural networks proposed by \citet{mnih_asynchronous_2016}, which we outline in this section. 
+The \textit{Partial Action Learning} (PAL) (see \ref{subsec:pal}) framework is based on the Actor Critic framework for neural networks proposed by \citet{mnih_asynchronous_2016}, which we outline (with a focus on intuition over rigor) in this section. 
 
-There are two neural networks, the Actor Network and the Value Network (the Critic part in the abbreviation stands for the Value Network). Given a state, the Actor Network outputs what it deems to be the optimum action to perform in that certain state. The Value Network estimates what long-term reward can be expected in this state. So an action is considered good if it achieved a long-term reward that is higher than the long-term reward expected by the Value Network and it is considered bad if the reward was lower than expected. The long-term reward is implemented as an exponentially weighted moving average of future rewards. So if a high reward can be achieved right now this is more favorable than if it can be achieved in the future. However it can also be beneficial to get a low reward now and instead get a very large one in the future. 
+There are two neural networks, the Actor Network and the Critic Network. Given a state, the Actor Network outputs what it deems to be the optimum action to perform in that certain state. The Critic Network estimates what long-term reward can be expected in this state. So an action is considered good if it achieved a long-term reward that is higher than the long-term reward expected by the Critic Network and it is considered bad if the reward was lower than expected. The long-term reward is implemented as an exponentially weighted moving average of future rewards. So if a high reward can be achieved right now this is more favorable than if it can be achieved in the future. However it can also be beneficial to get a low reward now and instead get a very large one in the future. 
 
-\subsubsection{Value Network}
+\subsubsection{Critic Network}
 \label{subsubsec:genericvalue}
 
-The Value Network outputs the expected long-term reward $V(s_{t}; \theta_\text{v})$ given a state $s_t$ at time step $t$ and the parameters (neural network weights) of the value network $\theta_v$.
+The Critic Network outputs the expected long-term reward $V(s_{t}; \theta_\text{v})$ given a state $s_t$ at time step $t$ and the parameters (neural network weights) of the critic network $\theta_v$.
 
-With $r_t$ being the reward that was received at time $t$ and $\gamma$ being a factor with $0 < \gamma \leq 1$, which stands for the influence that future reward has on the moving average, we define the expected long-term reward as 
+With $r_t$ being the reward that was received at time $t$ and $\gamma$ being a factor with $0 < \gamma \leq 1$, which stands for the influence that future reward has on the moving average, we define the expected long-term reward at time step $t$ as 
 \begin{align*}
 R_t = \gamma r_{t} + (1-\gamma) R_{t+1} ,
 %R_t = \left(\left(\sum_{i=0}^{k-1} \gamma^ir_{t+i}\right) + \gamma^k V(s_{t+k}; \theta_\text{v})\right)\left( 1-\gamma \right),
 \end{align*}
 
-One can see that to compute $R_t$ at time step $t$ one has to look infinitely far in the future to get all future rewards needed to accurately computer the exponentially weighted moving average at time step $t$. Thus, one usually only carries out $t_\text{max}$ steps (for example 20) and then uses an estimation of $R_{t_\text{max}+1}$ provided by the value network as the continuation \todo{Clearer than before?}. The only exception from this is when the task to carry out is over before reaching $t_\text{max}$. In this case, one can either use a prediction from the value network as usually or simply let the moving average end without continuation (ignoring the term weighted with $(\gamma-1)$ at the last step). 
+One can see that to compute $R_t$ at time step $t$ one has to look infinitely far into the future to get all future rewards needed to compute the exponentially weighted moving average at time step $t$. Thus, one usually only carries out $t_\text{max}$ steps (for example 20) and then uses an estimation of $R_{t_\text{max}+1}$ provided by the critic network as the continuation \todo{Clearer than before?}. The only exception from this is when the task to carry out is over before reaching $t_\text{max}$ (e.g. the TCP flow is over). In this case, one can either use a prediction from the critic network as a continuation as usually or simply let the moving average end without continuation (ignoring the term weighted with $(\gamma-1)$ at the last step). 
 
 %where $k$ is upper-bounded by $t_\text{max}$ ($t_\text{max}$ is a fixed hyperparameter that indicates how many rewards should be received before updating the neural network). So $R_t$ is the value of the exponentially weighted average of future rewards at time step $t$. In practice this means that we collect $t_\text{max}$ rewards, compute the expected long-term reward starting at each time step, update the neural network and start the same procedure again. 
 
 %\todo{Explanation not so clear?}
 
-The loss function (not in the sense of packet loss but in the sense of the loss of a machine learning problem), which the value network tries to minimize at each time step, is the square of the difference of the actual long-term reward received and the expected long-term reward
+The loss function (not in the sense of packet loss but in the sense of the loss of a machine learning problem), which the critic network tries to minimize at each time step, is the square of the difference of the actual long-term reward received and the expected long-term reward
 \begin{align*}
-l_{\text{v},t} = \left(R_t - V(s_t; \theta_\text{v})\right)^2.
+l_{\text{v},t} = \left(R_t - V(s_t; \theta)\right)^2.
 \end{align*}
 
 \subsubsection{Actor Network}
 \label{subsubsec:genericactor}
 
-The Actor Network outputs a probability distribution from which the action $a_t$ at time step $t$ is randomly sampled. We use the mean $\mu$ and the standard deviation $\sigma$, to parametrize a normal distribution. The main idea is that the network learns to output the right mean at the right time step to maximize the future reward and that it uses the standard deviation to try out new actions, which could yield a better than expected reward. 
+The Actor Network outputs a probability distribution from which the action $a_t$ at time step $t$ is randomly sampled. We use the mean $\mu$ and the standard deviation $\sigma$ to parametrize a normal distribution. The main idea is that the network learns to output the right mean at the right time step to maximize the future reward and that it uses the standard deviation to try out new actions, which could yield a better than expected reward. 
 
-With $v_t$ being the value that the value network estimated as the future reward given the current state $s_t$ at time step $t$ ($v_t$ is just an abbreviation for $V(s_t; \theta_\text{v})$) and $\theta_a$ the parameters of the actor network and with $\beta$ being a factor that specifies the importance of the entropy $H$, $\pi$ designating the probability density function, meaning that $\pi\left( a_t \given s_t; \theta_\text{a} \right)$ is the value of the probability density function of taking action $a_t$ in state $s_t$ with the current weights of the actor network $\theta_\text{a}$, we define the loss that the actor network aims to minimize as follows:
+Each time we take an action $a_t$ we also let the critic network make an estimation $V(s_t; \theta)$, which we abbreviate as $v_t$, given the current neural network weights $\theta$ and the current state $s_t$. The loss function of the actor network can now be described as this: How likely was it (on a logarithmic scale) to take action $a_t$ given the probability distribution at time $t$ and how beneficial was this action when comparing to the critic's estimation? For example, if an action was very successful and highly unlikely, the actor network's are updated to make actions like this more likely in the future. 
+
+The actor also aims at increasing the entropy of the probability density function ($\frac{1}{2} \log \left( 2 \pi e \sigma^2 \right)$) to encourage exploration: Otherwise the actor could always output similar actions but never actually take the action that yields the best performance. We designate the entropy as $H$ and introduce a parameter $\beta$ which specifies magnitude of the influence of the entropy. 
 \begin{align*}
-l_{\text{a},t} =& -\log \left( \pi\left( a_t \given s_t; \theta_\text{a} \right)\right)\left( R_t - v_t \right)\\ 
-&- \beta H\left( \pi\left( s_t; \theta_a \right)\right).
+l_{\text{a},t} =& -\log \left( \pi\left( a_t \given s_t; \theta \right)\right)\left( R_t - v_t \right)\\ 
+&- \beta H\left( \pi\left( s_t; \theta \right)\right).
 \end{align*}
 
 \section{Method}
 \subsection{Partial Action Learning}
 \label{subsec:pal}
 
-The key difference between PAL and previous approaches to Reinforcement Learning is that in classical Reinforcement Learning, an action is always followed by a reward and a reward is always followed by a action. In our proposed concept, however, it is possible to take new actions while previous actions haven't received their rewards yet.
+The key difference between PAL and previous approaches to RL is that in classical RL an action is always followed by a reward and a reward is always followed by an action. In our proposed concept, however, it is possible to take new actions while previous actions haven't received their rewards yet.
 
-Another major difference in PAL is that one action generates a number of partial actions ($\geq 0$) (see \autoref{fig:pal}). Each partial action generates feedback upon interacting with the environment. Upon receiving feedback for a partial action, the agent determines the current state and triggers a new action. When all feedbacks of one action were received, the agent combines them to form the reward and updates the value and actor networks.
+Another major difference in PAL is that one action generates a number of partial actions ($\geq 0$) (see \autoref{fig:pal}). Each partial action generates feedback upon interacting with the environment. Upon receiving feedback for a partial action, the agent determines the current state and triggers a new action. When all feedbacks of one action were received, the agent combines them to form the reward and updates the critic and actor networks.
 
-In \autoref{alg:pal} we show the code that runs in each of the agents (in the congestion control scenario, one agent corresponds to a sender). It is possible to have several agents which share a set of weights but one can also use separate weights for each agent, which is more realistic in case of congestion control in the Internet, as different senders cannot easily share a set of neural network weights over the Internet.
+In \autoref{alg:pal} (in the appendix) we show the code that runs in each of the agents (in the congestion control scenario, one agent corresponds to a sender). It is possible to have several agents which share a set of neural weights (which is usually done when performing off-line training \cite{mnih_asynchronous_2016,mao_neural_2017}) but one can also use separate weights for each agent, which is more realistic in case of congestion control in the Internet, as it is not sensible that different senders share a set of neural network weights over the Internet.
 
 \begin{figure}
 \begin{minipage}{\columnwidth}
 \includesvg{Reinforcement_learning_diagram}
-\caption{The classical Reinforcement Learning approach.\protect\footnote{adapted from \url{https://upload.wikimedia.org/wikipedia/commons/1/1b/Reinforcement_learning_diagram.svg}}}
+\caption{The classical reinforcement learning approach.\protect\footnote{adapted from \url{https://upload.wikimedia.org/wikipedia/commons/1/1b/Reinforcement_learning_diagram.svg}}}
 \label{fig:reinforcement}
 \end{minipage}
 \end{figure}
@@ -260,44 +262,45 @@ In \autoref{alg:pal} we show the code that runs in each of the agents (in the co
 \end{minipage}
 \end{figure}
 
-\subsection{Congestion Control specifics}
+\subsection{Congestion Control Specifics}
 
 \begin{figure}
 
 \input{petri_net.tex}
 
-\caption{A petri net describing the congestion control mechanism. We start with one token in the state \textit{Received feedback}, which means that we can take an action right in the beginning. The concept is the following: If there is at least one token in the \textit{Open congestion window}, send a packet. The token goes to the network and after some time the acknowledgement (or timeout if the packet gets lost) for the packet is received in the \textit{Received ACK} state. From here one token goes to the \textit{Open congestion window} meaning that when we get an ACK (or timeout) we can send another packet (The \textit{Open congestion window} signifies the congestion window minus the packets that are currently unacknowledged.). Furthermore the state \textit{Received feedback} receives a token upon receiving an ACK/timeout. \textit{Take action} adds \textit{a} tokens to the \textit{Open congestion window}, where $a$ is a real number (possibly also negative); thus in each state there can also be a real number of tokens (e.g.~ 2.34 tokens are possible in the \textit{Open congestion window}). However, we define that the congestion window can never be smaller than 1 (This means that the sum of all tokens in the \textit{Open congestion window.}, \textit{Received ACK} and \textit{Packets in the network} states can never be smaller than 1.}
+\caption{A petri net describing the congestion control mechanism. We start with one token in the state \textit{Received feedback}, which means that we can take an action right in the beginning. The concept is the following: If there is at least one token in the \textit{Open congestion window} send a packet (for the sake of simplicity in this example we assume that the congestion window is in packets and not bytes). The \textit{Open congestion window} signifies the congestion window minus the packets that are currently unacknowledged. The token now goes to the network and after some time the acknowledgement (ACK) (or negative-acknowledgement (NACK) or timeout if the packet gets lost) for the packet is received in the \textit{Received ACK} state. From here one token goes to the \textit{Open congestion window} meaning that when we get an ACK, NACK (or timeout) we can send another packet. Furthermore the state \textit{Received feedback} receives a token upon receiving an ACK/NACK/timeout. \textit{Take action} adds \textit{a} tokens to the \textit{Open congestion window}, where $a$ is a real number (possibly also negative); thus in each state there can also be a real number of tokens (e.g.~ 2.34 tokens are possible in the \textit{Open congestion window}). However, we define that the congestion window can never be smaller than 1, which means that the sum of all tokens in the \textit{Open congestion window.}, \textit{Received ACK} and \textit{Packets in the network} states can never be smaller than 1.}
 \label{fig:petri}
 \end{figure}
 
-The motivation for PAL is that classical Reinforcement Learning assumes that a reward follows an action and vice-versa (see \autoref{fig:reinforcement}). However, in the case of congestion control, it is desirable to perform a new action without having received a reward for the previous action. For example, imagine that we receive two acknowledgements directly after one other. For each of these two acknowledgements an action has to be performed but it does not seem feasible for the second action to wait until the first action has received a reward as it takes one RTT until an acknowledgement (a reward) is received. Thus the Asynchronous Actor Critic framework as described by \cite{mnih_asynchronous_2016} cannot be applied to congestion control as it assumes that actions and rewards are synchronized and so we have to use Partial Action Learning (see \autoref{subsec:pal}). We describe the overall workings of PAL for congestion control using a petri net (see \autoref{fig:petri}).
+The motivation for PAL is that classical reinforcement learning assumes that a reward follows an action and vice-versa (see \autoref{fig:reinforcement}). \todo{Too much repetition of this?} However, in the case of congestion control, it is desirable to perform a new action without having received a reward for the previous action. For example, imagine that we receive an acknowledgement. Now we have to sample an action and wait for the reward, and it takes one RTT until the first acknowledgements (which make up the reward) are received. If we now receive another acknowledgement before receiving the reward of the previous action, classical RL cannot handle this situation because of the asynchronicity of actions and rewards. Thus the Asynchronous Actor Critic framework as described by \cite{mnih_asynchronous_2016} cannot be applied to congestion control as it assumes that actions and rewards are synchronized and so we have to use Partial Action Learning (see \autoref{subsec:pal}). We describe the overall workings of PAL for congestion control using a petri net (see \autoref{fig:petri}).
 
-To use PAL for congestion control we first have to define the correct semantics for this specific use case and we have to explicitly state how the state, reward etc.~are defined. Furthermore, we have to define how the actor and value network explicitely work in case of congestion control. In the following a time step $t$ corresponds to the reception of an acknowledgement. The beginning of the flow, before any packet is sent, corresponds to time step $0$.
+To use PAL for congestion control we first have to define the correct semantics for this specific use case and we have to explicitly state how the state, reward etc.~are defined. Furthermore, we have to define how the actor and critic network explicitely work in case of congestion control. In the following a time step $t$ corresponds to the reception of an acknowledgement. The beginning of the flow, before any packet is sent, corresponds to time step $0$.
 
 \begin{description}
 \item[$\textit{s}_\text{t}$] The state  describes the current ``congestion state''. The following features are included in it:
 \begin{itemize}
-\item the round-trip time of the last packet
-\item the current congestion window
 \item the time between the last two packets that were sent
 \item the time between the last two packets that were received
-\item the number of packets that were lost since the last acknowledgement was received
+\item the RTT of the last received packet
+\item whether the last packet was lost where $1$ signifies that the last packet was lost while $0$ indicates that it was received correctly
+\item the current congestion window as a real number
 \end{itemize}
+Of each of these features the feature itself is included as well as one exponentially weighted moving average (ewma) with a factor $\alpha$ of $\frac{1}{8}$ and one with an $\alpha$ of $\frac{1}{256}$ (the concept of using ewmas with these specific values of $\alpha$ was first introduced in \textit{Remy} \cite{winstein_tcp_2013}).  
 Each time an acknowledgement is received, the state is updated and the actor network is asked for the next action.
-\item[$\textit{a}_\text{t}$] Based on a given state and the history of previous states (because we use LSTM cells and thus can also consider previous states), the actor network returns an action $a_t$, which is a real number that stands for the change of the congestion window. 
-\item[$\textit{r}_\text{t}$] The reward is a tuple of at least one reward metric. 
-%These are discussed in more detail in \autoref{subsubsec:value}. 
-For each reward metric there is also an output of the value network that predicts the expected long-term average of this reward metric given the current state. 
-%\item[$\textit{v}_\text{t}$] The value is a tuple of the expected average reward estimated by the value network (see \autoref{subsubsec:value}) for each of the reward metrics. 
+\item[$\textit{a}_t$] Based on a given state and the history of previous states (because we use Gated Recurrent Units (GRUs) and thus can also consider previous states), the actor network returns an action $a_t$, which is a real number that stands for the change of the congestion window. 
+\item[$\textit{r}_t$] The reward is a tuple of five reward metrics. 
+%These are discussed in more detail in \autoref{subsubsec:critic}. 
+For each reward metric there is also an output of the critic network that predicts the expected long-term average of this reward metric given the current state. 
+\item[$\textit{v}_t$] The value is a tuple of the expected average reward estimated by the critic network (see \autoref{subsubsec:critic}) for each of the reward metrics. 
 \end{description}
 
-We actually use the following types of reward: 
+We use the following reward metrics: 
 \begin{description}
-\item[$\textit{r}_{\text{packet},t}$] is the number of the packets that the sender sent during time step $t$ and that were not lost (so they were acknowledged at some point by the receiver).
+\item[$\textit{r}_{\text{sent},t}$] is the sum of all bytes in all packets the sender sent during time step $t$.
+\item[$\textit{r}_{\text{received},t}$] is the sum of all bytes in all packets that the sender sent during time step $t$ and that were not lost (so they were acknowledged at some point by the receiver).
 %\item[$\textit{r}_{\text{byte},t}$] is the sum of the bytes of the packets that the sender sent and that were not lost. Example: At time $t'$, three packets were sent with 300, 200, and 1500 bytes each so $\textit{r}_{\text{byte},t'} = 2000$
-\item[$\textit{r}_{\text{delay},t}$] is the sum of the round trip times of the packets that the sender sent and that were not lost.
-\item[$\textit{r}_{\text{duration},t}$] is the sum of the time between receiving the last packet and receiving this packet (``inter-receive time'') for the packets that the sender sent and that were not lost.
-\item[$\textit{r}_{\text{lost},t}$] is the sum of packets that were lost between receiving the last packet and receiving this packet.
+%\item[$\textit{r}_{\text{delay},t}$] is the sum of the round trip times of the packets that the sender sent and that were not lost.
+\item[$\textit{r}_{\text{duration},t}$] is the time between receiving the last packet and receiving this packet (``inter acknowledgement reception time'') summed over all packets that the sender sent and that were not lost. Example: The sender sent three packets, of which two were not lost. The time between receiving the ACK of the first packet that wasn't lost and the previous one is 5\,ms and the time between receiving the ACK of the second packet that wasn't lost and the previous ACK is 5\,ms. So for this time step $\textit{r}_{\text{duration},t}$ is 11\,ms.
 \end{description}
 
 %We actually use four moving averages for four different types of reward: 
@@ -308,38 +311,32 @@ We actually use the following types of reward:
 %\item[$\textit{R}_\text{duration}$] is the moving average of the time between receiving the last packet and receiving this packet (``inter-receive time'') for the packets that the sender sent and that were not lost.
 %\end{description}
 
-The overall structure of the neural network for both the value and the actor network is depicted in \autoref{fig:neural_network}.
+The overall structure of the neural network for both the value and the actor network is depicted in \autoref{fig:neural_network}. Having these reward metrics one can compose a variety of functions with their long-term averages. How these reward metrics can be used in reinforcement learning is described in \autoref{subsec:utility}. 
 
 \begin{figure}
 
 \input{neural_network.tex}
 
-\caption{An overview of the complete neural network being used. Ocher stands for the input, blue for linear layers, red for LSTM layers, green for linear layers with a softplus activation function and purple for the outputs of the neural network. The numbers in parentheses next to each label stand for the number of width of that layer (i.e.~the number of neurons except for the inputs and outputs).}
+\caption{An overview of the complete neural network being used. Ocher stands for the input, blue for linear layers, red for GRU layers and purple for the outputs of the neural network. The numbers in parentheses next to each label stand for the width of that layer (i.e.~the number of neurons except for the inputs and outputs).}
 \label{fig:neural_network}
 \end{figure}
 
-\subsubsection{Value Network}
-\label{subsubsec:value}
+\subsubsection{Critic Network}
+\label{subsubsec:critic}
 
-In the case of congestion control, the loss function $l_{\text{v},t}$ of the value network is actually the sum of the squares of the difference for each of the expected long-term averages and the empirically found averages for each reward metric:
+In the case of congestion control, the loss function $l_{\text{v},t}$ of the critic network is actually the sum of the squares of the difference for each of the expected long-term averages and the empirically found averages for each reward metric:
 \begin{align*}
-l_{\text{v},t} =& \left(R_{\text{packet},t} - V_\text{packet}(s_t; \theta_\text{v})\right)^2 \\
-%&+\left(R_{\text{byte},t} - V_\text{byte}(s_t; \theta_\text{v})\right)^2 \\
-&+\left(R_{\text{delay},t} - V_\text{delay}(s_t; \theta_\text{v})\right)^2 \\
-&+\left(R_{\text{duration},t} - V_\text{duration}(s_t; \theta_\text{v})\right)^2 \\
-&+\left(R_{\text{lost},t} - V_\text{lost}(s_t; \theta_\text{v})\right)^2
+l_{\text{v},t} =& \left(R_{\text{received},t} - V_\text{received}(s_t; \theta_\text{v})\right)^2 \\
+&+\left(R_{\text{sent},t} - V_\text{sent}(s_t; \theta_\text{v})\right)^2 \\
+&+\left(R_{\text{duration},t} - V_\text{duration}(s_t; \theta_\text{v})\right)^2
 \end{align*}
 
 \subsubsection{Actor Network}
 \label{subsubsec:actor}
 
-The actor network outputs two parameters: The mean of a normal distribution $\mu$ and its standard deviation $\sigma$. 
+Each time an action $a_t$ is requested, a change to the congestion window is sampled from the current normal distribution defined by the parameters $\mu$ and $\sigma$. However, we define that the window can never fall below $1$: $w_{t+1} = \max(w_t + a_t, 1)$. At the beginning of a flow, the window starts as $1$ too.  
 
-Each time an action $a_t$ is requested, it is sampled from the current normal distribution defined by the parameters $\mu$ and $\sigma$.
-
-Then the window is incremented by $a_t$; however, the window can never be smaller than 1. At the beginning of a flow the window starts with 1 as well.
-
-With $H$ being the entropy, the actor network minimizes the loss
+The actor network minimizes the loss function
 %\begin{align*}
 %l_{\text{a},t} =& -\log \left( \pi \left( a_t \given s_t ; \theta_\text{a} \right) \right)\\
 %&\left( \left(\log\left(\frac{R_{\text{byte},t}}{{R_{\text{duration},t}}}\right) - \log\left(\frac{v_{\text{byte},t}}{{v_{\text{duration},t}}}\right)\right) - \left( \frac{R_{\text{delay},t}}{{R_{\text{packet},t}}}- \frac{v_{\text{delay},t}}{{v_{\text{packet},t}}} \right)\right)\\ 
@@ -350,28 +347,26 @@ l_{\text{a},t} =& -\log \left( \pi \left( a_t \given s_t ; \theta_\text{a} \righ
 & \left( U_{\text{measured},t} - U_{\text{expected},t} \right)\\ 
 &- \beta H\left( \pi\left( s_t; \theta_a \right)\right)
 \end{align*}
-where $U$ can be any utility function defined based on some of the reward metrics. In the above formulation, one considers how much better the actual experienced Utility was compared to the expected one. The Utility is formed from the previously defined expected long-term values. 
+where $U$ can be any utility function defined based on some of the (long term averages of the) reward metrics. Thus, in simple terms, the actor network considers if an action improved the actual experienced utility was compared to the expected one and adjusts the neural network accordingly.
  
 \subsection{Utility function}
+\label{subsec:utility}
 
-As the utility function one can choose an arbitrary function based on the reward metrics previously defined. A safe choice is to use PCC's \citep{dong_pcc:_2015} reward function as its convergence has been previously proven. It is defined as follows:
+%t%As the utility function one can choose an arbitrary function based on the reward metrics previously defined. It is also possible to add other reward metrics such as the delay if one wants to incorporate it in the utility function. 
+
+We use a reward function that is similar to the one used by PCC \cite{dong_pcc:_2015}.
 
 \begin{align*}
-U_t = r_{\text{received},t}\text{Sigmoid}_\alpha\left(\frac{r_{\text{loss},t}}{r_{\text{sent},t}} - 0.05\right) + r_{\text{loss},t}
+U_t = \text{throughput} - \alpha \times \text{lost throughput}
 \end{align*}
-where 
+
+$\alpha$ is a parameter that determines how strongly packet loss is discouraged. We can define this utility function as follows using the previously defined reward metrics: 
+
 \begin{align*}
-\text{Sigmoid}_\alpha(x) = \frac{1}{1+e^{\alpha x}},
+U_t = \frac{R_{\text{received},t}}{R_{\text{duration},t}} - \alpha \frac{R_{\text{sent},t} - R_{\text{received},t}}{R_{\text{duration},t}}
 \end{align*}
-$r_\text{received}$ is the actual throughput (in packets per second), $r_\text{loss}$ is the loss rate (in packets per second) and $r_\text{sent}$ is the sending rate (in packets per second). Thus $\frac{r_\text{loss}}{r_\text{sent}}$ is the ratio of data getting lost compared to those being sent, which is a number between 0 and 1.
 
-Intuitively it means that one takes the actual throughput (packets that get received by the receiver and do not get lost) times the sigmoid function of the loss ratio minus 0.05 plus the loss rate. The sigmoid function essentially acts as a cutoff threshold. As soon as the loss rate rises above 5\%, the Sigmoid function decreases very quickly and thus diminishes the Utility. 
-
-It is also possible to set the cutoff threshold to 0, which means that losing packets is heavily punished; or one can increase the threshold to allow for more loss. 
-
-$r_{\text{received},t}$ can be calculated as $\frac{R_\text{packet},t}{R_\text{duration},t}$, $r_{\text{loss},t}$ can be calculated as $\frac{R_\text{lost},t}{R_\text{duration},t}$ and $r_{\text{sent},t}$ can be calculated as $\frac{{R_\text{packet},t} + {R_\text{lost},t}}{R_\text{duration},t}$.
-
-Actually, we assume equally sized packets for all of the above methodology, however, it would also easily be possible to consider the number of bytes per packet as well: One would have to add an additional reward metric of the average number of bytes per packet and as well add one more output to the value network. 
+The equivalent utility is also defined using the estimates of the value networks and it can be determined whether an action achieved a performance that was higher or lower than expected. 
 
 \subsection{Example}
 
@@ -389,10 +384,18 @@ In this section, an example of the overall procedure is outlined.
 
 \end{enumerate}
 
+\section{Results}
+
+\section{Discussion}
+
+\subsection{Best practices for on-line reinforcement learning}
+
+\section{Conclusion}
+
 \section*{Appendix}
 
 \begin{algorithm}[H]
-\caption{Partial Action Learning -- pseudocode for each agent. It is possible that the agents share the global weights $\theta_{\text{a},\text{g}}$ and $\theta_{\text{v},\text{g}}$, which can be reasonable when learning off-line. Otherwise an individual copy of them is kept by each agent. All weights are initialized randomly in the beginning. LSTM cells are used in both the actor and the value network.}
+\caption{Partial Action Learning -- pseudocode for each agent. It is possible that the agents share the global weights $\theta_{\text{a},\text{g}}$ and $\theta_{\text{v},\text{g}}$, which can be reasonable when learning off-line. Otherwise an individual copy of them is kept by each agent. All weights are initialized randomly in the beginning. LSTM cells are used in both the actor and the critic network.}
 \label{alg:pal}
 \begin{algorithmic}[1]
 \Loop
