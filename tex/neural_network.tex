@@ -1,5 +1,15 @@
+\newcommand{\nodedistance}{1.2}
+\newcommand{\neuralnetworkwidth}{32}
+
+\pgfmathsetmacro{\shortside}{sqrt((\nodedistance * \nodedistance ) /2)}
+\pgfmathsetmacro{\solutionx}{ \shortside }
+\pgfmathsetmacro{\solutiony}{ - (3 * \shortside + 3 * \nodedistance ) }
+
+\pgfmathsetmacro{\solutiondurationx}{ \shortside }
+\pgfmathsetmacro{\solutiondurationy}{ - (2 * \shortside + 2 * \nodedistance ) }
+
 \centering
-\begin{tikzpicture}[every label/.append style={font=\tiny}, node distance=1.2cm, >=stealth',bend angle=45,auto]
+\begin{tikzpicture}[every label/.append style={font=\tiny}, node distance=\nodedistance cm, >=stealth',bend angle=45,auto]
 
   \tikzstyle{place}=[circle,thick,draw=blue!75,fill=blue!20,minimum size=6mm]
   \tikzstyle{input place}=[circle,thick,draw=olive!75,fill=olive!20,minimum size=6mm]
@@ -13,7 +23,7 @@
 %  \tikzstyle{every label}=[blue!75]
 
   \begin{scope}
-    \node [input place] (s1) [label={[align=center]left: State (12)}] {};
+    \node [input place] (s1) [label={[align=center]left: State (15)}] {};
     \node [place] (s2) [above right of=s1, label={[align=center]above: Linear}] {};
     
   \path[->] (s1) edge node {} (s2);
@@ -63,33 +73,48 @@
     
   \path[->] (s12) edge node {} (s13);
 
-    \node [output place] (s17) [right of=s13, label={[align=center]above: $V_\text{packets}$ (1)}] {};
+    \node [output place] (s17) [right of=s13, label={[align=center]above: $V_\text{received}$ (1)}] {};
     
   \path[->] (s13) edge node {} (s17);
+%    
+%    \node [place] (s15) [below of=s13, label={[align=center]above: Linear}] {};
+%    
+%  \path[->] (s12) edge node {} (s15);
+%
+%    \node [output place] (s19) [right of=s15, label={[align=center]above: $V_\text{delay}$ (1)}] {};  
     
-    \node [place] (s15) [below of=s13, label={[align=center]above: Linear}] {};
+%  \path[->] (s15) edge node {} (s19);    
     
-  \path[->] (s12) edge node {} (s15);
-
-    \node [output place] (s19) [right of=s15, label={[align=center]above: $V_\text{delay}$ (1)}] {};  
-    
-  \path[->] (s15) edge node {} (s19);    
-    
-    \node [place] (s16) [below of=s15, label={[align=center]above: Linear}] {};
+    \node [place] (s16) [below of=s13, label={[align=center]below: Linear}] {};
     
   \path[->] (s12) edge node {} (s16);    
     
-    \node [output place] (s20) [right of=s16, label={[align=center]above: $V_\text{sent}$ (1)}] {};    
+    \node [output place] (s20) [right of=s16, label={[align=center]below: $V_\text{sent}$ (1)}] {};    
 
   \path[->] (s16) edge node {} (s20);    
     
-    \node [place] (s14) [below of=s16, label={[align=center]above: Linear}] {};
+
+    \node [place] (s40) at (\solutiondurationx cm,\solutiondurationy cm) [label={[align=center]below: Linear}] {};
+
+  \path[->] (s1) edge node {} (s40);   
+
+    \node [lstm place] (s41) [right of=s40, label={[align=center]above: GRU (32)}] {};
     
-  \path[->] (s12) edge node {} (s14);
+  \path[->] (s40) edge node {} (s41);
+  \path[->] (s41) edge [loop below] node {} (s41);
+
+    \node [lstm place] (s42) [right of=s41, label={[align=center]above: GRU (32)}] {};
     
-    \node [output place] (s21) [right of=s14, label={[align=center]above: $V_\text{duration}$ (1)}] {};   
+  \path[->] (s41) edge node {} (s42);
+  \path[->] (s42) edge [loop below] node {} (s42);
+       
+    \node [place] (s43) [right of=s42, label={[align=center]above: Linear}] {};
     
-  \path[->] (s14) edge node {} (s21); 
+  \path[->] (s42) edge node {} (s43);
+    
+    \node [output place] (s44) [right of=s43, label={[align=center]above: $V_\text{duration}$ (1)}] {};   
+    
+  \path[->] (s43) edge node {} (s44); 
   
 %    \node [place] (s17) [below of=s14, label={[align=center]above: Linear}] {};
 %    
@@ -98,6 +123,28 @@
 %    \node [output place] (s22) [right of=s17, label={[align=center]above: $V_\text{byte}$ (1)}] {};   
 %    
 %  \path[->] (s17) edge node {} (s22);   
+
+%    \node [place] (s30) at (\solutionx cm,\solutiony cm) [label={[align=center]below: Linear}] {};
+%
+%  \path[->] (s1) edge node {} (s30);   
+%
+%    \node [lstm place] (s31) [right of=s30, label={[align=center]above: GRU (\neuralnetworkwidth)}] {};
+%    
+%  \path[->] (s30) edge node {} (s31);
+%  \path[->] (s31) edge [loop below] node {} (s31);
+%
+%    \node [lstm place] (s32) [right of=s31, label={[align=center]above: GRU (\neuralnetworkwidth)}] {};
+%    
+%  \path[->] (s31) edge node {} (s32);
+%  \path[->] (s32) edge [loop below] node {} (s32);
+%    
+%    \node [place] (s33) [right of=s32, label={[align=center]above: Linear}] {};
+%    
+%  \path[->] (s32) edge node {} (s33);
+%
+%    \node [output place] (s34) [right of=s33, label={[align=center]above: $V_\text{byte}$ (1)}] {};
+%    
+%  \path[->] (s33) edge node {} (s34);
 
   \end{scope}
 
