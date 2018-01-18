@@ -14,7 +14,7 @@ from functools import reduce
 from game_ac_network import GameACLSTMNetwork
 
 # gamma_current, gamma_future = 1./(1+GAMMA), GAMMA/(1.+GAMMA)
-# from constants import LOCAL_T_MAX
+from constants import LOCAL_T_MAX
 from constants import LOG_LEVEL
 from constants import STATE_SIZE
 from constants import SIGMOID_ALPHA
