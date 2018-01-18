@@ -11,7 +11,7 @@ tiny = 1e-10
 def inverse_softplus(x):
 	return math.log(math.exp(x) - 1)
 
-# LOCAL_T_MAX = 20 # repeat step size
+LOCAL_T_MAX = 20 # repeat step size
 RMSP_ALPHA = 0.99 # decay parameter for RMSProp
 RMSP_EPSILON = 0.1 # epsilon parameter for RMSProp
 # CHECKPOINT_DIR = 'checkpoints'
