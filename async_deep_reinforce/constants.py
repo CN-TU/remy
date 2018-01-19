@@ -85,7 +85,7 @@ DURATION_FACTOR = 1e-2
 # PACKET_FACTOR = 1
 # DURATION_FACTOR = 1
 
-STATE_SIZE = int(os.environ.get('state_size')) if os.environ.get('state_size') is not None else 15
+STATE_SIZE = int(os.environ.get('state_size')) if os.environ.get('state_size') is not None else 10
 HIDDEN_SIZE = int(os.environ.get('hidden_size')) if os.environ.get('hidden_size') is not None else 32
 # ACTION_SIZE = 1 # action size
 
