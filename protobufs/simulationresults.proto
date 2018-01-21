@@ -74,6 +74,7 @@ message SenderState {
     optional uint32 window_size = 3;
     optional float intersend_time = 4;
     optional float lambda = 5;
+    optional uint32 packets_lost = 6;
 }
 
 message UtilityData {

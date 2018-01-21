@@ -186,6 +186,7 @@ void Network<Gang1Type, Gang2Type>::run_simulation_with_logging_until( const dou
     }
 
   }
+
 }
 
 template <class Gang1Type, class Gang2Type>
