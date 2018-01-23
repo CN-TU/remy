@@ -43,7 +43,7 @@ void signal_handler_just_save(int s) {
 }
 
 void unicorn_thread(const size_t thread_id, const BreederOptionsUnicorn options, const size_t iterations_per_thread) {
-  printf("Creating thread no %zd\n", thread_id);
+  printf("Creating thread number %zd\n", thread_id);
   UnicornBreeder breeder(options, thread_id);
   breeder.run(iterations_per_thread);
   // printf("thread = %u, score = %f\n", (unsigned int) thread_id, outcome.score);
