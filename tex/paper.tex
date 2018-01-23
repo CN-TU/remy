@@ -110,11 +110,11 @@
 \renewcommand{\shortauthors}{Bachl, Zseby, Fabini}
 
 \begin{abstract}
-This paper proposes a novel method of Congestion Control that uses on-line reinforcement learning (RL) to maintain the optimum congestion window with respect to a given utility function. 
+This paper proposes a new method of congestion control that uses on-line reinforcement learning to maintain the optimum congestion window with respect to a given utility function. 
 
-To this end we use a neural network based approach that can be initialized with a previously trained neural network or with random weights (without any prior knowledge). As in congestion control the rewards used in the learning process naturally come delayed and bit by bit, we propose a novel formulation of reinforcement learning that allows us to deal with delayed and partial rewards.
+We use a neural network based approach that can be initialized with a previously trained neural network or with random weights (without any prior knowledge). As in congestion control the rewards used in the learning process naturally come delayed and bit by bit, we propose a specific formulation of neural network based reinforcement learning that allows us to deal with delayed and partial rewards.
 
-We show that our method converges to a stable, close-to-optimum solution within the order of minutes and then commonly outperforms existing congestion control algorithms in typical networks. Thus, for the first time, we demonstrate that ANN based reinforcement learning without any preknowledge can feasibly be done on-line and can compete with hand-crafted solutions given long enough episodes. 
+We show that our method converges to a stable, close-to-optimum solution within the order of minutes and outperforms existing congestion control algorithms in typical networks. Thus, we demonstrate that neural network based reinforcement learning without any preknowledge can feasibly be done on-line and can compete with human-designed congestion-control schemes such as New Reno and Cubic. 
 
 \end{abstract}
 
@@ -159,9 +159,9 @@ Recent advances in neural network based reinforcement learning (RL) for the purp
 \item as many packets as possible
 \item with as little delay as possible
 \item while losing as few packets as possible
-\end{enumerate*}. As, for instance, for some applications overall throughput is more important than little packet loss, each application can define its preference using a custom utility function. Clearly, it is also desirable from an overall point of view that all participating players play the game in a way that does not give them an unfair advantage over others. When several players (from now on called senders) share an Internet link under the same conditions, they should receive an equal share of the reward. 
+\end{enumerate*}. As, for instance, for some applications overall throughput is more important than little packet loss, each application can define its preference using a custom utility function. Clearly, it is also desirable from an overall point of view that all participating players play the game in a way that does not give them an unfair advantage over others. When several players (senders) share an Internet link under the same conditions, they should receive an equal share of the reward. 
 
-When performing Congestion Control (CG) \todo{What should be capitalized and what shouldn't? Capitalize RL, CG, ANN?}, each sender uses a set of observed environment conditions to determine what action he should take to maximize his reward in the future. The environment conditions can be any metrics that the sender can obtain from the network, for example the mean round-trip time of the last received packets, the packet loss rate etc. An action is a change to the sending rate: For example, if a sender perceives an increase in the loss rate it might be advisable to lower the sending rate. 
+To perform Congestion Control (CG) \todo{What should be capitalized and what shouldn't? Capitalize RL, CG, ANN?}, each sender uses a set of observed environment conditions to determine which action he should take to maximize his reward in the future. The environment conditions can be any metrics that the sender can obtain from the network, for example the mean round-trip time of the last received packets, the packet loss rate etc. An action is a change to the sending rate: For example, if a sender perceives an increase in the loss rate it might be advisable to lower the sending rate. 
 
 From this formulation of Congestion Control, one can observe a couple of unique features of the problem that seem to prohibit the use of RL: \begin{itemize}
 \item When playing a video game, if one pushes a button, one can see the consequences of an action immediately. However, in Congestion Control, the rewards are always \textbf{delayed} by one round-trip time.
@@ -290,7 +290,7 @@ To use PAL for congestion control we first have to define the correct semantics 
 \item whether the last packet was lost where $1$ signifies that the last packet was lost while $0$ indicates that it was received correctly
 \item the current congestion window as a real number
 \end{itemize}
-Of each of these features the feature itself is included as well as one exponentially weighted moving average (ewma) with a factor $\alpha$ of $\frac{1}{8}$ and one with an $\alpha$ of $\frac{1}{256}$ (the concept of using ewmas with these specific values of $\alpha$ was first introduced in \textit{Remy} \cite{winstein_tcp_2013}).  
+Of each of these features a exponentially weighted moving average with a factor $\alpha$ of $\frac{1}{8}$ and one with an $\alpha$ of $\frac{1}{256}$ (the concept of using ewmas with these specific values of $\alpha$ was first introduced in \textit{Remy} \cite{winstein_tcp_2013}), which makes a total of 10 features.  
 Each time an acknowledgement is received, the state is updated and the actor network is asked for the next action.
 \item[$\textit{a}_t$] Based on a given state and the history of previous states (because we use Gated Recurrent Units (GRUs) and thus can also consider previous states), the actor network returns an action $a_t$, which is a real number that stands for the change of the congestion window. 
 \item[$\textit{r}_t$] The reward is a tuple of five reward metrics. 
@@ -322,7 +322,7 @@ The overall structure of the neural network for both the value and the actor net
 
 \input{neural_network.tex}
 
-\caption{An overview of the complete neural network being used. Ocher stands for the input, blue for linear layers, red for GRU layers and purple for the outputs of the neural network. The numbers in parentheses next to each label stand for the width of that layer (i.e.~the number of neurons except for the inputs and outputs).}
+\caption{An overview of the complete neural network being used. Ocher stands for the input, blue for linear layers, red for GRU layers and purple for the outputs of the neural network. The numbers in parentheses next to each label stand for the width of that layer (i.e.~the number of neurons except for the inputs and outputs). Parts of the neural network are shared between $V_\text{received}$ and $V_\text{sent}$ as well as $\mu$ and $\sigma$ as they output similar quantities and thus the gradients that are computed when updating the neural network are of the same order of magnitude. In our experiments we saw that if one uses shared weights between very different outputs, the outputs which produce significantly larger gradients would ``overwrite'' the gradients of the smaller ones.}
 \label{fig:neural_network}
 \end{figure}
 
@@ -335,6 +335,18 @@ l_{\text{v},t} =& \left(R_{\text{received},t} - V_\text{received}(s_t; \theta_\t
 &+\left(R_{\text{sent},t} - V_\text{sent}(s_t; \theta_\text{v})\right)^2 \\
 &+\left(R_{\text{duration},t} - V_\text{duration}(s_t; \theta_\text{v})\right)^2
 \end{align*}
+
+One apparent issue of using reinforcement learning for congestion control is that in RL one usually uses a fixed parameter $\gamma$ that determines the influence of future rewards. However, in congestion control the larger the window is, the more packets are sent and received per unit of time. Thus, if one used a single fixed parameter $\gamma$, one would have the problem that one would look into the future for a shorter time the larger the window is, as more packets and thus more actions and rewards are handled per unit of time. Our aim is to look into the future for a more-or-less constant time span no matter the current size of the window. In other words, we want to define $\gamma$ so that it reflects the number of packets in the current window, so that it always looks in the future for approximately one round-trip time. 
+
+A ewma with a $\gamma$ of $\frac{2}{n+1}$ has roughly the same distribution of forecast error as a regular moving average with a window size of $n$ \cite{nahmias_production_2009}. Furthermore, with sufficiently large $n$ this means that the first $n$ data account for $\approx 86\%$ of the total weight in the ewma \cite{boissard_applications_2012}.
+
+Thus, the idea is to make $n$ the number of packets in the current window and so we define the factor $\gamma$ as a function of the current window size and the expected amount of bytes to be sent per time step as follows:
+
+\begin{align*}
+\gamma_t = \frac{2}{1+\max(\frac{w_t+a_t}{V_\text{sent}(s_t; \theta_\text{v})},10)}
+\end{align*}
+
+We use 10 as a minimum because when $\gamma$ becomes too big, future rewards is not considered sufficiently anymore and as the variability increases instability ensues. 
 
 \subsubsection{Actor Network}
 \label{subsubsec:actor}
@@ -417,7 +429,7 @@ In this section, an example of the overall procedure is outlined.
 	\State $\theta \gets \theta_{\text{g}}$
 	\Repeat
 		\State $l_\text{values'}.\text{append}(V(s_t; \theta))$
-		\If{\Call{updateWeights}{}}
+		\If{\Call{updateWeights?}{}}
 			\State $\theta_\text{a} \gets \theta_{\text{g}}$
 			\State $l_\text{snapshots}.\text{append}(\theta)$
 			\State $l_\text{hiddenStates}.\text{append}(h)$
@@ -440,7 +452,7 @@ In this section, an example of the overall procedure is outlined.
 			\State $r_{t'} \gets \text{reward w.r.t all feedback }r_{\text{p},k,t'}$
 					\StateIndent[4] where $0 \leq k \leq\#(l_{\text{partialActions},t'})$
 			\State $l_\text{rewards}.\text{append}(r_{t'})$
-			\If{\Call{enoughRewards}{} or the episode is over}
+			\If{\Call{gotEnoughRewards?}{} or the episode is over}
 %			\If{$\#\left(l_\text{rewards}\right) > t_\text{max}$ or the episode is over}
 				\State \Call{computeGradients}{}
 			\EndIf
@@ -490,13 +502,13 @@ In this section, an example of the overall procedure is outlined.
 \label{alg:update}
 \begin{algorithmic}[1]%
 %\algrestore{palalg}
-\Function{updateWeights}{}
+\Function{updateWeights?}{}
 	\State $i \gets 0$
 	\While{$i < \#(l_\text{actions})$}
 		\State $w\gets \left\lfloor l_\text{windows}[i] + l_\text{actions}[i] \right\rfloor $
 		\For{$j\gets i..\#(l_\text{actions})-1$}
 			\State $w\gets \text{w} - l_\text{sent}[j]$
-			\If{$w\leq 0$}
+			\If{$w\leq 0 \land i+1 \geq 10$} \Comment{at least 10 rewards}
 				\State $i \gets j$
 				\State \Break
 			\EndIf
@@ -515,11 +527,11 @@ In this section, an example of the overall procedure is outlined.
 \label{alg:enough}
 \begin{algorithmic}[1]%
 %\algrestore{palalg}
-\Function{enoughRewards}{}
-	\State w $\gets \left\lfloor l_\text{windows}[0] + l_\text{actions}[0] \right\rfloor$
+\Function{gotEnoughRewards?}{}
+	\State $w \gets \left\lfloor l_\text{windows}[0] + l_\text{actions}[0] \right\rfloor$
 	\For{$i\gets 0..\#(l_\text{rewards})-1$}
-		\State w $\gets \text{w} - l_\text{sent}[i]$
-		\If{w $\leq 0$}
+		\State $w \gets \text{w} - l_\text{sent}[i]$
+		\If{$w \leq 0 \land i+1 \geq 10$} \Comment{at least 10 rewards}
 			\State \Return \True
 		\EndIf
 	\EndFor

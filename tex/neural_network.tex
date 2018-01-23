@@ -6,7 +6,7 @@
 \pgfmathsetmacro{\solutiony}{ - (3 * \shortside + 3 * \nodedistance ) }
 
 \pgfmathsetmacro{\solutiondurationx}{ \shortside }
-\pgfmathsetmacro{\solutiondurationy}{ - (2 * \shortside + 2 * \nodedistance ) }
+\pgfmathsetmacro{\solutiondurationy}{ - (3 * \shortside + 1 * \nodedistance ) }
 
 \centering
 \begin{tikzpicture}[every label/.append style={font=\tiny}, node distance=\nodedistance cm, >=stealth',bend angle=45,auto]
@@ -23,7 +23,7 @@
 %  \tikzstyle{every label}=[blue!75]
 
   \begin{scope}
-    \node [input place] (s1) [label={[align=center]left: State (15)}] {};
+    \node [input place] (s1) [label={[align=center]left: State (10)}] {};
     \node [place] (s2) [above right of=s1, label={[align=center]above: Linear}] {};
     
   \path[->] (s1) edge node {} (s2);
