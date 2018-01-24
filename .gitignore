@@ -23,7 +23,7 @@ Makefile.in
 *.nav
 *.snm
 *.toc
-*checkpoints*
+*stored_checkpoints*
 core
 /a3c_log*
 /csv*
