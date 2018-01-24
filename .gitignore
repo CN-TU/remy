@@ -28,6 +28,8 @@ core
 /a3c_log*
 /csv*
 /logging
+/old_data
+/compute-0-?.local
 
 /.vscode
 
