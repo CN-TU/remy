@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <ctime>
 
 #include "unicornbreeder.hh"
 
@@ -12,6 +13,17 @@ using namespace std;
 
 void UnicornBreeder::run(const size_t iterations)
 {
+  time_t rawtime;
+  struct tm * timeinfo;
+  char time_buffer [64 * sizeof(char)];
+
+  time (&rawtime);
+  timeinfo = localtime (&rawtime);
+
+  strftime (time_buffer,64 * sizeof(char),"%F-%T",timeinfo);
+
+  printf("Current time in time_buffer: %s\n", time_buffer);
+
   char file_name[64 * sizeof(char)];
   sprintf(file_name, "stats/thread%lu", _thread_id);
   FILE* f = fopen(file_name, "w");
@@ -45,12 +57,14 @@ void UnicornBreeder::run(const size_t iterations)
     fflush(f);
     printf("Finished iteration %lu in thread %lu! Score is %f.\n", i, _thread_id, final_score);
 
+
+
     char* file_name = getenv("checkpoints");
     string output_filename = "logging/" + string(strchr(file_name, '/')+1);
 
     if ( !output_filename.empty() ) {
-      char of[ 128 ];
-      snprintf( of, 128, "%s.%d", output_filename.c_str(), (int) i );
+      char of[ 256 ];
+      snprintf( of, 256, "%s_%s.%d", output_filename.c_str(), time_buffer, (int) i );
       fprintf( stderr, "Writing to \"%s\"... ", of );
       int fd = open( of, O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR );
       if ( fd < 0 ) {
@@ -75,8 +89,8 @@ void UnicornBreeder::run(const size_t iterations)
     string output_filename_csv = "csv/" + string(strchr(file_name, '/')+1);
 
     if ( !output_filename_csv.empty() ) {
-      char of[ 128 ];
-      snprintf( of, 128, "%s.%d.csv", output_filename_csv.c_str(), (int) i );
+      char of[ 256 ];
+      snprintf( of, 256, "%s_%s.%d.csv", output_filename_csv.c_str(), time_buffer, (int) i );
       fprintf( stderr, "Writing to \"%s\"... ", of );
       FILE* fd = fopen( of, "w" );
       if ( fd == NULL ) {
