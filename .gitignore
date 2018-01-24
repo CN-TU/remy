@@ -30,6 +30,7 @@ core
 /logging
 /old_data
 /compute-0-?.local
+/not_so_old_old_data
 
 /.vscode
 
