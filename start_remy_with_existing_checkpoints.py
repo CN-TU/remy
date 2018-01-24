@@ -25,9 +25,9 @@ for file_name in all_file_names:
 	# if acked_match is not None and int(acked_match.group(2)) >= 1:
 	assert(match is not None)
 
-	my_command="checkpoints=stored_checkpoints/"+match.group(1)+"_"+match.group(2)+"_"+match.group(3)+"_"+match.group(4)+" learning_rate="+learning_rate+" reward_type="+reward_type+" src/remy-unicorn cf=config/"+match.group(2)+"_"+match.group(1)+"_really_small_buffer_"+sloss+".cfg"
+	my_command="checkpoints=stored_checkpoints/"+match.group(1)+"_"+match.group(2)+"_"+match.group(3)+"_"+match.group(4)+" learning_rate="+learning_rate+" reward_type="+reward_type+" nohup src/remy-unicorn cf=config/"+match.group(2)+"_"+match.group(1)+"_really_small_buffer_"+sloss+".cfg"
 
-	print("my_command", my_command)
 	time.sleep(5)
-	# subprocess.Popen(["bash", "-c", my_command])
-	subprocess.run(["bash", "-c", my_command])
+	print("my_command", my_command)
+	subprocess.Popen(["bash", "-c", my_command])
+	# subprocess.run(["bash", "-c", my_command])
