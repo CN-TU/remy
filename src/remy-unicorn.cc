@@ -31,15 +31,15 @@ void print_range( const Range & range, const string & name )
 
 void signal_handler(int s) {
   printf("Signal Handler: Caught signal %d\n", s);
-  Rainbow& unicorn_farm = Rainbow::getInstance(cooperative);
-  unicorn_farm.save_session();
+  Rainbow& rainbow = Rainbow::getInstance(cooperative);
+  rainbow.save_session();
   exit(EXIT_SUCCESS);
 }
 
 void signal_handler_just_save(int s) {
   printf("Signal Handler: Caught signal %d\n", s);
-  Rainbow& unicorn_farm = Rainbow::getInstance(cooperative);
-  unicorn_farm.save_session();
+  Rainbow& rainbow = Rainbow::getInstance(cooperative);
+  rainbow.save_session();
 }
 
 void unicorn_thread(const size_t thread_id, const BreederOptionsUnicorn options, const size_t iterations_per_thread) {
@@ -192,6 +192,9 @@ int main( int argc, char *argv[] )
     thread_array[i].join();
     printf("All threads finished!\n");
   }
+
+  Rainbow& rainbow = Rainbow::getInstance(cooperative);
+  rainbow.save_session();
 
   return 0;
 }

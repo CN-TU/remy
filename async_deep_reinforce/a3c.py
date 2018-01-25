@@ -324,6 +324,7 @@ def call_process_finished(thread_id, actions_to_remove, time_difference, window)
 
 def save_session():
   # logging.debug("save_session")
+  logging.info("save session")
   global global_t, sess, CHECKPOINT_DIR
   if not os.path.exists(CHECKPOINT_DIR):
     os.mkdir(CHECKPOINT_DIR)
