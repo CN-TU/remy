@@ -67,7 +67,7 @@ protected:
   // }
 
 public:
-  Unicorn(const bool& cooperative, const double& delay_delta = 1);
+  Unicorn(const bool& cooperative);
   ~Unicorn();
 
   bool packets_lost( const std::vector< remy::Packet > & packets );

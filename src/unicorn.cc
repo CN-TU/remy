@@ -7,7 +7,7 @@
 
 using namespace std;
 
-Unicorn::Unicorn(const bool& cooperative, const double& delay_delta)
+Unicorn::Unicorn(const bool& cooperative)
   : _memory(),
     _packets_sent( 0 ),
     _packets_received( 0 ),
@@ -23,12 +23,14 @@ Unicorn::Unicorn(const bool& cooperative, const double& delay_delta)
     _outstanding_rewards(),
     _start_tick(0.0),
     _training(true),
-    _delay_delta(delay_delta),
+    _delay_delta(0),
     _id_to_sent_during_action(),
     _id_to_sent_during_flow(),
     _flow_to_last_received(),
     _active_flows()
 {
+  assert( getenv("delay_delta") != NULL );
+  _delay_delta = atof(getenv("delay_delta"));
   // puts("Creating a Unicorn");
 }
 

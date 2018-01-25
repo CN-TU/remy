@@ -14,7 +14,7 @@ from functools import reduce
 from game_ac_network import GameACLSTMNetwork
 
 # gamma_current, gamma_future = 1./(1+GAMMA), GAMMA/(1.+GAMMA)
-# from constants import LOCAL_T_MAX
+from constants import LOCAL_T_MAX
 from constants import LOG_LEVEL
 from constants import STATE_SIZE
 from constants import SIGMOID_ALPHA
@@ -103,13 +103,19 @@ class A3CTrainingThread(object):
 
   def start_anew(self):
     assert(len(self.windows) > 0)
-
     current_index = 0
     while current_index < len(self.windows):
       if current_index + math.floor(A3CTrainingThread.get_actual_window(self.windows[current_index]+self.actions[current_index])) == len(self.windows):
         return True
       current_index = current_index + math.floor(A3CTrainingThread.get_actual_window(self.windows[current_index]+self.actions[current_index]))
     return False
+
+  def start_anew_index(self):
+    assert(len(self.windows) > 0)
+    current_index = 0
+    while current_index < len(self.windows):
+      current_index = current_index + math.floor(A3CTrainingThread.get_actual_window(self.windows[current_index]+self.actions[current_index]))
+    return current_index
 
   def action_step(self, sess, state, tickno, window):
     # print(self.thread_index, "in action")
@@ -206,12 +212,15 @@ class A3CTrainingThread(object):
 
         if 'LOCAL_T_MAX' in globals():
           nones_to_add = [None] * ((LOCAL_T_MAX - (len(self.actions) % LOCAL_T_MAX)) % LOCAL_T_MAX)
-          self.actions += nones_to_add
-          self.states += nones_to_add
-          self.values += nones_to_add
-          self.estimated_values += nones_to_add
-          self.windows += nones_to_add
-          self.ticknos += nones_to_add
+        else:
+          # Sure this makes sense?
+          nones_to_add = [None] * (self.start_anew() - len(self.actions))
+        self.actions += nones_to_add
+        self.states += nones_to_add
+        self.values += nones_to_add
+        self.estimated_values += nones_to_add
+        self.windows += nones_to_add
+        self.ticknos += nones_to_add
       # TODO: Is this useful? I guess only the `local_t' is actually needed...
       else:
         self.local_t = 0
@@ -335,7 +344,9 @@ class A3CTrainingThread(object):
       # assert(False)
       # The GAMMA_FACTOR increases the influence that following observations have on this one.
 
-      GAMMA = (1 - 2/(A3CTrainingThread.get_actual_window(wi+ai) + 1))
+      # GAMMA = (1 - 2/(A3CTrainingThread.get_actual_window(wi+ai) + 1))
+
+      GAMMA = 0.99
 
       # R_duration = ((1-GAMMA)*ri[2] + GAMMA*R_duration)
       # R_packets = ((1-GAMMA)*ri[0] + GAMMA*R_packets)
