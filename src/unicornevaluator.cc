@@ -103,13 +103,17 @@ pair<UnicornEvaluator::Outcome, SimulationResultsUnicorn> UnicornEvaluator::scor
     SimulationRunData& logging = complete_logging.add_run_data(x, interval);
     printf("Running for %.f ticks\n", x.simulation_ticks);
     /* run once */
+    char* delay_delta_string = (char*) malloc(2048 * sizeof(char));
+    sprintf(delay_delta_string, "delay_delta=%f", config_range.delay_delta);
+    putenv(delay_delta_string);
     Network<SenderGang<Unicorn, ByteSwitchedSender<Unicorn>>,
-      SenderGang<Unicorn, ByteSwitchedSender<Unicorn>>> network1( Unicorn(config_range.cooperative, config_range.delay_delta), run_prng, x );
+      SenderGang<Unicorn, ByteSwitchedSender<Unicorn>>> network1( Unicorn(config_range.cooperative), run_prng, x );
     network1.run_simulation_with_logging( x.simulation_ticks, logging );
 
     the_outcome.score += network1.senders().utility();
     the_outcome.throughputs_delays.emplace_back( x, network1.senders().throughputs_delays() );
     counter += 1;
+    free(delay_delta_string);
   }
 
   return {the_outcome, complete_logging};
@@ -130,12 +134,16 @@ UnicornEvaluator::Outcome UnicornEvaluator::score(
   for ( auto &x : shuffled_configs ) {
     printf("Running for %.f ticks\n", x.simulation_ticks);
     /* run once */
+    char* delay_delta_string = (char*) malloc(2048 * sizeof(char));
+    sprintf(delay_delta_string, "delay_delta=%f", config_range.delay_delta);
+    putenv(delay_delta_string);
     Network<SenderGang<Unicorn, ByteSwitchedSender<Unicorn>>,
-      SenderGang<Unicorn, ByteSwitchedSender<Unicorn>>> network1( Unicorn(config_range.cooperative, config_range.delay_delta), run_prng, x );
+      SenderGang<Unicorn, ByteSwitchedSender<Unicorn>>> network1( Unicorn(config_range.cooperative), run_prng, x );
     network1.run_simulation( x.simulation_ticks );
 
     the_outcome.score += network1.senders().utility();
     the_outcome.throughputs_delays.emplace_back( x, network1.senders().throughputs_delays() );
+    free(delay_delta_string);
   }
 
   return the_outcome;
