@@ -110,11 +110,12 @@
 \renewcommand{\shortauthors}{Bachl, Zseby, Fabini}
 
 \begin{abstract}
-This paper proposes a new method of congestion control that uses on-line reinforcement learning to maintain the optimum congestion window with respect to a given utility function. 
 
-We use a neural network based approach that can be initialized with a previously trained neural network or with random weights (without any prior knowledge). As in congestion control the rewards used in the learning process naturally come delayed and bit by bit, we propose a specific formulation of neural network based reinforcement learning that allows us to deal with delayed and partial rewards.
+A major challenge in congestion control is to find a set of rules that dynamically adapt the congestion window to current and anticipated future network conditions to maximize a specified utility function, e.g. maximum throughput or minimum packet loss. 
 
-We show that our method converges to a stable, close-to-optimum solution within the order of minutes and outperforms existing congestion control algorithms in typical networks. Thus, we demonstrate that neural network based reinforcement learning without any preknowledge can feasibly be done on-line and can compete with human-designed congestion-control schemes such as New Reno and Cubic. 
+This paper proposes Reactive Adaptive eXperience based congestion control (TCP Rax), a new method of congestion control that uses online reinforcement learning to maintain an optimum congestion window with respect to a given utility function. We use a neural network based approach that can be initialized either with random weights (without prior knowledge) or with a previously trained neural network to improve stability and convergence time. The processing of rewards in congestion control depends on the arrival of acknowledgments, inducing loop delays that may lead to oscillations. As a remedy we propose a specific formulation of neural network based reinforcement learning that supports the proactive processing of delayed and partial rewards. 
+
+We show that our method converges to a stable, close-to-optimum solution within the order of minutes and outperforms existing congestion control algorithms in typical networks. Thus, this paper demonstrates that neural network based reinforcement learning without any prior knowledge can feasibly be done on-line and can compete with human-designed congestion-control schemes such as New Reno and Cubic.
 
 \end{abstract}
 
@@ -155,7 +156,8 @@ We show that our method converges to a stable, close-to-optimum solution within 
 
 \section{Introduction}
 
-Recent advances in neural network based reinforcement learning (RL) for the purpose of playing video games raise the question if it is also possible to formulate sending Internet data in a fashion similar to a video game. The rules of the ``Game of Congestion Control'' can be summarized approximately as follows: Each player wants to send \begin{enumerate*}
+Recent advances in neural network based reinforcement learning (RL) for the purpose of playing video games raise the question if it is possible to use these frameworks to model end-to-end congestion control. In general, in congestion control each sender aims to maximize an objective function that it composed of one or more of the following to 
+\begin{enumerate*}
 \item as many packets as possible
 \item with as little delay as possible
 \item while losing as few packets as possible
