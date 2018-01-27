@@ -29,7 +29,7 @@ Unicorn::Unicorn(const bool& cooperative)
     _flow_to_last_received(),
     _active_flows()
 {
-  assert( getenv("delay_delta") != NULL && strcmp(getenv("delay_delta"), "") != );
+  assert( getenv("delay_delta") != NULL && strcmp(getenv("delay_delta"), "") != 0);
   _delay_delta = atof(getenv("delay_delta"));
   // puts("Creating a Unicorn");
 }
