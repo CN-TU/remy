@@ -190,8 +190,7 @@ Using a utility function that encourages high throughput and discourages packet 
 \begin{minipage}{\columnwidth}
 \includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-4.local/figures/4_1_2018-01-25-20:17:15_3_2018-01-25-20:17:15.0}}}
 \includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-6.local/figures/4_2_2018-01-25-19:53:39_22_2018-01-25-19:53:39.0}}}
-\includegraphics[width=\columnwidth]{figures/4_1}
-\caption{\todo{figures don't look that appealing do they?} The throughput (solid line) and the loss rate (dashed line) when sharing a bottleneck link of 20\,Mbit/s with a two-way end-to-end delay of 50\,ms and a very small buffer of $\frac{1}{10}$ bandwidth delay product between 1, 2 and 4 senders (from top to bottom). One can see that the time to convergence increases as the number of senders increases, which is caused by the fact that the more senders use the link, the fewer packets each sender receives per unit of time for training. Also, the complexity of the learning problem increases with more senders as the environment becomes more dynamic and unpredictable.}
+\caption{The throughput and the loss rate when sharing a bottleneck link of 20\,Mbit/s with a two-way end-to-end delay of 50\,ms and a very small buffer of $\frac{1}{10}$ bandwidth delay product between 1 and 2 senders (from top to bottom). The time needed for convergence increases with more senders, which is caused by the fact that the more senders use the link, the fewer because each sender receives fewer packets per unit of time for training and because the environment gets more complex. It is interesting to note that in the case of two senders, both flows complement each other and quickly adapt to the sending rate of the other flow.}
 \label{fig:demo}
 \end{minipage}
 \end{figure}
@@ -398,16 +397,16 @@ The equivalent utility is also defined using the estimates of the value networks
 
 \subsection{Example}
 
-In this section, an example of the overall procedure is outlined. 
+In this section, a short example of the overall procedure is outlined. 
 
 \begin{enumerate}
 \item Receive an ACK
-\item Update the internal state to reflect the information that this ACK provides (for example, the state consists of the round trip time experienced by this packet, the time since we receive the last ACK etc.)
-\item Sample an increase for the congestion window from the Actor Network (e.g. $0.24$) and add it to the current congestion window.
+\item Update the internal state to reflect the information that this ACK provides
+\item Sample an increase for the congestion window from the Actor Network and add it to the current congestion window.
 \item 
 \begin{enumerate}
 \item If this was the last ACK, which completes a previous action (e.g. a previous action resulted in $3$ packets being sent; so if this is the ACK for the third (and last) packet of this previous action, we got all the ACKs to compute the reward), combine all partial rewards to form the actual reward for that action. 
-\item If we now have $t_\text{max}$ rewards (set to 20) then we also update the neural network. 
+\item If there are now enough acknowledgements $t_\text{max}$ rewards (set to 20) then we also update the neural network. 
 \end{enumerate}
 
 \end{enumerate}
