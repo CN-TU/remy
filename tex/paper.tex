@@ -72,42 +72,42 @@
 
 
 \begin{document}
-\title{Let's play congestion control}
+\title{TCP Rax: Deep Reinforcement Learning for TCP Congestion Control}
 \titlenote{Produces the permission block, and
   copyright information}
 \subtitle{Extended Abstract}
 \subtitlenote{The full version of the author's guide is available as
   \texttt{acmart.pdf} document}
 
-\author{Maximilian Bachl} 
-\affiliation{%
- \institution{Institute of Telecommunications}
- \streetaddress{Gußhausstraße 25}
- \postcode{1040}
- \city{Vienna} 
- \country{Austria}}
-\email{maximilian.bachl@tuwien.ac.at}
-
-\author{Tanja Zseby} 
-\affiliation{%
- \institution{Institute of Telecommunications}
- \streetaddress{Gußhausstraße 25}
- \postcode{1040}
- \city{Vienna} 
- \country{Austria}}
-\email{tanja.zseby@tuwien.ac.at}
-
-\author{Joachim Fabini} 
-\affiliation{%
- \institution{Institute of Telecommunications}
- \streetaddress{Gußhausstraße 25}
- \postcode{1040}
- \city{Vienna} 
- \country{Austria}}
-\email{joachim.fabini@tuwien.ac.at}
+%\author{Maximilian Bachl} 
+%\affiliation{%
+% \institution{Institute of Telecommunications}
+% \streetaddress{Gußhausstraße 25}
+% \postcode{1040}
+% \city{Vienna} 
+% \country{Austria}}
+%\email{maximilian.bachl@tuwien.ac.at}
+%
+%\author{Tanja Zseby} 
+%\affiliation{%
+% \institution{Institute of Telecommunications}
+% \streetaddress{Gußhausstraße 25}
+% \postcode{1040}
+% \city{Vienna} 
+% \country{Austria}}
+%\email{tanja.zseby@tuwien.ac.at}
+%
+%\author{Joachim Fabini} 
+%\affiliation{%
+% \institution{Institute of Telecommunications}
+% \streetaddress{Gußhausstraße 25}
+% \postcode{1040}
+% \city{Vienna} 
+% \country{Austria}}
+%\email{joachim.fabini@tuwien.ac.at}
 
 % The default list of authors is too long for headers}
-\renewcommand{\shortauthors}{Bachl, Zseby, Fabini}
+%\renewcommand{\shortauthors}{Bachl, Zseby, Fabini}
 
 \begin{abstract}
 
@@ -156,44 +156,53 @@ We show that our method converges to a stable, close-to-optimum solution within 
 
 \section{Introduction}
 
-Recent advances in neural network based reinforcement learning (RL) for the purpose of playing video games raise the question if it is possible to use these frameworks to model end-to-end congestion control. In general, in congestion control each sender aims to maximize an objective function that it composed of one or more of the following to 
+Recent advances in neural network based reinforcement learning (RL) raise the question if it is possible to use these frameworks to model end-to-end congestion control. In general, in congestion control each sender aims to maximize an objective function that usually comprises of
 \begin{enumerate*}
-\item as many packets as possible
+\item sending as many packets as possible
 \item with as little delay as possible
-\item while losing as few packets as possible
-\end{enumerate*}. As, for instance, for some applications overall throughput is more important than little packet loss, each application can define its preference using a custom utility function. Clearly, it is also desirable from an overall point of view that all participating players play the game in a way that does not give them an unfair advantage over others. When several players (senders) share an Internet link under the same conditions, they should receive an equal share of the reward. 
+\item while minimizing the amount of lost packets
+\end{enumerate*}. As, for instance, for some applications overall throughput is more important than little packet loss, each application can define its preference using a custom utility function. Clearly, it is also desirable from an overall point of view that all senders use available resources in a way that is fair to the others: When several senders share an Internet link under the same conditions, they should receive an equal share of the reward. To achieve fairness, it is necessary that senders only use utility functions that 
+\begin{enumerate*}
+\item converge to a stable equilibrium and
+\item provide each sender with a fair share of his subgoals
+\end{enumerate*}. 
 
-To perform Congestion Control (CG) \todo{What should be capitalized and what shouldn't? Capitalize RL, CG, ANN?}, each sender uses a set of observed environment conditions to determine which action he should take to maximize his reward in the future. The environment conditions can be any metrics that the sender can obtain from the network, for example the mean round-trip time of the last received packets, the packet loss rate etc. An action is a change to the sending rate: For example, if a sender perceives an increase in the loss rate it might be advisable to lower the sending rate. 
+In an ideal machine learning based congestion control method, each sender uses a set of observed environment conditions to determine which action he should take to maximize his reward in the future. The environment conditions can be any metrics that the sender can obtain from the network, for example the mean round-trip time of the last received packets, the packet loss rate etc. An action is a change to the sending rate: For example, if a sender perceives an increase in the loss rate it might be advisable to lower the sending rate. To modulate the sending rate one can  either
+\begin{enumerate*}
+\item change the sending rate itself at certain points in time or
+\item maintain a congestion window that indicates the number of packets that can be in flight at a certain point in time
+\end{enumerate*}. It seems preferable to maintain a congestion window, as one cannot be certain that the operating system (OS) can maintain a certain constant sending rate for each application on one machine, as the OS has to schedule different applications and share the network interfaces between them. 
 
-From this formulation of Congestion Control, one can observe a couple of unique features of the problem that seem to prohibit the use of RL: \begin{itemize}
-\item When playing a video game, if one pushes a button, one can see the consequences of an action immediately. However, in Congestion Control, the rewards are always \textbf{delayed} by one round-trip time.
-\item Due to the delay, by the time an action receives its reward, probably other actions have already been carried out in the mean time. Thus, contrary to classical RL, \textbf{action and rewards are out of sync}. 
-\item \textbf{Actions and rewards are not atomic}: If an action causes three packets to be sent, we consider these three packets being sent three \textit{partial actions}. In case these packets are transmitted correctly, the receiver will send three acknowledgements. Each of these acknowledgements is a \textit{partial reward} that already unveils new information on the current state of the network and enables the sender to take an action based on this new information. However, only if all partial rewards have been received, the sender can assemble the overall reward of the corresponding action and can perform an update of the underlying RL logic. 
+While congestion control seems to be a well suited problem for reinforcement learning, there are a couple of challenges and differences from most other reinforcement learning problems:  \begin{itemize}
+\item For instance, when playing a video game, if one pushes a button, one can see the consequences of an action immediately. However, in congestion control, the rewards are always \textbf{delayed} by one round-trip time.
+\item Due to the delay, by the time an action receives its reward, probably other actions have already been carried out in the meantime. Thus, contrary to classical RL, \textbf{action and rewards are not synchronized}. 
+\item \textbf{Actions and rewards are not atomic}: If an action causes three packets to be sent, we consider these three packets being sent three \textit{partial actions}. In case these packets are transmitted correctly, the receiver will send back three acknowledgements. Each of these acknowledgements is a \textit{partial reward} that already unveils new information on the current state of the network and enables the sender to take an action based on this new information. However, only if all partial rewards have been received, the sender can assemble the overall reward of the corresponding action and can perform an update of the underlying reinforcement learning logic. 
+\item The \textbf{number of actions and rewards} per unit of time is \textbf{variable}: If the congestion window is larger, more packets are sent and more acknowledgements are received, which means that the reinforcement learning algorithm gets more training data the larger the window is. This is problematic as it means that -- without proper adjustments -- the experience made at a larger congestion window will ``overwrite'' the experience made at a smaller window as with the larger window simply more training data arrives and it is thus going to be overemphasized. 
 \end{itemize}
 
-To address these problems, we develop a new formulation of RL called \textit{Partial Action Learning} (PAL). PAL is a superset of reinforcement learning: If one uses PAL for a learning problem without delay, asynchronicity and partial actions/partial rewards, one gets classical RL.
+To address these problems, we develop a new formulation of reinforcement learning called \textit{Partial Action Learning} (PAL). PAL is a superset of reinforcement learning: If one uses PAL for a learning problem without delay, asynchronicity and partial actions/partial rewards, one gets classical reinforcement learning.
 
-While using PAL to train an optimum congestion control for a specific range of network scenarios in an off-line fashion is possible, it is something that has already been done previously in an approach called \textit{Remy} \citep{winstein_tcp_2013}. The only seizable advantage that PAL could provide here is increased training speed. Thus we want to show that it is  not only possible to learn congestion control by using machine learning but that it is even possible to do so on-line and without any preknowledge about the network environment.
+While using PAL to train an optimum congestion control for a specific range of network scenarios in an off-line fashion is possible, it is something that has already been done previously in an approach called \textit{Remy} \citep{winstein_tcp_2013}. The only potential advantage that PAL could provide here is increased training speed. Thus, we want to show that it is  not only possible to learn congestion control by using machine learning but that it is even possible to do so on-line and without any preknowledge about the network environment.
 
-Using a utility function that encourages high throughput and discourages packet loss (adapted from \citep{dong_pcc:_2015}) we see that our machine learning based approach can learn congestion control that maximizes this objective given a couple of minutes of time (without any pre-training) \ref{fig:demo}, which -- to our knowledge -- is the first demonstration that neural network based on-line reinforcement learning is possible. 
+Using a utility function that encourages high throughput and discourages packet loss (adapted from \citep{dong_pcc:_2015}) we see that our machine learning approach can learn congestion control that maximizes this objective given a couple of minutes of time (without any pre-training) \ref{fig:demo}. 
 
 \begin{figure}
 \begin{minipage}{\columnwidth}
-\includegraphics[width=\columnwidth]{figures/1_4}
-\includegraphics[width=\columnwidth]{figures/2_2}
+\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-4.local/figures/4_1_2018-01-25-20:17:15_3_2018-01-25-20:17:15.0}}}
+\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-6.local/figures/4_2_2018-01-25-19:53:39_22_2018-01-25-19:53:39.0}}}
 \includegraphics[width=\columnwidth]{figures/4_1}
 \caption{\todo{figures don't look that appealing do they?} The throughput (solid line) and the loss rate (dashed line) when sharing a bottleneck link of 20\,Mbit/s with a two-way end-to-end delay of 50\,ms and a very small buffer of $\frac{1}{10}$ bandwidth delay product between 1, 2 and 4 senders (from top to bottom). One can see that the time to convergence increases as the number of senders increases, which is caused by the fact that the more senders use the link, the fewer packets each sender receives per unit of time for training. Also, the complexity of the learning problem increases with more senders as the environment becomes more dynamic and unpredictable.}
 \label{fig:demo}
 \end{minipage}
 \end{figure}
 
-After spending up to a few minutes with suboptimal performance during initial exploration (if no online pre-training was used), our approach can compete with established algorithms and achieve superior throughput with packet loss at an average of less than 5\%, while still gradually improving and adapting its way of performing congestion control.
+After spending up to a few minutes with suboptimal performance during initial exploration (if no pre-training is used), our approach can compete with established algorithms and achieve superior throughput and packet loss of less that 1\%, while still gradually improving and adapting its way of performing congestion control.
 
 \section{Related Work}
 
 \subsection{Congestion Control}
 
-Congestion control has been implemented in TCP since the 1980s as a series of congestion collapses dramatically decreased applications' throughput in the Internet, which lead to the development of the Tahoe and Reno algorithms \cite{jacobson_congestion_1988}. These approaches as well as most others maintain a congestion window which stands for the maximum amount of data that are allowed to be traveling in the network without having been acknowledged by the receiver. In general, receiving acknowledgements of data that were successfully transmitted leads to the congestion window being increased while packet loss (or an increase in delay as in the Vegas algorithm \cite{brakmo_tcp_1995} \todo{How much detail is necessary in the related work section?}) lead to the congestion window being lowered according to a set of fixed rules. Algorithms such as Cubic and Compound \cite{ha_cubic:_2008, tan_compound_2006} improve congestion control specifically with respect to so-called long fat networks with a high round-trip time and bandwidth. Proportional rate reduction \cite{dukkipati_proportional_2011} aims to make the reduction of the rate that occurs in case of congestion more smooth and steady in time to avoid the bursty behavior that occurred upon loss in previous TCP congestion control variants. On the other hand, BBR \cite{cardwell_bbr:_2016} does not use a set of fixed rules such as previous congestion control algorithms but instead estimates a model of the network path by using measurements of RTT and throughput and then adjusts its sending rate so that it uses the maximum bandwidth according to its network model while trying not to fill up queues. A similar approach is PCC \cite{dong_pcc:_2015}, which also uses measurements to find an optimum sending rate with respect to a defined utility function (e.g. maximizing throughput while minimizing packet loss). However, PCC doesn't maintain a congestion window but instead modulates the sending rate. 
+Congestion control has been implemented in TCP since the 1980s as a series of congestion collapses dramatically decreased applications' throughput in the Internet, which lead to the development of the Tahoe and Reno algorithms \cite{jacobson_congestion_1988}. These approaches as well as most others maintain a congestion window which stands for the maximum amount of data that are allowed to be traveling in the network without having been acknowledged by the receiver. In general, receiving acknowledgements of data that were successfully transmitted leads to the congestion window being increased while packet loss (or an increase in delay as in the Vegas algorithm \cite{brakmo_tcp_1995}) lead to the congestion window being lowered according to a set of fixed rules. Algorithms such as Cubic and Compound \cite{ha_cubic:_2008, tan_compound_2006} improve congestion control specifically with respect to so-called long fat networks with a high round-trip time and bandwidth. Proportional rate reduction \cite{dukkipati_proportional_2011} aims to make the reduction of the rate that occurs in case of congestion more smooth and steady in time to avoid the bursty behavior that occurred upon loss in previous TCP congestion control variants. On the other hand, BBR \cite{cardwell_bbr:_2016} does not use a set of fixed rules such as previous congestion control algorithms but instead estimates a model of the network path by using measurements of RTT and throughput and then adjusts its sending rate so that it uses the maximum bandwidth according to its network model while trying not to fill up queues. A similar approach is PCC \cite{dong_pcc:_2015}, which also uses measurements to find an optimum sending rate with respect to a defined utility function (e.g. maximizing throughput while minimizing packet loss). However, PCC doesn't maintain a congestion window but instead modulates the sending rate, using one constant sending rate for a certain time span.
 
 Besides the aforementioned human-designed algorithms there have been attempts to use machine learning to improve congestion control. \citet{geurts_machine_2004} train a classifier off-line to determine whether packet loss is caused by congestion or by the link layer. If it is caused by the link layer, TCP does not alter the window. Otherwise -- if a packet was lost due to congestion according to the classifier -- it uses a traditional TCP congestion control algorithm. \citet{winstein_tcp_2013} train a machine learning solution called \textit{Remy} that finds an optimum congestion control for a given range of network parameters. For instance, one could find an optimum congestion control for networks with an RTT of 50-100\,ms and link speeds of 100-500\,Mbit/s. After a lengthy training procedure Remy finds an optimum congestion control algorithm for the specified networks on a per acknowledgement basis (updating the window upon receiving an acknowledgement alike traditional congestion control algorithms). 
 

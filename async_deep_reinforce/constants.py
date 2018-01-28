@@ -37,6 +37,7 @@ GENERAL_FACTOR = 10**float(os.environ.get('learning_rate')) if os.environ.get('l
 # INITIAL_ALPHA_LOW = 1e-2*GENERAL_FACTOR   # log_uniform low limit for learning rate
 # INITIAL_ALPHA_HIGH = 1e0*GENERAL_FACTOR   # log_uniform high limit for learning rate
 INITIAL_RATE = GENERAL_FACTOR
+print("learning_rate", INITIAL_RATE)
 
 PRECISION = tf.float32
 
