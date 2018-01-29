@@ -474,7 +474,18 @@ To verify whether pre-training is generally feasible, we used the neural network
 
 Stochastic loss does not substantially affect TCP Rax. This can be attributed to the fact that the reinforcement learning gets to understand that a certain minimum packet loss rate is ``normal'' and cannot be avoided and thus TCP Rax is flexible in this regard. 
 
-\subsection{Best practices for on-line reinforcement learning}
+\subsection{Comparing to other TCP congestion control variants}
+
+Again we take the scenario of a 20\,Mbit/s shared bottleneck with a small buffer of $\frac{1}{10}$ bandwidth delay product to create a challenging scenario. 
+
+\begin{figure}
+\begin{minipage}{\columnwidth}
+\includegraphics[width=\columnwidth]{{{/home/max/repos/ns-allinone-2.35/ns-2.35/tcl/ex/congctrl/regular-tcp/nam_traces/figures/all_together_1_0}}}
+\includegraphics[width=\columnwidth]{{{/home/max/repos/ns-allinone-2.35/ns-2.35/tcl/ex/congctrl/regular-tcp/nam_traces/figures/all_together_2_0}}}
+\caption{One and two senders (from top to bottom) on a link with a stochastic loss rate of 1\%, a bandwidth/packet loss tradeoff of 2 on a link with 20\,Mbit/s bottleneck speed and 50\,ms RTT and a $\frac{1}{10}$ bandwidth delay buffer. Median in black and $\frac{1}{4}$ and $\frac{3}{4}$ quantile band in gray. It looks as if there is no stochastic loss in the very beginning of the flows, however, this is an artifact of the binning procedure: As the window is very small in the beginning, there are more flows in which no packet loss occurs whatsoever and thus the median is distorted.}
+\label{fig:regular_tcps}
+\end{minipage}
+\end{figure}
 
 \section{Conclusion}
 
