@@ -14,7 +14,8 @@ from functools import reduce
 from game_ac_network import GameACLSTMNetwork
 
 # gamma_current, gamma_future = 1./(1+GAMMA), GAMMA/(1.+GAMMA)
-from constants import LOCAL_T_MAX
+# from constants import LOCAL_T_MAX
+# from constants import GAMMA
 from constants import LOG_LEVEL
 from constants import STATE_SIZE
 from constants import SIGMOID_ALPHA
@@ -102,12 +103,16 @@ class A3CTrainingThread(object):
     summary_writer.flush()
 
   def start_anew(self):
+    # print("self.windows", self.windows)
     assert(len(self.windows) > 0)
     current_index = 0
     while current_index < len(self.windows):
+      # print("current_index", current_index)
       if current_index + math.floor(A3CTrainingThread.get_actual_window(self.windows[current_index]+self.actions[current_index])) == len(self.windows):
         return True
       current_index = current_index + math.floor(A3CTrainingThread.get_actual_window(self.windows[current_index]+self.actions[current_index]))
+      # print("current_index afterwards", current_index)
+
     return False
 
   def start_anew_index(self):
@@ -115,6 +120,7 @@ class A3CTrainingThread(object):
     current_index = 0
     while current_index < len(self.windows):
       current_index = current_index + math.floor(A3CTrainingThread.get_actual_window(self.windows[current_index]+self.actions[current_index]))
+    # print("current_index in start_anew", current_index)
     return current_index
 
   def action_step(self, sess, state, tickno, window):
@@ -173,19 +179,21 @@ class A3CTrainingThread(object):
     self.rewards.append((reward_throughput, reward_delay, duration, sent))
 
     # if len(self.rewards)>=LOCAL_T_MAX or (len([item for item in self.actions[:LOCAL_T_MAX] if item is not None]) == len(self.rewards) and len(self.rewards) > 0 and self.time_differences[0] is not None):
-    if ('LOCAL_T_MAX' in globals() and (len(self.rewards)>=globals()["LOCAL_T_MAX"] or (len([item for item in self.actions[:globals()["LOCAL_T_MAX"]] if item is not None]) == len(self.rewards) and len(self.rewards) > 0 and self.time_differences[0] is not None))) or (not 'LOCAL_T_MAX' in globals() and len(self.rewards)>=math.floor(A3CTrainingThread.get_actual_window(self.windows[0]+self.actions[0]))):
+    if ('LOCAL_T_MAX' in globals() and (len(self.rewards)>=globals()["LOCAL_T_MAX"] or (len([item for item in self.actions[:globals()["LOCAL_T_MAX"]] if item is not None]) == len(self.rewards) and len(self.rewards) > 0 and self.time_differences[0] is not None))) or (not 'LOCAL_T_MAX' in globals() and len(self.rewards)>=math.floor(A3CTrainingThread.get_actual_window(self.windows[0]+self.actions[0])) or (len([item for item in self.actions[:math.floor(A3CTrainingThread.get_actual_window(self.windows[0]+self.actions[0]))] if item is not None]) == len(self.rewards) and len(self.rewards) > 0 and self.time_differences[0] is not None)):
       if not 'LOCAL_T_MAX' in globals():
-        assert(len(self.rewards) == math.floor(A3CTrainingThread.get_actual_window(self.windows[0]+self.actions[0])))
+        assert(len(self.rewards) == math.floor(A3CTrainingThread.get_actual_window(self.windows[0]+self.actions[0])) or (len([item for item in self.actions[:math.floor(A3CTrainingThread.get_actual_window(self.windows[0]+self.actions[0]))] if item is not None]) == len(self.rewards) and len(self.rewards) > 0 and self.time_differences[0] is not None))
       # print(self.thread_index, "rewards", self.rewards, "actions", self.actions, "time_diffs", self.time_differences)
       # assert(len(self.rewards) <= LOCAL_T_MAX)
       # print(len([item for item in self.actions[:LOCAL_T_MAX] if item is not None]), len(self.rewards[:LOCAL_T_MAX]))
 
       # assert(len([item for item in self.actions[:LOCAL_T_MAX] if item is not None]) == len(self.rewards[:LOCAL_T_MAX]))
+      if not len([item for item in self.actions[:len(self.rewards)] if item is not None]) == len(self.rewards[:len(self.rewards)]):
+        print("actions", self.actions, "rewards", self.rewards)
       assert(len([item for item in self.actions[:len(self.rewards)] if item is not None]) == len(self.rewards[:len(self.rewards)]))
       result = self.process(sess, global_t, summary_writer, summary_op, summary_inputs, self.time_differences[0])
       return result
     else:
-      return  0
+      return 0
 
   def final_step(self, sess, global_t, summary_writer, summary_op, summary_inputs, actions_to_remove, time_difference, window):
     # print(self.thread_index, "self.time_differences", self.time_differences)
@@ -200,7 +208,7 @@ class A3CTrainingThread(object):
     # self.actions = self.actions[:-actions_to_remove]
     # self.states = self.states[:-actions_to_remove]
     # self.values = self.values[:-actions_to_remove]
-    # self.estimated_values = self.estimated_values[:-actions_to_remove+1]
+    # self.estimated_values = self.estimated_values[:-actions_to_remove+1] # Sure that you have to remove one less?
     # print("Final step is called")
 
     if self.training:
@@ -214,7 +222,7 @@ class A3CTrainingThread(object):
           nones_to_add = [None] * ((LOCAL_T_MAX - (len(self.actions) % LOCAL_T_MAX)) % LOCAL_T_MAX)
         else:
           # Sure this makes sense?
-          nones_to_add = [None] * (self.start_anew() - len(self.actions))
+          nones_to_add = [None] * (self.start_anew_index() - len(self.actions))
         self.actions += nones_to_add
         self.states += nones_to_add
         self.values += nones_to_add
@@ -271,19 +279,33 @@ class A3CTrainingThread(object):
     # logging.debug(" ".join(map(str,(self.thread_index, "In process: len(rewards)", len(self.rewards), "len(states)", len(self.states), "len(actions)", len(self.actions), "len(values)", len(self.values)))))
 
     if 'LOCAL_T_MAX' in globals():
-      actions = [item for item in self.actions[:LOCAL_T_MAX] if item is not None]
-      ticknos = [item for item in self.ticknos[:LOCAL_T_MAX] if item is not None]
-      windows = [item for item in self.windows[:LOCAL_T_MAX] if item is not None]
-      states = [item for item in self.states[:LOCAL_T_MAX] if item is not None]
-      rewards = [item for item in self.rewards[:LOCAL_T_MAX] if item is not None]
-      values = [item for item in self.values[:LOCAL_T_MAX] if item is not None]
+      actions = self.actions[:LOCAL_T_MAX]
+      ticknos = self.ticknos[:LOCAL_T_MAX]
+      windows = self.windows[:LOCAL_T_MAX]
+      states = self.states[:LOCAL_T_MAX]
+      rewards = self.rewards[:LOCAL_T_MAX]
+      values = self.values[:LOCAL_T_MAX]
     else:
-      actions = self.actions[:len(self.rewards)]
-      ticknos = self.ticknos[:len(self.rewards)]
-      windows = self.windows[:len(self.rewards)]
-      states = self.states[:len(self.rewards)]
-      values = self.values[:len(self.rewards)]
-      rewards = self.rewards[:len(self.rewards)]
+      # actions = self.actions[:len(self.rewards)]
+      # ticknos = self.ticknos[:len(self.rewards)]
+      # windows = self.windows[:len(self.rewards)]
+      # states = self.states[:len(self.rewards)]
+      # values = self.values[:len(self.rewards)]
+      # rewards = self.rewards[:len(self.rewards)]
+
+      actions = self.actions[:math.floor(A3CTrainingThread.get_actual_window(self.windows[0]+self.actions[0]))]
+      ticknos = self.ticknos[:math.floor(A3CTrainingThread.get_actual_window(self.windows[0]+self.actions[0]))]
+      windows = self.windows[:math.floor(A3CTrainingThread.get_actual_window(self.windows[0]+self.actions[0]))]
+      states = self.states[:math.floor(A3CTrainingThread.get_actual_window(self.windows[0]+self.actions[0]))]
+      values = self.values[:math.floor(A3CTrainingThread.get_actual_window(self.windows[0]+self.actions[0]))]
+      rewards = self.rewards[:math.floor(A3CTrainingThread.get_actual_window(self.windows[0]+self.actions[0]))]
+
+    actions = [item for item in actions if item is not None]
+    ticknos = [item for item in ticknos if item is not None]
+    windows = [item for item in windows if item is not None]
+    states = [item for item in states if item is not None]
+    rewards = [item for item in rewards if item is not None]
+    values = [item for item in values if item is not None]
 
     assert(len(actions) > 0)
     assert(len(ticknos) > 0)
@@ -315,10 +337,14 @@ class A3CTrainingThread(object):
     R_packets_initial, R_duration_initial, R_sent_initial = R_packets, R_duration, R_sent
 
 
-    R_packets, R_duration, R_sent = R_packets, 1.0/R_duration, R_sent
+    R_packets, R_duration, R_sent = R_packets, 1/R_duration, R_sent
     # R_packets, R_accumulated_delay, R_duration, R_sent = (R_packets)/(1-GAMMA), (R_accumulated_delay)/(1-GAMMA), (R_duration)/(1-GAMMA), (R_sent)/(1-GAMMA)
     # logging.debug(" ".join(map(str,("exp(R_packets)", R_packets, "exp(R_accumulated_delay)", R_accumulated_delay, "exp(R_duration)", R_duration))))
-    assert(np.isfinite(R_duration))
+    if not (R_duration > 0):
+      print("R_duration", R_duration)
+    if not np.isfinite(R_duration):
+      R_duration = 0.0
+    assert(np.isfinite(R_duration)) # Pretty dumb
     assert(np.isfinite(R_packets))
     # assert(np.isfinite(R_accumulated_delay))
     assert(np.isfinite(R_sent))
@@ -377,7 +403,7 @@ class A3CTrainingThread(object):
         # PCC
         td = self.inverse_sigmoid(((R_sent - R_packets)/R_sent))*R_packets/R_duration - self.inverse_sigmoid(((Vi[2]-Vi[0])/Vi[2]))*Vi[0]/(1/Vi[1]) - ((R_sent - R_packets)/R_duration - (Vi[2] - Vi[0])/(1/Vi[1])) #- (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
-      elif environ.get('reward_type') == "no_cutoff":
+      elif environ.get('reward_type') is None or environ.get('reward_type') == "no_cutoff":
         # PCC without cutoff
         td = R_packets/R_duration - Vi[0]/(1/Vi[1]) - self.delay_delta*((R_sent - R_packets)/R_duration - (Vi[2] - Vi[0])/(1/Vi[1])) #- (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
@@ -420,9 +446,9 @@ class A3CTrainingThread(object):
     old_local_t = self.local_t
     self.local_t += len(rewards)
 
-    # if final or self.local_t % LOG_INTERVAL == 0:
-    #   print(self.thread_index, "actions", len(self.actions), "rewards", len(self.rewards), "values", len(self.values), "estimated_values", len(self.estimated_values))
-    #   print(self.thread_index, "actions", self.actions, "rewards", self.rewards, "values", self.values, "estimated_values", self.estimated_values)
+    # # if final or self.local_t % LOG_INTERVAL == 0:
+    # print(self.thread_index, "windows", len(self.windows), "\nticknos", len(self.ticknos), "\nstates", len(self.states), "\nactions", len(self.actions), "\nrewards", len(self.rewards), "\nvalues", len(self.values), "\nestimated_values", len(self.estimated_values))
+    # print(self.thread_index, "windows", self.windows, "\nticknos", self.ticknos, "\nstates", self.states, "\nactions", self.actions, "\nrewards", self.rewards, "\nvalues", self.values, "\nestimated_values", self.estimated_values)
 
     # return advanced local step size
     diff_local_t = self.local_t - start_local_t
@@ -559,13 +585,14 @@ class A3CTrainingThread(object):
       self.rewards = self.rewards[LOCAL_T_MAX:]
       self.estimated_values = self.estimated_values[LOCAL_T_MAX:]
     else:
-      self.actions = self.actions[len(rewards):]
-      self.ticknos = self.ticknos[len(rewards):]
-      self.windows = self.windows[len(rewards):]
-      self.states = self.states[len(rewards):]
-      self.values = self.values[len(rewards):]
-      self.estimated_values = self.estimated_values[len(rewards):]
-      self.rewards = self.rewards[len(rewards):]
+      items_to_remove = math.floor(A3CTrainingThread.get_actual_window(self.windows[0]+self.actions[0]))
+      self.actions = self.actions[items_to_remove:]
+      self.ticknos = self.ticknos[items_to_remove:]
+      self.windows = self.windows[items_to_remove:]
+      self.states = self.states[items_to_remove:]
+      self.values = self.values[items_to_remove:]
+      self.estimated_values = self.estimated_values[items_to_remove:]
+      self.rewards = self.rewards[items_to_remove:]
     self.time_differences = self.time_differences[1:]
     self.start_lstm_states = self.start_lstm_states[1:]
     self.variable_snapshots = self.variable_snapshots[1:]

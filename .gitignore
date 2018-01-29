@@ -30,6 +30,8 @@ core
 /logging
 /old_data
 /compute-0-?.local
+/new_gpu
+/gpu
 /not_so_old_old_data
 
 /.vscode

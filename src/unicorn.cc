@@ -29,7 +29,7 @@ Unicorn::Unicorn(const bool& cooperative)
     _flow_to_last_received(),
     _active_flows()
 {
-  assert( getenv("delay_delta") != NULL );
+  assert( getenv("delay_delta") != NULL && strcmp(getenv("delay_delta"), "") != 0);
   _delay_delta = atof(getenv("delay_delta"));
   // puts("Creating a Unicorn");
 }
@@ -164,10 +164,9 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
 
 void Unicorn::reset(const double & tickno)
 {
-  printf("%lu: Fucking resetting\n", _thread_id);
+  printf("%lu: Resetting\n", _thread_id);
   _rainbow._training = _training;
   // assert(false);
-  // printf("%lu: Resetting\n", _thread_id);
   // _largest_ack -= 1;
   if (_outstanding_rewards.size() != _put_actions-_put_rewards) {
     printf("%lu: _outstanding_rewards=%lu, _put_actions=%lu, _put_rewards=%lu\n", _thread_id, _outstanding_rewards.size(), _put_actions, _put_rewards);
@@ -258,9 +257,9 @@ void Unicorn::get_action(const double& tickno) {
   const double action = _rainbow.get_action(
     _thread_id,
     {
-      // _memory._send,
-      _memory._rec_send_ewma,
-      _memory._slow_rec_send_ewma,
+      // // _memory._send,
+      // _memory._rec_send_ewma,
+      // _memory._slow_rec_send_ewma,
 
       // _memory._rec,
       _memory._rec_rec_ewma,

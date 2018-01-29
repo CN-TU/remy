@@ -33,10 +33,11 @@ LOG_FILE = os.path.join(ABSOLUTE_PATH,'a3c_log')
 logging.info(" ".join(map(str,("LOG_DIR:",LOG_FILE))))
 ACTOR_FACTOR = 1e0
 VALUE_FACTOR = 1e0
-GENERAL_FACTOR = 10**float(os.environ.get('learning_rate')) if os.environ.get('learning_rate') is not None else -4.5
+GENERAL_FACTOR = 10**float(os.environ.get('learning_rate')) if os.environ.get('learning_rate') is not None else -4
 # INITIAL_ALPHA_LOW = 1e-2*GENERAL_FACTOR   # log_uniform low limit for learning rate
 # INITIAL_ALPHA_HIGH = 1e0*GENERAL_FACTOR   # log_uniform high limit for learning rate
 INITIAL_RATE = GENERAL_FACTOR
+print("learning_rate", INITIAL_RATE)
 
 PRECISION = tf.float32
 
@@ -75,6 +76,8 @@ SENT_OFFSET = BIAS_OFFSET
 # INTER_PACKET_ARRIVAL_TIME_OFFSET = inverse_softplus(DELAY/(1-GAMMA))
 # LOST_OFFSET = inverse_softplus(1e-10/(1-GAMMA))
 
+GAMMA = 0.99
+
 INITIAL_WINDOW_INCREASE_BIAS_OFFSET = 0
 INITIAL_WINDOW_INCREASE_WEIGHT_FACTOR = 1e-2
 PACKET_FACTOR = 1e-2
@@ -85,7 +88,7 @@ DURATION_FACTOR = 1e-2
 # PACKET_FACTOR = 1
 # DURATION_FACTOR = 1
 
-STATE_SIZE = int(os.environ.get('state_size')) if os.environ.get('state_size') is not None else 10
+STATE_SIZE = int(os.environ.get('state_size')) if os.environ.get('state_size') is not None else 8
 HIDDEN_SIZE = int(os.environ.get('hidden_size')) if os.environ.get('hidden_size') is not None else 32
 # ACTION_SIZE = 1 # action size
 
