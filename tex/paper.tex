@@ -294,7 +294,6 @@ To use PAL for congestion control we first have to define the correct semantics 
 \begin{description}
 \item[$\textit{s}_\text{t}$] The state  describes the current ``congestion state''. The following features are included in it:
 \begin{itemize}
-\item the time between the last two packets that were sent
 \item the time between the last two packets that were received
 \item the RTT of the last received packet
 \item whether the last packet was lost where $1$ signifies that the last packet was lost while $0$ indicates that it was received correctly
@@ -363,6 +362,8 @@ We use 10 as a minimum because when $\gamma$ becomes too big, future rewards is 
 
 Each time an action $a_t$ is requested, a change to the congestion window is sampled from the current normal distribution defined by the parameters $\mu$ and $\sigma$. However, we define that the window can never fall below $1$: $w_{t+1} = \max(w_t + a_t, 1)$. At the beginning of a flow, the window starts as $1$ too.  
 
+It might seem simplistic to only use an additive increase to the congestion window and no more sophisticated mechanisms such as a combination of a multiplicative increase and an additive increase. However, as we use GRUs in the actor network, which have a non-linear output function (a hyperbolic tangent function), they can learn to become very flexible regarding their output.  
+
 The actor network minimizes the loss function
 %\begin{align*}
 %l_{\text{a},t} =& -\log \left( \pi \left( a_t \given s_t ; \theta_\text{a} \right) \right)\\
@@ -413,7 +414,7 @@ The equivalent utility is also defined using the estimates of the value networks
 
 \section{Evaluation}
 
-We implemented TCP Rax as an extension to both the NS-2 network simulator \cite{fall_network_2007} and as well as Remy \cite{winstein_tcp_2013}.  
+We implemented TCP Rax as an extension to both the NS-2 network simulator \cite{fall_network_2007} and Remy \cite{winstein_tcp_2013}.  
 In the following evaluation we use a classical dumbbell network topology with one receiver and one or more senders and a shared bottleneck link. 
 
 \subsection{Tradeoff between throughput and packet loss}
@@ -428,7 +429,9 @@ In the following evaluation we use a classical dumbbell network topology with on
 \end{minipage}
 \end{figure}
 
-The tunable tradeoff between bandwidth and packet loss rate ($\alpha$) has a clear impact on both the highest spike of packet loss that is produced in the very beginning of the online learning process as well as on the median packet loss rate later on in the learning process \autoref{fig:one_sender_loss}. However, the stronger packet loss is punished, the longer it takes for the sender to reach the maximum bandwidth on the link. 
+The tunable tradeoff between bandwidth and packet loss rate ($\alpha$) has a clear impact on both the highest spike of packet loss that is produced in the very beginning of the online learning process as well as on the median packet loss rate later on in the learning process (see \autoref{fig:one_sender_loss}). However, the stronger packet loss is punished, the longer it takes for the sender to reach the maximum bandwidth on the link. 
+
+The apparent spike of packet loss in the beginning is the following: In the very beginning the reinforcement learning learns that increasing the window is always good (as it is still below the bottleneck bandwidth). This leads to exponential growth of the congestion window in the beginning and as soon as the bottleneck bandwidth is reached, the reinforcement learning needs to correct its behavior to realize that increasing the congestion window is not always the appropriate action to perform. Potential countermeasure for this are to use pre-training (see \autoref{subsec:pretraining}) and to use a utility function that heavily penalizes excessive packet loss. 
 
 \subsection{Number of senders}
 
@@ -442,9 +445,10 @@ The tunable tradeoff between bandwidth and packet loss rate ($\alpha$) has a cle
 \end{minipage}
 \end{figure}
 
-While TCP Rax generally does not exhibit much variance after a few minutes of training when it is the only flow on a link, fluctuations clearly increase when having two or four concurrent senders \autoref{fig:multiple_senders}. We attribute this to the fact that on a shared link with $n$ senders each can only get $\frac{1}{n}$ of the bandwidth on average and thus each sender receives fewer packets which he can use for training. Furthermore, as the environment becomes more dynamic with more senders, each sender has a harder time learning whether the reward changed due to his own actions or due to actions that were caused by other senders: If there is only one flow on a link, the flow ``can be sure'' that all changes in rewards were actually caused by his own actions. 
+While TCP Rax generally does not exhibit much variance after a few minutes of training when it is the only flow on a link, fluctuations clearly increase when having two or four concurrent senders (see \autoref{fig:multiple_senders}). We attribute this to the fact that on a shared link with $n$ senders each can only get $\frac{1}{n}$ of the bandwidth on average and thus each sender receives fewer packets which he can use for training. Furthermore, as the environment becomes more dynamic with more senders, each sender has a harder time learning whether the reward changed due to his own actions or due to actions that were caused by other senders: If there is only one flow on a link, the flow ``can be sure'' that all changes in rewards were actually caused by his own actions. 
 
 \subsection{Pre-training}
+\label{subsec:pretraining}
 
 \begin{figure}
 \begin{minipage}{\columnwidth}
@@ -455,7 +459,7 @@ While TCP Rax generally does not exhibit much variance after a few minutes of tr
 \end{minipage}
 \end{figure}
 
-To verify whether pre-training is generally feasible, we used the neural networks that were produced after each 600 seconds flow shown in figure \autoref{fig:multiple_senders} and started flows of equal length with the pre-trained neural networks. The flows seem to simply resume where they ended training in the flow before. This does not seem like a remarkable finding, however, this is unexpected: For instance, in the case of one sender on a link, the neural network starts with random weights and discovers that it achieves optimum utility at a window that results in 20\,Mbit/s of bandwidth. Then the sender constantly stays in this state and one would expect it to slowly ``forget'' what it learned in the very beginning when it started the flow. Thus, it is interesting that after hundreds of seconds of only seeing one same state, the neural network still acts correctly when starting with a small congestion window again in a completely different state than it is used to. 
+To verify whether pre-training is generally feasible, we used the neural networks that were produced after each 600 seconds flow shown in figure \autoref{fig:multiple_senders} and started flows of equal length with the pre-trained neural networks. The flows seem to simply resume where they ended training in the flow before. This does not seem like a remarkable finding, however, it is quite unexpected: For instance, in the case of one sender on a link, the neural network starts with random weights and discovers that it achieves optimum utility at a window that results in 20\,Mbit/s of bandwidth. Then the sender constantly stays in this state and one would expect it to slowly ``forget'' what it learned in the very beginning when it started the flow. Thus, it is interesting that after hundreds of seconds of only seeing one same state, the neural network still acts correctly when starting with a small congestion window again in a completely different state than the one it is used to. 
 
 \subsection{Stochastic Loss}
 
@@ -463,22 +467,30 @@ To verify whether pre-training is generally feasible, we used the neural network
 \begin{minipage}{\columnwidth}
 \includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-5.local/figures/1_4}}}
 \includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-7.local/figures/2_4}}}
-\caption{One and two senders (from top to bottom) on a link with a stochastic loss rate of 1\%, a bandwidth/packet loss tradeoff of 2 on a link with 20\,Mbit/s bottleneck speed and 50\,ms RTT and a $\frac{1}{10}$ bandwidth delay buffer. Median in black and $\frac{1}{4}$ and $\frac{3}{4}$ quantile band in gray.}
+\caption{One and two senders (from top to bottom) on a link with a stochastic loss rate of 1\%, a bandwidth/packet loss tradeoff of 2 on a link with 20\,Mbit/s bottleneck speed and 50\,ms RTT and a $\frac{1}{10}$ bandwidth delay buffer. Median in black and $\frac{1}{4}$ and $\frac{3}{4}$ quantile band in gray. It looks as if there is no stochastic loss in the very beginning of the flows, however, this is an artifact of the binning procedure: As the window is very small in the beginning, there are more flows in which no packet loss occurs whatsoever and thus the median is distorted.}
 \label{fig:stochastic_loss}
 \end{minipage}
 \end{figure}
 
-To see whether pre-training is generally feasible, we used the neural networks that were produced after each 600 seconds flow shown in figure \autoref{fig:multiple_senders} and started flows of equal length with the pre-trained neural networks. The flows seem to simply resume where they ended training in the flow before. This does not seem like a remarkable finding, however, this is unexpected: For instance, in the case of one sender on a link, the neural network starts with random weights and discovers that it achieves optimum utility at a window that results in 20\,Mbit/s of bandwidth. Then the sender constantly stays in this state and one would expect it to slowly ``forget'' what it learned in the very beginning when it started the flow. Thus it is interesting that after hundreds of seconds of only seeing one same state, the neural network still acts correctly when starting with a small congestion window again. 
-
-\section{Discussion}
+Stochastic loss does not substantially affect TCP Rax. This can be attributed to the fact that the reinforcement learning gets to understand that a certain minimum packet loss rate is ``normal'' and cannot be avoided and thus TCP Rax is flexible in this regard. 
 
 \subsection{Best practices for on-line reinforcement learning}
 
 \section{Conclusion}
 
-\section*{Appendix}
+The goal of this paper was to determine whether it is possible to use deep reinforcement learning to learn a per-acknowledgement congestion control online. To this end we had to modify existing reinforcement learning algorithms to accommodate the specific needs of congestion control such as the inherent delay amongst others. 
 
-\begin{algorithm}[H]
+We developed TCP Rax and the results of our evaluation indicate that congestion control can be learned online in principle and has the potential to outperform standard TCP variants given long enough flows. We came to the insight that it is possible to pre-train the neural network used in the reinforcement learning and that this improves performance especially in the beginning of the flow. 
+
+Some interesting questions, however, remain. In what way can pre-training be utilized to compete with other TCP congestion control variants even for very short flows? Is it feasible and sensible that one computer uses a set of shared weights for all its flows?
+
+\todo{Ist dieser Teil mit offenen Fragen sinnlos? Hab das schon in anderen Papers gesehen...}
+
+\section*{Appendix}	
+
+The algorithm for Partial Action Learning is described in a generic formulation that can also be used for other reinforcement learning problems with similar characteristics such as delay and asynchronous actions and rewards in \autoref{alg:pal}. We use custom functions to determine when to update the neural network weights and when to compute the gradients and apply them in \autoref{alg:update} and \autoref{alg:enough}. Intuitively, these functions ensure that the neural network gets updated approximately every round-trip time. For other reinforcement learning problems it is also possible to simply use a fixed step size such as proposed by \cite{mnih_asynchronous_2016}.
+
+\begin{algorithm}
 \caption{Partial Action Learning -- pseudocode for each agent. It is possible that the agents share the global weights $\theta_{\text{g}}$, which is reasonable when learning off-line. Otherwise an individual copy of them is kept by each agent. By default, all weights are initialized randomly in the beginning but it is also possible to use a pre-trained neural network for initialization. As we use Gated Recurrent Units (GRUs) their output is stored in $h$ and fed into them at the next time step.}
 \label{alg:pal}
 \begin{algorithmic}[1]
@@ -532,7 +544,7 @@ To see whether pre-training is generally feasible, we used the neural networks t
 \end{algorithmic}
 \end{algorithm}
 
-\begin{algorithm}[H]
+\begin{algorithm}
 \caption{Partial Action Learning -- procedure which computes and applies the gradients.}
 \label{alg:grad}
 \begin{algorithmic}[1]%
@@ -564,7 +576,7 @@ To see whether pre-training is generally feasible, we used the neural networks t
 \end{algorithmic}
 \end{algorithm}
 
-\begin{algorithm}[H]
+\begin{algorithm}
 \caption{Procedure which determines when to synchronize the neural network weights from the global weights in case of congestion control. We assume that the window at time step $t$ is stored in a list $l_\text{windows}$ and that the number of bytes sent in each time step is stored in $l_\text{sent}$. Alternatively to this procedure one can simply synchronize the weights after each $t_\text{max}$ actions where $t_\text{max}$ is an arbitrarily chosen integer greater than 0.}
 \label{alg:update}
 \begin{algorithmic}[1]%
@@ -589,7 +601,7 @@ To see whether pre-training is generally feasible, we used the neural networks t
 \end{algorithmic}
 \end{algorithm}
 
-\begin{algorithm}[H]
+\begin{algorithm}
 \caption{Procedure which determines when to start computing the gradients in case of congestion control. We assume that the window at time step $t$ is stored in a list $l_\text{windows}$ and that the number of bytes sent in each time step is stored in $l_\text{sent}$. Alternatively to this procedure one can simply compute the gradients when $t_\text{max}$ rewards have been received where $t_\text{max}$ is an arbitrarily chosen integer greater than 0.}
 \label{alg:enough}
 \begin{algorithmic}[1]%
