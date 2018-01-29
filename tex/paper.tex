@@ -75,9 +75,9 @@
 \title{TCP Rax: Deep Reinforcement Learning for TCP Congestion Control}
 \titlenote{Produces the permission block, and
   copyright information}
-\subtitle{Extended Abstract}
-\subtitlenote{The full version of the author's guide is available as
-  \texttt{acmart.pdf} document}
+%\subtitle{Extended Abs\texttt{tract}
+%\subtitlenote{The full version of the author's guide is available as
+%  \texttt{acmart.pdf} document}}
 
 %\author{Maximilian Bachl} 
 %\affiliation{%
@@ -395,23 +395,52 @@ U_t = \frac{R_{\text{received},t}}{R_{\text{duration},t}} - \alpha \frac{R_{\tex
 
 The equivalent utility is also defined using the estimates of the value networks and it can be determined whether an action achieved a performance that was higher or lower than expected. 
 
-\subsection{Example}
+%\subsection{Example}
+%
+%In this section, a short example of the overall procedure is outlined. 
+%
+%\begin{enumerate}
+%\item Receive an ACK
+%\item Update 
+%\item Update the internal state to reflect the information that this ACK provides
+%\item Sample an increase for the congestion window from the Actor Network and add it to the current congestion window.
+%\item 
+%\begin{enumerate}
+%\item If this was the last ACK, which completes a previous action (e.g. a previous action resulted in $3$ packets being sent; so if this is the ACK for the third (and last) packet of this previous action, we got all the ACKs to compute the reward), combine all partial rewards to form the actual reward for that action. 
+%\item If there are now enough acknowledgements $t_\text{max}$ rewards (set to 20) then we also update the neural network. 
+%\end{enumerate}
+%\end{enumerate}
 
-In this section, a short example of the overall procedure is outlined. 
+\section{Evaluation}
 
-\begin{enumerate}
-\item Receive an ACK
-\item Update the internal state to reflect the information that this ACK provides
-\item Sample an increase for the congestion window from the Actor Network and add it to the current congestion window.
-\item 
-\begin{enumerate}
-\item If this was the last ACK, which completes a previous action (e.g. a previous action resulted in $3$ packets being sent; so if this is the ACK for the third (and last) packet of this previous action, we got all the ACKs to compute the reward), combine all partial rewards to form the actual reward for that action. 
-\item If there are now enough acknowledgements $t_\text{max}$ rewards (set to 20) then we also update the neural network. 
-\end{enumerate}
+We implemented TCP Rax as an extension to both the NS-2 network simulator \cite{fall_network_2007} and as well as Remy \cite{winstein_tcp_2013}.  
+In the following evaluation we use a classical dumbbell network topology with one receiver and one or more senders and a shared bottleneck link. 
 
-\end{enumerate}
+\subsection{Tradeoff between throughput and packet loss}
 
-\section{Results}
+\begin{figure}
+\begin{minipage}{\columnwidth}
+\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-4.local/figures/1_1}}}
+\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-4.local/figures/1_2}}}
+\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-4.local/figures/1_4}}}
+\caption{One sender with a bandwidth/packet loss tradeoff of 1, 2 and 4 (from top to bottom) on a link with 20\,Mbit/s bottleneck speed and 50\,ms RTT and a $\frac{1}{10}$ bandwidth delay buffer. Median in black and $\frac{1}{4}$ and $\frac{3}{4}$ quantile band in gray.}
+\label{fig:one_sender_loss}
+\end{minipage}
+\end{figure}
+
+The tunable tradeoff between bandwidth and packet loss rate ($\alpha$) has a clear impact on both the highest spike of packet loss that is produced in the very beginning of the online learning process as well as on the median packet loss rate later on in the learning process \autoref{fig:one_sender_loss}. However, the stronger packet loss is punished, the longer it takes for the sender to reach the maximum bandwidth on the link. 
+
+\subsection{Number of senders} 
+
+\begin{figure}
+\begin{minipage}{\columnwidth}
+\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-4.local/figures/1_4}}}
+\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-4.local/figures/2_4}}}
+\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-4.local/figures/4_4}}}
+\caption{One sender with a bandwidth/packet loss tradeoff of 1, 2 and 4 (from top to bottom) on a link with 20\,Mbit/s bottleneck speed and 50\,ms RTT and a $\frac{1}{10}$ bandwidth delay buffer. Median in black and $\frac{1}{4}$ and $\frac{3}{4}$ quantile band in gray.}
+\label{fig:one_sender_loss}
+\end{minipage}
+\end{figure}
 
 \section{Discussion}
 
