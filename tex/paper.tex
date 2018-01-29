@@ -50,7 +50,7 @@
 %\setcopyright{none}
 %\setcopyright{acmcopyright}
 %\setcopyright{acmlicensed}
-\setcopyright{rightsretained}
+%\setcopyright{rightsretained}
 %\setcopyright{usgov}
 %\setcopyright{usgovmixed}
 %\setcopyright{cagov}
@@ -65,10 +65,10 @@
 %Conference
 \acmConference[WOODSTOCK'97]{ACM Woodstock conference}{July 1997}{El
   Paso, Texas USA} 
-\acmYear{2017}
-\copyrightyear{2017}
+\acmYear{2018}
+\copyrightyear{2018}
 
-\acmPrice{15.00}
+%\acmPrice{15.00}
 
 
 \begin{document}
@@ -241,11 +241,11 @@ l_{\text{v},t} = \left(R_t - V(s_t; \theta)\right)^2.
 \subsubsection{Actor Network}
 \label{subsubsec:genericactor}
 
-The Actor Network outputs a probability distribution from which the action $a_t$ at time step $t$ is randomly sampled. We use the mean $\mu$ and the standard deviation $\sigma$ to parametrize a normal distribution. The main idea is that the neural network learns to output the right mean at the right time step to maximize the future reward and that it uses the standard deviation to try out new actions, which could yield a better than expected reward. 
+The Actor Network outputs a normal distribution parametrized by a mean $\mu$ and a standard deviation $\sigma$ from which the action $a_t$ at time step $t$ is randomly sampled. The main idea is that the neural network learns to output the right mean at the right time step to maximize the future reward and that it uses the standard deviation to try out new actions, which could yield a better than expected reward. 
 
-Each time we take an action $a_t$ we also let the critic network make an estimation $V(s_t; \theta)$, which we abbreviate as $v_t$, given the current neural network weights $\theta$ and the current state $s_t$. The loss function of the actor network can now be described as this: How likely was it (on a logarithmic scale) to take action $a_t$ given the probability distribution at time $t$ and how beneficial was this action when comparing to the critic's estimation? For example, if an action was very successful and highly unlikely, the actor network's are updated to make actions like this more likely in the future. 
+Each time we take an action $a_t$ we also let the critic network make an estimation $V(s_t; \theta)$, which we abbreviate as $v_t$, given the current neural network weights $\theta$ and the current state $s_t$. The loss function of the actor network can now be described as this: How likely was it to take action $a_t$ given the probability distribution at time $t$ and how beneficial was this action when comparing it to the critic's estimation? For example, if an action was very successful and highly unlikely, the actor network's weights are updated to make actions like this more likely in the future. 
 
-The actor also aims at increasing the entropy of the probability density function ($\frac{1}{2} \log \left( 2 \pi e \sigma^2 \right)$) to encourage exploration: Otherwise the actor could always output similar actions but never actually take the action that yields the best performance. We designate the entropy as $H$ and introduce a parameter $\beta$ which specifies magnitude of the influence of the entropy. 
+The actor also aims at increasing the entropy of the probability density function ($\frac{1}{2} \log \left( 2 \pi e \sigma^2 \right)$) to encourage exploration: Otherwise the actor could always perform similar actions but never actually take the action that yields the best performance. We designate the entropy as $H$ and introduce a parameter $\beta$ which specifies magnitude of the influence of the entropy. 
 \begin{align*}
 l_{\text{a},t} =& -\log \left( \pi\left( a_t \given s_t; \theta \right)\right)\left( R_t - v_t \right)\\ 
 &- \beta H\left( \pi\left( s_t; \theta \right)\right).
@@ -255,7 +255,7 @@ l_{\text{a},t} =& -\log \left( \pi\left( a_t \given s_t; \theta \right)\right)\l
 \subsection{Partial Action Learning}
 \label{subsec:pal}
 
-The key difference between PAL and previous approaches to RL is that in classical RL an action is always followed by a reward and a reward is always followed by an action. In our proposed concept, however, it is possible to take new actions while previous actions haven't received their rewards yet.
+The key difference between PAL and previous approaches to RL is that in classical RL an action is always followed by a reward and a reward is always followed by an action. In our proposed concept, however, it is possible to take new actions while previous actions haven't been rewarded yet.
 
 Another major difference in PAL is that one action generates a number of partial actions ($\geq 0$) (see \autoref{fig:pal}). Each partial action generates feedback upon interacting with the environment. Upon receiving feedback for a partial action, the agent determines the current state and triggers a new action. When all feedbacks of one action were received, the agent combines them to form the reward and updates the critic and actor networks.
 
@@ -312,8 +312,8 @@ For each reward metric there is also an output of the critic network that predic
 
 We use the following reward metrics: 
 \begin{description}
-\item[$\textit{r}_{\text{sent},t}$] is the sum of all bytes in all packets the sender sent during time step $t$.
-\item[$\textit{r}_{\text{received},t}$] is the sum of all bytes in all packets that the sender sent during time step $t$ and that were not lost (so they were acknowledged at some point by the receiver).
+\item[$\textit{r}_{\text{sent},t}$] is the sum of all bytes in all packets the sender sent during time step $t$. 
+\item[$\textit{r}_{\text{received},t}$] is the sum of all bytes in all packets that the sender sent during time step $t$ and that were not lost (so they were acknowledged at some point by the receiver). Example: During time step $t$, 2500 bytes are sent, of which 1250 are lost and 1250 are acknowledged at some point in time later. Then $\textit{r}_{\text{received},t}$ is 1250 for at time step $t$. However, $\textit{r}_{\text{received},t}$ can only be determined at some point in time in the future, when the sender will have received the acknowledgements for all the bytes that he sent. 
 %\item[$\textit{r}_{\text{byte},t}$] is the sum of the bytes of the packets that the sender sent and that were not lost. Example: At time $t'$, three packets were sent with 300, 200, and 1500 bytes each so $\textit{r}_{\text{byte},t'} = 2000$
 %\item[$\textit{r}_{\text{delay},t}$] is the sum of the round trip times of the packets that the sender sent and that were not lost.
 \item[$\textit{r}_{\text{duration},t}$] is the time between receiving the last packet and receiving this packet (``inter acknowledgement reception time'') summed over all packets that the sender sent and that were not lost. Example: The sender sent three packets, two of which two were not lost. The time between receiving the ACK of the first packet that was not lost and the previous one is 5\,ms and the time between receiving the ACK of the second packet that was not lost and the previous ACK is 6\,ms. So for this time step $\textit{r}_{\text{duration},t}$ is 11\,ms.
@@ -609,7 +609,7 @@ The algorithm for Partial Action Learning is described in \autoref{alg:pal} in a
 		\State $w\gets \left\lfloor l_\text{windows}[i] + l_\text{actions}[i] \right\rfloor $
 		\For{$j\gets i..\#(l_\text{actions})-1$}
 			\State $w\gets \text{w} - l_\text{sent}[j]$
-			\If{$w\leq 0 \land i+1 \geq 10$} \Comment{at least 10 rewards}
+			\If{$w\leq 0 \land i+1 \geq 10$} \Comment{at least 10}
 				\State $i \gets j$
 				\State \Break
 			\EndIf
@@ -624,7 +624,7 @@ The algorithm for Partial Action Learning is described in \autoref{alg:pal} in a
 \end{algorithm}
 
 \begin{algorithm}
-\caption{Procedure which determines when to start computing the gradients in case of congestion control. We assume that the window at time step $t$ is stored in a list $l_\text{windows}$ and that the number of bytes sent in each time step is stored in $l_\text{sent}$. Alternatively to this procedure one can simply compute the gradients when $t_\text{max}$ rewards have been received where $t_\text{max}$ is an arbitrarily chosen integer greater than 0.}
+\caption{Procedure which determines when to start computing the gradients in case of congestion control. We assume that the window at time steps $t$ is stored in a list $l_\text{windows}$ and that the number of bytes sent in each time step is stored in $l_\text{sent}$ analogously to the other metrics defined in \autoref{alg:pal}. Alternatively to this procedure, one can simply compute the gradients when $t_\text{max}$ rewards have been received where $t_\text{max}$ is an arbitrarily chosen integer greater than 0.}
 \label{alg:enough}
 \begin{algorithmic}[1]%
 %\algrestore{palalg}
@@ -632,7 +632,7 @@ The algorithm for Partial Action Learning is described in \autoref{alg:pal} in a
 	\State $w \gets \left\lfloor l_\text{windows}[0] + l_\text{actions}[0] \right\rfloor$
 	\For{$i\gets 0..\#(l_\text{rewards})-1$}
 		\State $w \gets \text{w} - l_\text{sent}[i]$
-		\If{$w \leq 0 \land i+1 \geq 10$} \Comment{at least 10 rewards}
+		\If{$w \leq 0 \land i+1 \geq 10$} \Comment{at least 10}
 			\State \Return \True
 		\EndIf
 	\EndFor
