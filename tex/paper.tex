@@ -434,15 +434,41 @@ The tunable tradeoff between bandwidth and packet loss rate ($\alpha$) has a cle
 
 \begin{figure}
 \begin{minipage}{\columnwidth}
-\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-4.local/figures/1_2}}}
-\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-6.local/figures/2_2}}}
-\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/new_gpu/no_loss/figures/4_2}}}
-\caption{One, two and eight senders (from top to bottom) with a bandwidth/packet loss tradeoff of 2 on a link with 20\,Mbit/s bottleneck speed and 50\,ms RTT and a $\frac{1}{10}$ bandwidth delay buffer. Median in black and $\frac{1}{4}$ and $\frac{3}{4}$ quantile band in gray.}
+\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-4.local/figures/1_4}}}
+\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-6.local/figures/2_4}}}
+\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/new_gpu/no_loss/figures/4_4}}}
+\caption{One, two and four senders (from top to bottom) with a bandwidth/packet loss tradeoff of 4 on a link with 20\,Mbit/s bottleneck speed and 50\,ms RTT and a $\frac{1}{10}$ bandwidth delay buffer. Median in black and $\frac{1}{4}$ and $\frac{3}{4}$ quantile band in gray.}
 \label{fig:multiple_senders}
 \end{minipage}
 \end{figure}
 
-When comparing TCP Rax as the only sender on a link compared to sharing a link with more than one 
+While TCP Rax generally does not exhibit much variance after a few minutes of training when it is the only flow on a link, fluctuations clearly increase when having two or four concurrent senders \autoref{fig:multiple_senders}. We attribute this to the fact that on a shared link $n$ can on average only get $\frac{1}{n}$ of the bandwidth and thus each sender receives fewer packets which he can use for training. Furthermore, as the environment becomes more dynamic with more senders, each sender has a harder time learning whether the reward changed due to his own actions or due to actions that were caused by other senders: If there is only one flow on a link, the flow ``can be sure'' that all changes in rewards were actually caused by his own actions. 
+
+\subsection{Pre-training}
+
+\begin{figure}
+\begin{minipage}{\columnwidth}
+\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-4.local/figures/1_4_again}}}
+\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-6.local/figures/2_4_again}}}
+\caption{One and two senders (from top to bottom) that were trained with a bandwidth/packet loss tradeoff of 2 on a link with 20\,Mbit/s bottleneck speed and 50\,ms RTT and a $\frac{1}{10}$ bandwidth delay buffer. Median in black and $\frac{1}{4}$ and $\frac{3}{4}$ quantile band in gray.}
+\label{fig:resuming_training}
+\end{minipage}
+\end{figure}
+
+To see whether pre-training is generally feasible, we used the neural networks that were produced after each 600 seconds flow shown in figure \autoref{fig:multiple_senders} and started flows of equal length with the pre-trained neural networks. The flows seem to simply resume where they ended training in the flow before. This does not seem like a remarkable finding, however, this is unexpected: For instance, in the case of one sender on a link, the neural network starts with random weights and discovers that it achieves optimum utility at a window that results in 20\,Mbit/s of bandwidth. Then the sender constantly stays in this state and one would expect it to slowly ``forget'' what it learned in the very beginning when it started the flow. Thus it is interesting that after hundreds of seconds of only seeing one same state, the neural network still acts correctly when starting with a small congestion window again. 
+
+\subsection{Stochastic Loss}
+
+\begin{figure}
+\begin{minipage}{\columnwidth}
+\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-5.local/figures/1_4}}}
+\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-7.local/figures/2_4}}}
+\caption{One and two senders (from top to bottom) on a link with a stochastic loss rate of 1\%, a bandwidth/packet loss tradeoff of 2 on a link with 20\,Mbit/s bottleneck speed and 50\,ms RTT and a $\frac{1}{10}$ bandwidth delay buffer. Median in black and $\frac{1}{4}$ and $\frac{3}{4}$ quantile band in gray.}
+\label{fig:stochastic_loss}
+\end{minipage}
+\end{figure}
+
+To see whether pre-training is generally feasible, we used the neural networks that were produced after each 600 seconds flow shown in figure \autoref{fig:multiple_senders} and started flows of equal length with the pre-trained neural networks. The flows seem to simply resume where they ended training in the flow before. This does not seem like a remarkable finding, however, this is unexpected: For instance, in the case of one sender on a link, the neural network starts with random weights and discovers that it achieves optimum utility at a window that results in 20\,Mbit/s of bandwidth. Then the sender constantly stays in this state and one would expect it to slowly ``forget'' what it learned in the very beginning when it started the flow. Thus it is interesting that after hundreds of seconds of only seeing one same state, the neural network still acts correctly when starting with a small congestion window again. 
 
 \section{Discussion}
 
