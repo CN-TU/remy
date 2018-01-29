@@ -51,7 +51,7 @@ bool Unicorn::packets_lost( const std::vector< remy::Packet > & packets ) {
         _packets_lost += 1;
         _memory.lost(1);
         _memory.window(_the_window);
-        _the_window = std::max(_the_window - 1, MIN_WINDOW_UNICORN);
+        // _the_window = std::max(_the_window - 1, MIN_WINDOW_UNICORN);
         get_action(packet.tick_received);
         _largest_ack += 1;
         return true;
