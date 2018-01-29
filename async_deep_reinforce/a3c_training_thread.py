@@ -342,7 +342,7 @@ class A3CTrainingThread(object):
     # logging.debug(" ".join(map(str,("exp(R_packets)", R_packets, "exp(R_accumulated_delay)", R_accumulated_delay, "exp(R_duration)", R_duration))))
     if not (R_duration > 0):
       print("R_duration", R_duration)
-    if (np.isfinite(R_duration)):
+    if not np.isfinite(R_duration):
       R_duration = 0.0
     assert(np.isfinite(R_duration)) # Pretty dumb
     assert(np.isfinite(R_packets))
