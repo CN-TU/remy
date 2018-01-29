@@ -430,17 +430,19 @@ In the following evaluation we use a classical dumbbell network topology with on
 
 The tunable tradeoff between bandwidth and packet loss rate ($\alpha$) has a clear impact on both the highest spike of packet loss that is produced in the very beginning of the online learning process as well as on the median packet loss rate later on in the learning process \autoref{fig:one_sender_loss}. However, the stronger packet loss is punished, the longer it takes for the sender to reach the maximum bandwidth on the link. 
 
-\subsection{Number of senders} 
+\subsection{Number of senders}
 
 \begin{figure}
 \begin{minipage}{\columnwidth}
-\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-4.local/figures/1_4}}}
-\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-4.local/figures/2_4}}}
-\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-4.local/figures/4_4}}}
-\caption{One sender with a bandwidth/packet loss tradeoff of 1, 2 and 4 (from top to bottom) on a link with 20\,Mbit/s bottleneck speed and 50\,ms RTT and a $\frac{1}{10}$ bandwidth delay buffer. Median in black and $\frac{1}{4}$ and $\frac{3}{4}$ quantile band in gray.}
-\label{fig:one_sender_loss}
+\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-4.local/figures/1_2}}}
+\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-6.local/figures/2_2}}}
+\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/new_gpu/no_loss/figures/4_2}}}
+\caption{One, two and eight senders (from top to bottom) with a bandwidth/packet loss tradeoff of 2 on a link with 20\,Mbit/s bottleneck speed and 50\,ms RTT and a $\frac{1}{10}$ bandwidth delay buffer. Median in black and $\frac{1}{4}$ and $\frac{3}{4}$ quantile band in gray.}
+\label{fig:multiple_senders}
 \end{minipage}
 \end{figure}
+
+When comparing TCP Rax as the only sender on a link compared to sharing a link with more than one 
 
 \section{Discussion}
 

@@ -31,7 +31,7 @@ logging.info(" ".join(map(str,("CHECKPOINT_DIR:",CHECKPOINT_DIR))))
 
 LOG_FILE = os.path.join(ABSOLUTE_PATH,'a3c_log')
 logging.info(" ".join(map(str,("LOG_DIR:",LOG_FILE))))
-ACTOR_FACTOR = 1e0
+ACTOR_FACTOR = 1e-1
 VALUE_FACTOR = 1e0
 GENERAL_FACTOR = 10**float(os.environ.get('learning_rate')) if os.environ.get('learning_rate') is not None else -3
 # INITIAL_ALPHA_LOW = 1e-2*GENERAL_FACTOR   # log_uniform low limit for learning rate
