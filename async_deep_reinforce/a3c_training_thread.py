@@ -399,17 +399,17 @@ class A3CTrainingThread(object):
 
       # td = inverse_sigmoid(self.delay_delta, R_sent/(R_packets+R_sent) - 0.05)*R_packets/R_duration - inverse_sigmoid(self.delay_delta, Vi[3]/(Vi[0]+Vi[3]) - 0.05)*Vi[0]/Vi[2] - (R_sent/R_duration - Vi[3]/(Vi[2])) - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
-      if environ.get('reward_type') == "PCC":
-        # PCC
-        td = self.inverse_sigmoid(((R_sent - R_packets)/R_sent))*R_packets/R_duration - self.inverse_sigmoid(((Vi[2]-Vi[0])/Vi[2]))*Vi[0]/(1/Vi[1]) - ((R_sent - R_packets)/R_duration - (Vi[2] - Vi[0])/(1/Vi[1])) #- (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+      # if environ.get('reward_type') == "PCC":
+      #   # PCC
+      #   td = self.inverse_sigmoid(((R_sent - R_packets)/R_sent))*R_packets/R_duration - self.inverse_sigmoid(((Vi[2]-Vi[0])/Vi[2]))*Vi[0]/(1/Vi[1]) - ((R_sent - R_packets)/R_duration - (Vi[2] - Vi[0])/(1/Vi[1])) #- (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
-      elif environ.get('reward_type') is None or environ.get('reward_type') == "no_cutoff":
+      # if environ.get('reward_type') is None or environ.get('reward_type') == "no_cutoff":
         # PCC without cutoff
-        td = R_packets/R_duration - Vi[0]/(1/Vi[1]) - self.delay_delta*((R_sent - R_packets)/R_duration - (Vi[2] - Vi[0])/(1/Vi[1])) #- (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+      td = R_packets/R_duration - Vi[0]/(1/Vi[1]) - self.delay_delta*((R_sent - R_packets)/R_duration - (Vi[2] - Vi[0])/(1/Vi[1])) #- (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
-      elif environ.get('reward_type') == "modified":
-        # PCC modified
-        td = (1 - (R_sent - R_packets)/R_sent)*R_packets/R_duration - (1 - (Vi[2]-Vi[0])/Vi[2])*Vi[0]/(1/Vi[1]) - ((R_sent - R_packets)/R_duration - (Vi[2] - Vi[0])/(1/Vi[1])) #- (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
+      # elif environ.get('reward_type') == "modified":
+      #   # PCC modified
+      #   td = (1 - (R_sent - R_packets)/R_sent)*R_packets/R_duration - (1 - (Vi[2]-Vi[0])/Vi[2])*Vi[0]/(1/Vi[1]) - ((R_sent - R_packets)/R_duration - (Vi[2] - Vi[0])/(1/Vi[1])) #- (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 
       # td = R_packets*(1-GAMMA)*inverse_sigmoid(SIGMOID_ALPHA * R_sent/(R_packets+R_sent) - self.delay_delta) - Vi[0]*inverse_sigmoid(SIGMOID_ALPHA * Vi[3]/(Vi[0]+Vi[3]) - self.delay_delta) - (R_sent*(1-GAMMA) - Vi[3]) - (R_accumulated_delay/R_packets - Vi[1]/Vi[0])
 

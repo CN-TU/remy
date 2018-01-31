@@ -52,7 +52,7 @@ bool Unicorn::packets_lost( const std::vector< remy::Packet > & packets ) {
         _memory.lost(1);
         _memory.window(_the_window);
         // _the_window = std::max(_the_window - 1, MIN_WINDOW_UNICORN);
-        get_action(packet.tick_received);
+        // get_action(packet.tick_received);
         _largest_ack += 1;
         return true;
       }
@@ -94,8 +94,8 @@ void Unicorn::packets_received( const vector< remy::Packet > & packets ) {
         const double throughput_final = it->second["received"];
         const double delay_final = it->second["delay_acc"];
         // const double duration = it->second["end_time"] - it->second["start_time"];
-        // const double duration = it->second["intersend_duration_acc"];
-        const double duration = it->second["interreceive_duration_acc"];
+        const double duration = it->second["intersend_duration_acc"];
+        // const double duration = it->second["interreceive_duration_acc"];
         assert(duration >= 0);
         const double sent_final = it->second["sent"];
         assert(throughput_final <= sent_final);
@@ -252,7 +252,7 @@ double Unicorn::next_event_time( const double & tickno ) const
 
 void Unicorn::get_action(const double& tickno) {
 
-    assert(_memory._window >= 1 && _memory._window_ewma >= 1 && _memory._slow_window_ewma);
+  assert(_memory._window >= 1 && _memory._window_ewma >= 1 && _memory._slow_window_ewma);
 
   const double action = _rainbow.get_action(
     _thread_id,
@@ -262,12 +262,12 @@ void Unicorn::get_action(const double& tickno) {
       // _memory._slow_rec_send_ewma,
 
       // _memory._rec,
-      _memory._rec_rec_ewma,
-      _memory._slow_rec_rec_ewma,
+      // _memory._rec_rec_ewma,
+      // _memory._slow_rec_rec_ewma,
 
       // _memory._rec > 0 ? 1.0/_memory._rec : _memory._rec,
-      // _memory._rec_rec_ewma > 0 ? 1.0/_memory._rec_rec_ewma : _memory._rec_rec_ewma,
-      // _memory._slow_rec_rec_ewma > 0 ? 1.0/_memory._slow_rec_rec_ewma : _memory._slow_rec_rec_ewma,
+      _memory._rec_rec_ewma > 0 ? 1.0/_memory._rec_rec_ewma : _memory._rec_rec_ewma,
+      _memory._slow_rec_rec_ewma > 0 ? 1.0/_memory._slow_rec_rec_ewma : _memory._slow_rec_rec_ewma,
 
       // _memory._rtt,
       _memory._rtt_ewma,
