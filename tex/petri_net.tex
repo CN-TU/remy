@@ -8,8 +8,8 @@
 %  \tikzstyle{every label}=[blue!75]
 
   \begin{scope}
-    \node [place,tokens=1] (s1) at (0, 1) [label={[align=center]left:Receive\\ feedback}] {};
-    \node [place] (s2) at (1, 2) [label={[align=center]above:Received\\ ACK}] {};
+    \node [place,tokens=1] (s1) at (0, 1) [label={[align=center]left:Received\\ feedback}] {};
+    \node [place] (s2) at (1, 2) [label={[align=center]above:Received\\ ACKs}] {};
     \node [place] (s3) at (2, 1) [label={[align=center]right:Packets\\ in the\\ network}] {};
     \node [place] (s4) at (1, 0) [label={[align=center]below:Open congestion\\ window (cwnd)}] {};      
 
@@ -29,7 +29,7 @@
       edge [pre] node {1} (s2)
       edge [post] node {1} (s4);
       
-    \node [transition] (e5) at (0, 2) [label={[align=center]left:Received\\ feedback}] {}
+    \node [transition] (e5) at (0, 2) [label={[align=center]left:Receive\\ feedback}] {}
       edge [pre] node {1} (s2)
       edge [post] node {1} (s1);
 
