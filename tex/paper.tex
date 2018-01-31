@@ -179,13 +179,13 @@ As, for instance, for some applications overall throughput is more important tha
 \item and converge to a stable equilibrium
 \end{enumerate*}.
 
-In a machine learning based congestion control method, each sender uses a set of observed environment conditions to determine which action he should take to maximize his reward in the future. The environment conditions can be any metrics that the sender can obtain from the network, for example the mean round-trip time of the last received packets, the packet loss rate etc. An action is a change to the sending rate: For example, if a sender perceives an increase in the loss rate it might be advisable to lower the sending rate. To modulate the sending rate one can  either
+In a machine learning based congestion control method, each sender uses a set of observed environment conditions to determine which action it should take to maximize his reward in the future. The environment conditions can be any metrics that the sender can obtain from the network, for example the mean round-trip time of the last received packets, the packet loss rate etc. An action is a change to the sending rate: For example, if a sender perceives an increase in the loss rate it might be advisable to lower the sending rate. To modulate the sending rate one can  either
 \begin{enumerate*}
 \item change the sending rate itself at certain points in time or
 \item maintain a congestion window that indicates the number of packets that can be in flight at a certain point in time
 \end{enumerate*}. It seems preferable to maintain a congestion window, as one cannot be certain that the operating system (OS) can maintain a certain constant sending rate for each application on one machine, as the OS has to schedule different applications and share the network interfaces between them. 
 
-While congestion control seems to be a well suited problem for reinforcement learning, there are a couple of unique aspects and differences that distinguish it from most other reinforcement learning problems:  \begin{itemize}
+While congestion control seems to be a well-suited problem for reinforcement learning, there are a couple of unique aspects and differences that distinguish it from most other reinforcement learning problems:  \begin{itemize}
 \item \textbf{Delayed rewards}: In congestion control, rewards are always delayed by one round-trip time, while in most other areas where reinforcement learning is applied, if one performs an action, one can see the consequences of it action immediately. Also, due to the delay, by the time an action receives its reward, probably other actions have already been carried out in the meantime. Thus, contrary to most RL applications, actions and rewards are not synchronized. 
 \item \textbf{Actions and rewards are not atomic}: If an action causes three packets to be sent, we consider these three packets being sent three \textit{partial actions}. In case these packets are transmitted correctly, the receiver will send back three acknowledgements. Each of these acknowledgements is a \textit{partial reward} that already unveils new information on the current state of the network and enables the sender to take an action based on this new information. However, only if all partial rewards have been received, the sender can assemble the overall reward of the corresponding action and can perform an update of the underlying reinforcement learning logic. 
 \item \textbf{Variable number of actions and rewards}: If the congestion window is larger, more packets are sent and more acknowledgements are received, which means that the reinforcement learning algorithm gets more training data the larger the window is. This is problematic as it means that -- without proper adjustments -- the experience made at a larger congestion window will ``overwrite'' the experience made at a smaller window as with the larger window simply more training data arrives and it is thus going to be overemphasized. 
@@ -199,8 +199,8 @@ Using a utility function that encourages high throughput and discourages packet 
 
 \begin{figure}
 \begin{minipage}{\columnwidth}
-\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-4.local/figures/4_1_2018-01-25-20:17:15_3_2018-01-25-20:17:15.0}}}
-\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-6.local/figures/4_2_2018-01-25-19:53:39_22_2018-01-25-19:53:39.0}}}
+\subfloat[One sender]{\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-4.local/figures/4_1_2018-01-25-20:17:15_3_2018-01-25-20:17:15.0}}}}{}
+\subfloat[Two senders]{\includegraphics[width=\columnwidth]{{{/home/max/repos/remy/compute-0-6.local/figures/4_2_2018-01-25-19:53:39_22_2018-01-25-19:53:39.0}}}}{}
 \caption{Throughput and loss rate when sharing a bottleneck link of 20\,Mbit/s with a two-way end-to-end delay of 50\,ms and a very small buffer of $\frac{1}{10}$ bandwidth delay product between 1 and 2 senders (from top to bottom). The time needed for convergence increases with more senders, which is caused by the fact that the more senders use the link, the fewer packets each sender receives per unit of time for training and because of the increasing complexity of the environment. It is interesting to note that in the case of two senders, both flows complement each other and quickly adapt to the sending rate of the other flow.}
 \label{fig:demo}
 \end{minipage}
@@ -256,10 +256,12 @@ The Actor Network outputs a normal distribution parametrized by a mean $\mu$ and
 
 Each time we take an action $a_t$ we also let the critic network make an estimation $V(s_t; \theta)$, given the current neural network weights $\theta$ and the current state $s_t$. The loss function of the actor network can now be described as this: How likely was it to take action $a_t$ given the probability distribution ($\pi$) at time $t$ and how beneficial was this action when comparing it to the critic's estimation? For example, if an action was very successful and highly unlikely, the actor network's weights are updated to make actions like this more likely in the future. 
 
-The actor also aims at increasing the probability density function's entropy ($\frac{1}{2} \log \left( 2 \pi e \sigma^2 \right)$) to encourage exploration: Otherwise the actor could always perform similar actions but never actually take the action that yields the best performance. The actor network will aim to maximize the entropy and at the same time output the best possible action: If it realizes that the entropy is too large and bad actions are taken, it learns to lower the entropy. We designate the entropy as $H$ and introduce a parameter $\beta$ which specifies magnitude of the influence of the entropy. 
+The actor also aims at increasing the probability density function's entropy ($\frac{1}{2} \log \left( 2 \pi e \sigma^2 \right)$) to encourage exploration: Otherwise the actor could always perform similar actions but never actually take the action that yields the best performance. The actor network will aim to maximize the entropy and at the same time output the best possible action: If it realizes that the entropy is too large and bad actions are taken, it learns to lower the entropy. We designate the entropy as $H$ and introduce a parameter $\beta$ which specifies magnitude of the influence of the entropy. The loss function of the actor network is defined as follows \cite{mnih_asynchronous_2016}:
 \begin{align}
+\begin{split}
 l_{\text{a},t} =& -\log \left( \pi\left( a_t \given s_t; \theta \right)\right)\left( R_t - v_t \right)\\ 
 &- \beta H\left( \pi\left( s_t; \theta \right)\right).
+\end{split}
 \end{align}
 
 \section{Method}
@@ -308,7 +310,7 @@ To use PAL for congestion control we first have to define the correct semantics 
 \begin{itemize}
 \item the time between the last two packets that were received
 \item the RTT of the last received packet
-\item whether the last packet was lost, where $1$ designates that the last packet was lost while $0$ indicates that it was received correctly
+\item whether the last packet was lost, where $1$ denotes that the last packet was lost while $0$ indicates that it was received correctly
 \item the current congestion window (as a real number, as actions by output by the actor network can be very small and thus the congestion window is often only changed by minuscule amounts)%
 \end{itemize}
 Of each of these features a exponentially weighted moving average (ewma) with a factor $\alpha$ of $\frac{1}{8}$ and one with an $\alpha$ of $\frac{1}{256}$ (the concept of using ewmas with these specific values of $\alpha$ was first introduced in \textit{Remy} \cite{winstein_tcp_2013}), which makes a total of 8 features.  
@@ -354,9 +356,11 @@ The overall structure of the neural network for both the value and the actor net
 
 In case of congestion control, the loss function $l_{\text{v},t}$ of the critic network is actually the sum of the squares of the difference for each of the expected long-term averages and the empirically found averages for each reward metric:
 \begin{align}
+\begin{split}
 l_{\text{v},t} =& \left(R_{\text{received},t} - V_\text{received}(s_t; \theta)\right)^2 \\
 &+\left(R_{\text{sent},t} - V_\text{sent}(s_t; \theta)\right)^2 \\
 &+\left(R_{\text{duration},t} - V_\text{duration}(s_t; \theta)\right)^2
+\end{split}
 \end{align}
 
 One apparent issue of using reinforcement learning for congestion control is that in RL one usually uses a fixed parameter $\gamma$ that determines the influence of future rewards. However, in congestion control the larger the window is, the more packets are sent and received per unit of time. Thus, if one used a single fixed parameter $\gamma$, one would have the problem that one would look into the future for a shorter time the larger the window is, as more packets and thus more actions and rewards are handled per unit of time. Our aim is to look into the future for a more-or-less constant time span no matter the current size of the window. In other words, we want to define $\gamma$ so that it reflects the number of packets in the current window, so that it always looks in the future for approximately one round-trip time (as one full window corresponds to one round-trip time). 
@@ -383,9 +387,10 @@ The actor network minimizes the loss function
 %&+ \beta H\left( \pi\left( s_t; \theta_a \right)\right).
 
 \begin{align}
-l_{\text{a},t} =& -\log \left( \pi \left( a_t \given s_t ; \theta_\text{a} \right) \right)\\
-& \left( U_{\text{measured},t} - U_{\text{expected},t} \right)\\ 
+\begin{split}
+l_{\text{a},t} =& -\log \left( \pi \left( a_t \given s_t ; \theta_\text{a} \right) \right)\left( U_{\text{measured},t} - U_{\text{expected},t} \right)\\ 
 &- \beta H\left( \pi\left( s_t; \theta_a \right)\right)
+\end{split}
 \end{align}
 where $U$ can be any utility function defined based on some of the (long term averages of the) reward metrics. Thus, in simple terms, the actor network considers if an action improved the actual experienced utility compared to the expected one and adjusts the neural network accordingly.
  
