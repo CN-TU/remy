@@ -39,11 +39,12 @@ void Unicorn::send( const unsigned int id, NextHop & next, const double & tickno
       _flow_to_last_received[_flow_id] = tickno;
     }
 
-    _last_send_time = tickno;
     _id_to_sent_during_action[_packets_sent] = _put_actions;
     _outstanding_rewards[_put_actions]["sent"] += 1;
     _outstanding_rewards[_put_actions]["intersend_duration_acc"] += tickno - _last_send_time;
     _packets_sent++;
+
+    _last_send_time = tickno;
 
     _memory.packet_sent( p );
     next.accept( p, tickno );

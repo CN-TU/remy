@@ -1,0 +1,2 @@
+time,sender_number,packets_received,packets_sent,packets_lost,sending_duration,total_delay
+1.399597,0,0,1,0,1000.000000,0.000000
