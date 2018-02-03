@@ -14,7 +14,7 @@ from functools import reduce
 from game_ac_network import GameACLSTMNetwork
 
 # gamma_current, gamma_future = 1./(1+GAMMA), GAMMA/(1.+GAMMA)
-# from constants import LOCAL_T_MAX
+from constants import LOCAL_T_MAX
 # from constants import GAMMA
 from constants import LOG_LEVEL
 from constants import STATE_SIZE
@@ -313,12 +313,12 @@ class A3CTrainingThread(object):
     assert(len(states) > 0)
     assert(len(rewards) > 0)
     assert(len(values) > 0)
-    if not (len(actions) == len(ticknos) == len(windows) == len(states) == len(rewards) == len(values)):
-      print(len(self.actions), len(self.ticknos), len(self.windows), len(self.states), len(self.rewards), len(self.values))
-      print(len(actions), len(ticknos), len(windows), len(states), len(rewards), len(values))
-      print(self.actions, self.ticknos, self.windows, self.states, self.rewards, self.values)
-      print(actions, ticknos, windows, states, rewards, values)
-    assert(len(actions) == len(ticknos) == len(windows) == len(states) == len(rewards) == len(values))
+    if not (len(actions) == len(ticknos) == len(windows) == len(states) == len(values)):
+      print(len(self.actions), len(self.ticknos), len(self.windows), len(self.states), len(self.values))
+      print(len(actions), len(ticknos), len(windows), len(states), len(values))
+      print(self.actions, self.ticknos, self.windows, self.states, self.values)
+      print(actions, ticknos, windows, states, values)
+     assert(len(actions) == len(ticknos) == len(windows) == len(states) == len(values))
 
     # if not len(self.actions) == len(self.ticknos) == len(self.windows) == len(self.states) == len(self.values) == len(self.estimated_values):
     #   print("In thread:", self.thread_index, "rewards:", len(self.rewards), ";", len(self.actions), len(self.ticknos), len(self.windows), len(self.states), len(self.values), len(self.estimated_values))
@@ -370,9 +370,9 @@ class A3CTrainingThread(object):
       # assert(False)
       # The GAMMA_FACTOR increases the influence that following observations have on this one.
 
-      GAMMA = (1 - 2/(A3CTrainingThread.get_actual_window(wi+ai) + 1))
+      # GAMMA = (1 - 2/(A3CTrainingThread.get_actual_window(wi+ai) + 1))
 
-      # GAMMA = 0.99
+      GAMMA = 0.99
 
       # R_duration = ((1-GAMMA)*ri[2] + GAMMA*R_duration)
       # R_packets = ((1-GAMMA)*ri[0] + GAMMA*R_packets)
