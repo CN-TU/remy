@@ -150,6 +150,8 @@ void Rainbow::put_reward(const long unsigned int thread_id, const double reward_
 	PyObject* pReturnValue = PyObject_CallObject(pRewardFunc, pRewardArgs);
 	if (pReturnValue == NULL) {
 		PyErr_Print();
+		fflush(stdout);
+		fflush(stderr);
 	}
 	Py_DECREF(pRewardArgs);
 	Py_DECREF(pReturnValue);

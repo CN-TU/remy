@@ -175,11 +175,10 @@ class A3CTrainingThread(object):
 
     assert(len(self.rewards) <= 2*MAX_WINDOW)
 
-    # assert(sent == reward_throughput)
     self.rewards.append((reward_throughput, reward_delay, duration, sent))
 
     # if len(self.rewards)>=LOCAL_T_MAX or (len([item for item in self.actions[:LOCAL_T_MAX] if item is not None]) == len(self.rewards) and len(self.rewards) > 0 and self.time_differences[0] is not None):
-    if ('LOCAL_T_MAX' in globals() and (len(self.rewards)>=globals()["LOCAL_T_MAX"] or (len([item for item in self.actions[:globals()["LOCAL_T_MAX"]] if item is not None]) == len(self.rewards) and len(self.rewards) > 0 and self.time_differences[0] is not None))) or (not 'LOCAL_T_MAX' in globals() and len(self.rewards)>=math.floor(A3CTrainingThread.get_actual_window(self.windows[0]+self.actions[0])) or (len([item for item in self.actions[:math.floor(A3CTrainingThread.get_actual_window(self.windows[0]+self.actions[0]))] if item is not None]) == len(self.rewards) and len(self.rewards) > 0 and self.time_differences[0] is not None)):
+    if ('LOCAL_T_MAX' in globals() and (len(self.rewards)>=globals()["LOCAL_T_MAX"] or (len([item for item in self.actions[:globals()["LOCAL_T_MAX"]] if item is not None]) == len(self.rewards) and len(self.rewards) > 0 and self.time_differences[0] is not None))) or (not 'LOCAL_T_MAX' in globals() and (len(self.rewards)>=math.floor(A3CTrainingThread.get_actual_window(self.windows[0]+self.actions[0])) or (len([item for item in self.actions[:math.floor(A3CTrainingThread.get_actual_window(self.windows[0]+self.actions[0]))] if item is not None]) == len(self.rewards) and len(self.rewards) > 0 and self.time_differences[0] is not None))):
       if not 'LOCAL_T_MAX' in globals():
         assert(len(self.rewards) == math.floor(A3CTrainingThread.get_actual_window(self.windows[0]+self.actions[0])) or (len([item for item in self.actions[:math.floor(A3CTrainingThread.get_actual_window(self.windows[0]+self.actions[0]))] if item is not None]) == len(self.rewards) and len(self.rewards) > 0 and self.time_differences[0] is not None))
       # print(self.thread_index, "rewards", self.rewards, "actions", self.actions, "time_diffs", self.time_differences)
@@ -313,12 +312,12 @@ class A3CTrainingThread(object):
     assert(len(states) > 0)
     assert(len(rewards) > 0)
     assert(len(values) > 0)
-    if not (len(actions) == len(ticknos) == len(windows) == len(states) == len(values)):
-      print(len(self.actions), len(self.ticknos), len(self.windows), len(self.states), len(self.values))
-      print(len(actions), len(ticknos), len(windows), len(states), len(values))
-      print(self.actions, self.ticknos, self.windows, self.states, self.values)
-      print(actions, ticknos, windows, states, values)
-     assert(len(actions) == len(ticknos) == len(windows) == len(states) == len(values))
+    if not (len(actions) == len(ticknos) == len(windows) == len(states) == len(rewards) == len(values)):
+      print(len(self.actions), len(self.ticknos), len(self.windows), len(self.states), len(self.rewards), len(self.values))
+      print(self.actions, self.ticknos, self.windows, self.states, self.rewards, self.values)
+      print(len(actions), len(ticknos), len(windows), len(states), len(rewards), len(values))
+      print(actions, ticknos, windows, states, rewards, values)
+    assert(len(actions) == len(ticknos) == len(windows) == len(states) == len(rewards) == len(values))
 
     # if not len(self.actions) == len(self.ticknos) == len(self.windows) == len(self.states) == len(self.values) == len(self.estimated_values):
     #   print("In thread:", self.thread_index, "rewards:", len(self.rewards), ";", len(self.actions), len(self.ticknos), len(self.windows), len(self.states), len(self.values), len(self.estimated_values))
@@ -332,7 +331,7 @@ class A3CTrainingThread(object):
     # assert((not len(self.estimated_values) <= len(rewards)) or final)
     # print("self.estimated_values", self.estimated_values)
     # print("Spam and eggs")
-    R_packets, R_duration, R_sent = self.estimated_values[len(rewards)] if self.estimated_values[len(rewards)] is not None and not final else self.estimated_values[len(rewards)-1]
+    R_packets, R_duration, R_sent = self.estimated_values[len(rewards)] if len(self.estimated_values) > len(rewards) and self.estimated_values[len(rewards)] is not None and not final else self.estimated_values[len(rewards)-1]
 
     R_packets_initial, R_duration_initial, R_sent_initial = R_packets, R_duration, R_sent
 
@@ -370,9 +369,9 @@ class A3CTrainingThread(object):
       # assert(False)
       # The GAMMA_FACTOR increases the influence that following observations have on this one.
 
-      # GAMMA = (1 - 2/(A3CTrainingThread.get_actual_window(wi+ai) + 1))
+      GAMMA = (1 - 2/(A3CTrainingThread.get_actual_window(wi+ai) + 1))
 
-      GAMMA = 0.99
+      # GAMMA = 0.99
 
       # R_duration = ((1-GAMMA)*ri[2] + GAMMA*R_duration)
       # R_packets = ((1-GAMMA)*ri[0] + GAMMA*R_packets)
