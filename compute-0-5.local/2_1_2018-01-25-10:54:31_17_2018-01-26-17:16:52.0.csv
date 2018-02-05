@@ -1,3 +1,0 @@
-time,sender_number,packets_received,packets_sent,packets_lost,sending_duration,total_delay
-1.032629,0,8,10,0,303.500000,404.000000
-2.437129,0,28,29,0,1708.000000,1415.500000

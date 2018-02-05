@@ -32,6 +32,8 @@ core
 /gpu
 /not_so_old_old_data
 /tex/pal.tex
+/compute-0-*
+/new_gpu
 
 /.vscode
 
