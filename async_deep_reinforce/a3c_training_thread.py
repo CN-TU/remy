@@ -14,7 +14,7 @@ from functools import reduce
 from game_ac_network import GameACLSTMNetwork
 
 # gamma_current, gamma_future = 1./(1+GAMMA), GAMMA/(1.+GAMMA)
-from constants import LOCAL_T_MAX
+# from constants import LOCAL_T_MAX
 # from constants import GAMMA
 from constants import LOG_LEVEL
 from constants import STATE_SIZE
@@ -369,9 +369,8 @@ class A3CTrainingThread(object):
       # assert(False)
       # The GAMMA_FACTOR increases the influence that following observations have on this one.
 
-      GAMMA = (1 - 2/(A3CTrainingThread.get_actual_window(wi+ai) + 1))
-
-      # GAMMA = 0.99
+      # GAMMA = (1 - 2/(A3CTrainingThread.get_actual_window(wi+ai) + 1))
+      GAMMA = 0.99
 
       # R_duration = ((1-GAMMA)*ri[2] + GAMMA*R_duration)
       # R_packets = ((1-GAMMA)*ri[0] + GAMMA*R_packets)
