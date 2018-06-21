@@ -27,6 +27,7 @@ import numpy.random
 import itertools
 
 tiny = 1e-10
+really_tiny = 1e-20
 
 from tensorflow.python.ops import variable_scope as vs
 
