@@ -1,7 +1,23 @@
-[![Build Status](https://travis-ci.org/tcpexmachina/remy.svg?branch=master)](https://travis-ci.org/tcpexmachina/remy)
-
 Remy: TCP ex Machina (computer-generated congestion control)
 ============================================================
+
+This is a forked version of [Remy](https://github.com/tcpexmachina/remy) 
+which adds support for reinforcement learning 
+(using code from the repository [async_deep_reinforce](https://github.com/miyosuda/async_deep_reinforce)). 
+The results were published in *Bachl, Maximilian, Tanja Zseby, and Joachim Fabini. "Rax: Deep Reinforcement Learning for Congestion Control." ICC 2019-2019 IEEE International Conference on Communications (ICC). IEEE, 2019.*
+
+All files with *unicorn* in the file name were added for this purpose.
+
+The license for Remy can be found at *debian/copyright*. All added *unicorn* files are licensed under the same license. 
+The license for *async_deep_reinforce* can be found at *async_deep_reinforce/LICENSE.txt*.
+
+The modified version `remy-unicorn` can be launched like `remy` as follows:
+
+    learning_rate=-4.5 reward_type=no_cutoff src/remy-unicorn cf=config/2_2_really_small_buffer_0.cfg
+    
+This launches a simulation with 2 senders, an RTT of 100 ms, a buffer of one tenth of the bandwidth delay product, a throughput/packet-loss-tradeoff of 2, a stochastic packet loss probability of 0 and a link speed of 20 Mbit/s. 
+
+-- Maximilian Bachl
 
 Remy is an optimization tool to develop new TCP congestion-control
 schemes, given prior knowledge about the network it will encounter
@@ -38,7 +54,7 @@ Basic usage:
   the link speed (in packets per millisecond), `rtt=` to set the RTT,
   and `nsrc=` to set the maximum degree of multiplexing.
 
-If you have any questions, please visit [Remy's Web
+If you have any questions regarding Remy, please visit [Remy's Web
 site](http://web.mit.edu/remy) or e-mail `remy at mit dot edu`.
 
 -- Keith Winstein
